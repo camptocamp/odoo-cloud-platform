@@ -8,7 +8,7 @@
  'author': 'Camptocamp',
  'license': 'AGPL-3',
  'category': 'category',
- 'depends': ['base'],
+ 'depends': ['base', 'web'],
  'website': 'http://www.camptocamp.com',
  'data': [],
  'installable': True,

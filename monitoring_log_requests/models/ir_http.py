@@ -21,7 +21,8 @@ class IrHttp(models.AbstractModel):
         begin = time.time()
         response = super(IrHttp, self)._dispatch()
         end = time.time()
-        if not self._monitoring_blacklist(http_request):
+        if (not self._monitoring_blacklist(http_request) and
+                self._monitoring_filter(http_request)):
             info = self._monitoring_info(http_request, response, begin, end)
             self._monitoring_log(info)
         return response
@@ -32,7 +33,11 @@ class IrHttp(models.AbstractModel):
             return True
         return False
 
+    def _monitoring_filter(self, request):
+        return True
+
     def _monitoring_info(self, request, response, begin, end):
+        path = request.httprequest.environ.get('PATH_INFO')
         info = {
             # timing
             'start_time': time.strftime("%Y-%m-%d %H:%M:%S",
@@ -41,17 +46,17 @@ class IrHttp(models.AbstractModel):
             # HTTP things
             'method': request.httprequest.method,
             'url': request.httprequest.url,
-            'path': request.httprequest.environ.get('PATH_INFO'),
+            'path': path,
             'content_type': request.httprequest.environ.get('CONTENT_TYPE'),
             'user_agent': request.httprequest.environ.get('HTTP_USER_AGENT'),
             # Odoo things
             'db': None,
             'uid': request.uid,
             'login': None,
-            'json_method': None,
             'server_environment': config.get('running_env'),
             'model': None,
             'model_method': None,
+            'workflow_signal': None,
             # response things
             'response_status_code': response.status_code,
         }
@@ -60,12 +65,11 @@ class IrHttp(models.AbstractModel):
                 'login': request.session.get('login'),
                 'db': request.session.get('db'),
             })
-        if hasattr(request, 'jsonrequest'):
-            info['json_method'] = request.jsonrequest.get('method')
         if hasattr(request, 'params'):
             info.update({
                 'model': request.params.get('model'),
                 'model_method': request.params.get('method'),
+                'workflow_signal': request.params.get('signal'),
             })
         return info
 
