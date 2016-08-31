@@ -7,7 +7,7 @@ import logging
 import time
 
 from openerp import models
-from openerp.http import request
+from openerp.http import request as http_request
 from openerp.tools.config import config
 
 
@@ -21,11 +21,18 @@ class IrHttp(models.AbstractModel):
         begin = time.time()
         response = super(IrHttp, self)._dispatch()
         end = time.time()
-        info = self._monitoring_info(response, begin, end)
-        self._monitoring_log(info)
+        if not self._monitoring_blacklist(http_request):
+            info = self._monitoring_info(http_request, response, begin, end)
+            self._monitoring_log(info)
         return response
 
-    def _monitoring_info(self, response, begin, end):
+    def _monitoring_blacklist(self, request):
+        path_info = request.httprequest.environ.get('PATH_INFO')
+        if path_info.startswith('/longpolling/'):
+            return True
+        return False
+
+    def _monitoring_info(self, request, response, begin, end):
         info = {
             # timing
             'start_time': time.strftime("%Y-%m-%d %H:%M:%S",
