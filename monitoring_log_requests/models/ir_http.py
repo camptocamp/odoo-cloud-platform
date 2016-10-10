@@ -58,8 +58,10 @@ class IrHttp(models.AbstractModel):
             'model_method': None,
             'workflow_signal': None,
             # response things
-            'response_status_code': response.status_code,
+            'response_status_code': None,
         }
+        if hasattr(request, 'status_code'):
+            info['status_code'] = response.status_code
         if hasattr(request, 'session'):
             info.update({
                 'login': request.session.get('login'),
