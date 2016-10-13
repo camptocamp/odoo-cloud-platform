@@ -43,7 +43,7 @@ class IrAttachment(models.Model):
 
     @api.depends('store_fname', 'db_datas')
     def _compute_datas(self):
-        bin_size = self._context.get('bin_size')
+        bin_size = self.env.context.get('bin_size')
         if self._s3_readonly():
             for attach in self:
                 # look first in db_datas in case a file has been modified
@@ -165,10 +165,7 @@ class IrAttachment(models.Model):
     def _file_read_s3(self, bucket, fname, bin_size=False):
         filekey = bucket.get_key(fname)
         if filekey:
-            if bin_size:
-                read = filekey.size
-            else:
-                read = base64.b64encode(filekey.get_contents_as_string())
+            read = base64.b64encode(filekey.get_contents_as_string())
         else:
             # If the attachment has been created before the installation
             # of the addon, it might be stored on the filesystem.
