@@ -9,16 +9,73 @@ import os
 import xml.dom.minidom
 from functools import partial
 
+from distutils.util import strtobool
+
 import boto
 from boto.exception import S3ResponseError
 
-from openerp import _, api, exceptions, models
+from openerp import _, api, exceptions, fields, models
 
 _logger = logging.getLogger(__name__)
 
 
 class IrAttachment(models.Model):
     _inherit = "ir.attachment"
+
+    datas = fields.Binary(
+        compute='_compute_datas',
+        inverse='_inverse_datas',
+        string='File Content',
+        nodrop=True,
+    )
+
+    @api.model
+    def _s3_readonly(self):
+
+        def is_true(strval):
+            return bool(strtobool(strval or '0'.lower()))
+
+        params = self.env['ir.config_parameter'].sudo()
+        storage = params.get_param('ir_attachment.location', default='')
+        env_ro = is_true(os.environ.get('AWS_ATTACHMENT_READONLY'))
+        param_ro = is_true(params.get_param('ir_attachment.s3.readonly'))
+        return storage.startswith('s3://') and (env_ro or param_ro)
+
+    @api.depends('store_fname', 'db_datas')
+    def _compute_datas(self):
+        bin_size = self._context.get('bin_size')
+        if self._s3_readonly():
+            for attach in self:
+                # look first in db_datas in case a file has been modified
+                # locally
+                data = attach.db_datas
+                if data:
+                    attach.datas = data
+                else:
+                    params = self.env['ir.config_parameter'].sudo()
+                    bucket_url = params.get_param('ir_attachment.location')
+                    bucket = self._get_s3_bucket(bucket_url)
+                    attach.datas = self._file_read_s3(bucket,
+                                                      attach.store_fname,
+                                                      bin_size)
+        else:
+            values = self._data_get('datas', None)
+            for attach in self:
+                attach.datas = values.get(attach.id)
+
+    def _inverse_datas(self):
+        for attach in self:
+            self._data_set('datas', attach.datas, None)
+
+    @api.model
+    def _storage(self):
+        if self._s3_readonly():
+            # When the S3 readonly mode is active, we force the storage
+            # to be in the database. We'll override the read method
+            # to look in S3 if we have a value though.
+            return 'db'
+        else:
+            return super(IrAttachment, self)._storage()
 
     @api.model
     def _get_s3_bucket(self, bucket_url):
@@ -29,13 +86,13 @@ class IrAttachment(models.Model):
         ``s3://<access-key>:<secret-key>@<bucket-name>``
 
         Alternatively, we can also use environment variables, in that case,
-        you must set the url to ``s3://``.
+        you must set the parameter to ``s3://``.
 
         If the S3 provider is not AWS, the key
-        ``ir_attachment.location.s3host`` can be configured in the System
+        ``ir_attachment.s3.host`` can be configured in the System
         Parameters with the hostname.
 
-        The following environment variable can be set:
+        The following environment variables can be set:
         * ``AWS_HOST``
         * ``AWS_ACCESS_KEY_ID``
         * ``AWS_SECRET_ACCESS_KEY``
@@ -45,8 +102,8 @@ class IrAttachment(models.Model):
         assert bucket_url.startswith('s3://')
         host = os.environ.get('AWS_HOST')
         if not host:
-            host = self.env['ir.config_parameter'].get_param(
-                'ir_attachment.location.s3host', default=None
+            host = self.env['ir.config_parameter'].sudo().get_param(
+                'ir_attachment.s3.host', default=None
             )
         if host:
             connect_s3 = partial(boto.connect_s3, host=host)
@@ -63,6 +120,7 @@ class IrAttachment(models.Model):
                       '* AWS_ACCESS_KEY_ID\n'
                       '* AWS_SECRET_ACCESS_KEY\n'
                       '* AWS_BUCKETNAME\n'
+                      '* AWS_HOST (optional)\n'
                       )
                 )
         else:
@@ -104,26 +162,36 @@ class IrAttachment(models.Model):
         return msg
 
     @api.model
+    def _file_read_s3(self, bucket, fname, bin_size=False):
+        filekey = bucket.get_key(fname)
+        if filekey:
+            if bin_size:
+                read = filekey.size
+            else:
+                read = base64.b64encode(filekey.get_contents_as_string())
+        else:
+            # If the attachment has been created before the installation
+            # of the addon, it might be stored on the filesystem.
+            # Fallback on the filesystem read.
+            # Consider running ``force_storage()`` to move all the
+            # attachments on the Object Storage
+            try:
+                _super = super(IrAttachment, self)
+                read = _super._file_read(fname, bin_size=bin_size)
+            except (IOError, OSError):
+                # File is missing
+                read = ''
+        return read
+
+    @api.model
     def _file_read(self, fname, bin_size=False):
-        _super = super(IrAttachment, self)
         storage = self._storage()
         if storage.startswith('s3://'):
+            storage = self._storage()
             bucket = self._get_s3_bucket(storage)
-            filekey = bucket.get_key(fname)
-            if filekey:
-                read = base64.b64encode(filekey.get_contents_as_string())
-            else:
-                # If the attachment has been created before the installation
-                # of the addon, it might be stored on the filesystem.
-                # Fallback on the filesystem read.
-                # Consider running ``force_storage()`` to move all the
-                # attachments on the Object Storage
-                try:
-                    read = _super._file_read(fname, bin_size=bin_size)
-                except (IOError, OSError):
-                    # File is missing
-                    return ''
+            read = self._file_read_s3(bucket, fname, bin_size=bin_size)
         else:
+            _super = super(IrAttachment, self)
             read = _super._file_read(fname, bin_size=bin_size)
         return read
 
