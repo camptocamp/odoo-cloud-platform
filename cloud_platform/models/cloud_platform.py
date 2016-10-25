@@ -98,11 +98,10 @@ class CloudPlatform(models.AbstractModel):
         assert os.environ.get('ODOO_SESSION_REDIS_HOST')
         assert os.environ.get('ODOO_SESSION_REDIS_PREFIX')
         prefix = os.environ['ODOO_SESSION_REDIS_PREFIX']
-        if environment_name in ('prod', 'integration', 'test'):
-            assert re.match(r'[a-z]+-odoo-%s' % (environment_name,), prefix), (
-                "ODOO_SESSION_REDIS_PREFIX should match '<client>-odoo-%s', "
-                "we got: '%s'" % (environment_name, prefix)
-            )
+        assert re.match(r'[a-z]+-odoo-[a-z]+', prefix), (
+            "ODOO_SESSION_REDIS_PREFIX should match '<client>-odoo-<env>'"
+            ", we got: '%s'" % (prefix,)
+        )
 
     @api.model
     def check(self):
