@@ -69,6 +69,7 @@ class CloudPlatform(models.AbstractModel):
         attachment_readonly = is_true(
             os.environ.get('AWS_ATTACHMENT_READONLY')
         )
+        use_s3 = params.get_param('ir_attachment.location') == 's3://'
         if environment_name in ('prod', 'integration'):
             assert os.environ.get('AWS_ACCESS_KEY_ID')
             assert os.environ.get('AWS_SECRET_ACCESS_KEY')
@@ -78,17 +79,17 @@ class CloudPlatform(models.AbstractModel):
                 "AWS_BUCKETNAME should match '<client>-odoo-prod', "
                 "we got: '%s'" % (bucket_name,)
             )
-            assert params.get_param('ir_attachment.location') == 's3://'
-            # on the integration, we read the filestore from the production
-            # s3, but we must be readonly!
-            if environment_name == 'integration':
-                assert attachment_readonly
-            else:
-                assert not attachment_readonly
+            assert use_s3
         elif environment_name == 'test':
+            # store in DB so we don't have files local to the host
             assert params.get_param('ir_attachment.location') == 'db'
-        else:
-            assert params.get_param('ir_attachment.location') in ('db', 'file')
+        if use_s3:
+            # on the integration/dev, we read the filestore from the production
+            # s3, but we must be readonly!
+            if environment_name == 'prod':
+                assert not attachment_readonly
+            else:
+                assert attachment_readonly
 
     @api.model
     def _check_redis(self, environment_name):
