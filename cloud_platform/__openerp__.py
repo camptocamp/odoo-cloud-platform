@@ -11,6 +11,8 @@
  'category': 'Extra Tools',
  'depends': [
      'attachment_s3',
+     'session_redis',
+     'monitoring_status',
      #'monitoring_log_requests',
      'server_environment',  # OCA/server-tools
  ],
