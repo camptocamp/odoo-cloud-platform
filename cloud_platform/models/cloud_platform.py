@@ -58,7 +58,7 @@ class CloudPlatform(models.AbstractModel):
         environment = config['running_env']
         configs = self._config_by_server_env(environment)
         params.set_param('ir_attachment.location', configs.filestore)
-        self.check(self.env)
+        self.check()
         if configs.filestore == FilestoreKind.s3:
             self.env['ir.attachment'].sudo().force_storage()
         _logger.info('cloud platform configured for exoscale')
