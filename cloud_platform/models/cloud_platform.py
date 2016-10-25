@@ -71,25 +71,26 @@ class CloudPlatform(models.AbstractModel):
         )
         use_s3 = params.get_param('ir_attachment.location') == 's3://'
         if environment_name in ('prod', 'integration'):
+            assert use_s3
+        if use_s3:
             assert os.environ.get('AWS_ACCESS_KEY_ID')
             assert os.environ.get('AWS_SECRET_ACCESS_KEY')
             assert os.environ.get('AWS_BUCKETNAME')
             bucket_name = os.environ['AWS_BUCKETNAME']
-            assert re.match(r'[a-z]+-odoo-prod', bucket_name), (
-                "AWS_BUCKETNAME should match '<client>-odoo-prod', "
-                "we got: '%s'" % (bucket_name,)
-            )
-            assert use_s3
+            prod_bucket = bool(re.match(r'[a-z]+-odoo-prod', bucket_name))
+            if environment_name == 'prod':
+                assert prod_bucket, (
+                    "AWS_BUCKETNAME should match '<client>-odoo-prod', "
+                    "we got: '%s'" % (bucket_name,)
+                )
+                assert not attachment_readonly
+            else:
+                # if we are using the prod bucket on another instance
+                # such as an integration, we must be sure to be in read only!
+                assert not prod_bucket or attachment_readonly
         elif environment_name == 'test':
             # store in DB so we don't have files local to the host
             assert params.get_param('ir_attachment.location') == 'db'
-        if use_s3:
-            # on the integration/dev, we read the filestore from the production
-            # s3, but we must be readonly!
-            if environment_name == 'prod':
-                assert not attachment_readonly
-            else:
-                assert attachment_readonly
 
     @api.model
     def _check_redis(self, environment_name):
