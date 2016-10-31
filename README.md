@@ -50,8 +50,7 @@ The exact naming is important, because the `cloud_platform` addon rely on these 
  * `AWS_HOST`: depends of the platform
  * `AWS_ACCESS_KEY_ID`: depends of the platform
  * `AWS_SECRET_ACCESS_KEY`: depends of the platform
- * `AWS_BUCKETNAME`: `<client>-odoo-prod` (this is normal, we read only the data)
- * `AWS_ATTACHMENT_READONLY`: `1`
+ * `AWS_BUCKETNAME`: `<client>-odoo-integration`
 * test: attachments are stored in database
 
 Besides, the 

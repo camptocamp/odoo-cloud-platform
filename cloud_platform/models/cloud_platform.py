@@ -23,13 +23,13 @@ def is_true(strval):
 
 PlatformConfig = namedtuple(
     'PlatformConfig',
-    'filestore filestore_readonly'
+    'filestore'
 )
 
 
 class FilestoreKind(object):
     db = 'db'
-    s3 = 's3://'  # or compatible s3 object storage
+    s3 = 's3'  # or compatible s3 object storage
     file = 'file'
 
 
@@ -40,14 +40,10 @@ class CloudPlatform(models.AbstractModel):
     @api.model
     def _config_by_server_env(self, environment):
         configs = {
-            'prod': PlatformConfig(filestore=FilestoreKind.s3,
-                                   filestore_readonly=False),
-            'integration': PlatformConfig(filestore=FilestoreKind.s3,
-                                          filestore_readonly=True),
-            'test': PlatformConfig(filestore=FilestoreKind.db,
-                                   filestore_readonly=True),
-            'dev': PlatformConfig(filestore=FilestoreKind.db,
-                                  filestore_readonly=True),
+            'prod': PlatformConfig(filestore=FilestoreKind.s3),
+            'integration': PlatformConfig(filestore=FilestoreKind.s3),
+            'test': PlatformConfig(filestore=FilestoreKind.db),
+            'dev': PlatformConfig(filestore=FilestoreKind.db),
         }
         return configs.get(environment) or configs['dev']
 
@@ -66,10 +62,7 @@ class CloudPlatform(models.AbstractModel):
     @api.model
     def _check_s3(self, environment_name):
         params = self.env['ir.config_parameter'].sudo()
-        attachment_readonly = is_true(
-            os.environ.get('AWS_ATTACHMENT_READONLY')
-        )
-        use_s3 = params.get_param('ir_attachment.location') == 's3://'
+        use_s3 = params.get_param('ir_attachment.location') == FilestoreKind.s3
         if environment_name in ('prod', 'integration'):
             assert use_s3
         if use_s3:
@@ -83,11 +76,14 @@ class CloudPlatform(models.AbstractModel):
                     "AWS_BUCKETNAME should match '<client>-odoo-prod', "
                     "we got: '%s'" % (bucket_name,)
                 )
-                assert not attachment_readonly
             else:
                 # if we are using the prod bucket on another instance
                 # such as an integration, we must be sure to be in read only!
-                assert not prod_bucket or attachment_readonly
+                assert not prod_bucket, (
+                    "AWS_BUCKETNAME should not match '<client>-odoo-prod', "
+                    "we got: '%s'" % (bucket_name,)
+                )
+
         elif environment_name == 'test':
             # store in DB so we don't have files local to the host
             assert params.get_param('ir_attachment.location') == 'db'
@@ -125,5 +121,6 @@ class CloudPlatform(models.AbstractModel):
 
     @api.cr
     def _register_hook(self, cr):
+        super(CloudPlatform, self)._register_hook(cr)
         env = api.Environment(cr, SUPERUSER_ID, {})
         env['cloud.platform'].check()
