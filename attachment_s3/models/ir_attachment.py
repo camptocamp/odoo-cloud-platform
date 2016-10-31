@@ -7,6 +7,7 @@ import base64
 import logging
 import os
 import xml.dom.minidom
+from contextlib import closing, contextmanager
 from functools import partial
 
 from distutils.util import strtobool
@@ -14,7 +15,9 @@ from distutils.util import strtobool
 import boto
 from boto.exception import S3ResponseError
 
-from openerp import _, api, exceptions, fields, models
+import openerp
+from openerp import _, api, exceptions, fields, models, SUPERUSER_ID
+from ..s3uri import S3Uri
 
 _logger = logging.getLogger(__name__)
 
@@ -22,75 +25,9 @@ _logger = logging.getLogger(__name__)
 class IrAttachment(models.Model):
     _inherit = "ir.attachment"
 
-    datas = fields.Binary(
-        compute='_compute_datas',
-        inverse='_inverse_datas',
-        string='File Content',
-        nodrop=True,
-    )
-
     @api.model
-    def _s3_readonly(self):
-
-        def is_true(strval):
-            return bool(strtobool(strval or '0'.lower()))
-
-        params = self.env['ir.config_parameter'].sudo()
-        storage = params.get_param('ir_attachment.location', default='')
-        env_ro = is_true(os.environ.get('AWS_ATTACHMENT_READONLY'))
-        param_ro = is_true(params.get_param('ir_attachment.s3.readonly'))
-        return storage.startswith('s3://') and (env_ro or param_ro)
-
-    @api.depends('store_fname', 'db_datas')
-    def _compute_datas(self):
-        bin_size = self.env.context.get('bin_size')
-        if self._s3_readonly():
-            for attach in self:
-                # look first in db_datas in case a file has been modified
-                # locally
-                data = attach.db_datas
-                if data:
-                    attach.datas = data
-                else:
-                    params = self.env['ir.config_parameter'].sudo()
-                    bucket_url = params.get_param('ir_attachment.location')
-                    bucket = self._get_s3_bucket(bucket_url)
-                    attach.datas = self._file_read_s3(bucket,
-                                                      attach.store_fname,
-                                                      bin_size)
-        else:
-            values = self._data_get('datas', None)
-            for attach in self:
-                attach.datas = values.get(attach.id)
-
-    def _inverse_datas(self):
-        for attach in self:
-            self._data_set('datas', attach.datas, None)
-
-    @api.model
-    def _storage(self):
-        if self._s3_readonly():
-            # When the S3 readonly mode is active, we force the storage
-            # to be in the database. We'll override the read method
-            # to look in S3 if we have a value though.
-            return 'db'
-        else:
-            return super(IrAttachment, self)._storage()
-
-    @api.model
-    def _get_s3_bucket(self, bucket_url):
+    def _get_s3_bucket(self, name=None):
         """Connect to S3 and return the bucket
-
-        It expects the ``bucket_url`` to be in the form:
-
-        ``s3://<access-key>:<secret-key>@<bucket-name>``
-
-        Alternatively, we can also use environment variables, in that case,
-        you must set the parameter to ``s3://``.
-
-        If the S3 provider is not AWS, the key
-        ``ir_attachment.s3.host`` can be configured in the System
-        Parameters with the hostname.
 
         The following environment variables can be set:
         * ``AWS_HOST``
@@ -98,44 +35,31 @@ class IrAttachment(models.Model):
         * ``AWS_SECRET_ACCESS_KEY``
         * ``AWS_BUCKETNAME``
 
+        If a name is provided, we'll read this bucket, otherwise, the bucket
+        from the environment variable ``AWS_BUCKETNAME`` will be read.
+
         """
-        assert bucket_url.startswith('s3://')
         host = os.environ.get('AWS_HOST')
-        if not host:
-            host = self.env['ir.config_parameter'].sudo().get_param(
-                'ir_attachment.s3.host', default=None
-            )
         if host:
             connect_s3 = partial(boto.connect_s3, host=host)
         else:
             connect_s3 = boto.connect_s3
 
-        if bucket_url == 's3://':
-            access_key = os.environ.get('AWS_ACCESS_KEY_ID')
-            secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
-            bucket_name = os.environ.get('AWS_BUCKETNAME')
-            if not (access_key and secret_key and bucket_name):
-                raise exceptions.UserError(
-                    _('The following environment variables must be set:\n'
-                      '* AWS_ACCESS_KEY_ID\n'
-                      '* AWS_SECRET_ACCESS_KEY\n'
-                      '* AWS_BUCKETNAME\n'
-                      '* AWS_HOST (optional)\n'
-                      )
-                )
+        access_key = os.environ.get('AWS_ACCESS_KEY_ID')
+        secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
+        if name:
+            bucket_name = name
         else:
-            malformed_msg = _(
-                'S3 bucket %s is malformed, the expected form is '
-                's3://<access-key>:<secret-key>@<bucket-name>'
+            bucket_name = os.environ.get('AWS_BUCKETNAME')
+        if not (access_key and secret_key and bucket_name):
+            raise exceptions.UserError(
+                _('The following environment variables must be set:\n'
+                  '* AWS_ACCESS_KEY_ID\n'
+                  '* AWS_SECRET_ACCESS_KEY\n'
+                  '* AWS_BUCKETNAME\n'
+                  '* AWS_HOST (optional)\n'
+                  )
             )
-            params = bucket_url[5:].split('@')
-            if not len(params) == 2:
-                raise exceptions.UserError(malformed_msg % bucket_url)
-            keys, bucket_name = params
-            keys = keys.split(':')
-            if not len(keys) == 2:
-                raise exceptions.UserError(malformed_msg % bucket_url)
-            access_key, secret_key = keys
 
         try:
             conn = connect_s3(aws_access_key_id=access_key,
@@ -162,31 +86,46 @@ class IrAttachment(models.Model):
         return msg
 
     @api.model
-    def _file_read_s3(self, bucket, fname, bin_size=False):
-        filekey = bucket.get_key(fname)
+    def _file_read_s3(self, fname, bin_size=False):
+        try:
+            s3uri = S3Uri(fname)
+        except ValueError:
+            # compatibility mode: previously we stored only the key
+            # of the object, not we store the uri:
+            # example:
+            # before: fc02f84c0db500c69204972d27356ffdf0759386
+            # now: s3://bucket/fc02f84c0db500c69204972d27356ffdf0759386
+            # where 'project-odoo-prod' is the bucket name
+            bucket_name = None
+            item_name = fname
+        else:
+            bucket_name = s3uri.bucket()
+            item_name = s3uri.item()
+
+        bucket = self._get_s3_bucket(name=bucket_name)
+        filekey = bucket.get_key(item_name)
         if filekey:
             read = base64.b64encode(filekey.get_contents_as_string())
         else:
-            # If the attachment has been created before the installation
-            # of the addon, it might be stored on the filesystem.
-            # Fallback on the filesystem read.
-            # Consider running ``force_storage()`` to move all the
-            # attachments on the Object Storage
-            try:
-                _super = super(IrAttachment, self)
-                read = _super._file_read(fname, bin_size=bin_size)
-            except (IOError, OSError):
-                # File is missing
-                read = ''
+            read = ''
+            _logger.info("_read_file_s3 reading %s, file missing", fname)
         return read
 
     @api.model
     def _file_read(self, fname, bin_size=False):
         storage = self._storage()
-        if storage.startswith('s3://'):
-            storage = self._storage()
-            bucket = self._get_s3_bucket(storage)
-            read = self._file_read_s3(bucket, fname, bin_size=bin_size)
+        if storage.startswith('s3') or fname.startswith('s3://'):
+            read = self._file_read_s3(fname, bin_size=bin_size)
+            if not read and not fname.startswith('s3://'):
+                # If the attachment has been created before the installation
+                # of the addon, it might still be stored on the filesystem.
+                # Fallback on the filesystem read.
+                try:
+                    _super = super(IrAttachment, self)
+                    read = _super._file_read(fname, bin_size=bin_size)
+                except (IOError, OSError):
+                    # File is missing
+                    read = ''
         else:
             _super = super(IrAttachment, self)
             read = _super._file_read(fname, bin_size=bin_size)
@@ -195,11 +134,12 @@ class IrAttachment(models.Model):
     @api.model
     def _file_write(self, value, checksum):
         storage = self._storage()
-        if storage.startswith('s3://'):
-            bucket = self._get_s3_bucket(storage)
+        if storage.startswith('s3'):
+            bucket = self._get_s3_bucket()
             bin_data = value.decode('base64')
-            filename = self._compute_checksum(bin_data)
-            filekey = bucket.get_key(filename) or bucket.new_key(filename)
+            key = self._compute_checksum(bin_data)
+            filekey = bucket.get_key(key) or bucket.new_key(key)
+            filename = 's3://%s/%s' % (bucket.name, key)
             try:
                 filekey.set_contents_from_string(bin_data)
             except S3ResponseError as error:
@@ -217,11 +157,20 @@ class IrAttachment(models.Model):
 
     @api.model
     def _file_delete(self, fname):
-        storage = self._storage()
-        if storage.startswith('s3://'):
-            bucket = self._get_s3_bucket(storage)
-            filekey = bucket.get_key(fname)
-            if filekey:
+        if fname.startswith('s3://'):
+            # using SQL to include files hidden through unlink or due to record
+            # rules
+            cr = self.env.cr
+            cr.execute("SELECT COUNT(*) FROM ir_attachment "
+                       "WHERE store_fname = %s", (fname,))
+            count = cr.fetchone()[0]
+            s3uri = S3Uri(fname)
+            bucket_name = s3uri.bucket()
+            item_name = s3uri.item()
+
+            bucket = self._get_s3_bucket(name=bucket_name)
+            filekey = bucket.get_key(item_name)
+            if not count and filekey:
                 try:
                     filekey.delete()
                 except S3ResponseError as error:
@@ -233,75 +182,104 @@ class IrAttachment(models.Model):
                         _('The file could not be deleted: %s') %
                         (self._parse_s3_error(error),)
                     )
-            else:
-                # If the attachment has been created before the installation
-                # of the addon, it might be stored on the filesystem.
-                # Fallback on the filesystem delete method.
-                # Consider running ``force_storage()`` to move all the
-                # attachments on the Object Storage
-                super(IrAttachment, self)._file_delete(fname)
         else:
             super(IrAttachment, self)._file_delete(fname)
 
     @api.model
-    def force_storage(self):
+    def _force_storage_s3(self):
         if not self.env['res.users'].browse(self.env.uid)._is_admin():
             raise exceptions.AccessError(
                 _('Only administrators can execute this action.')
             )
 
         storage = self._storage()
-        if storage.startswith('s3://'):
-            _logger.info('migrating files to the object storage')
-            s3_bucket = self._get_s3_bucket(storage)
-            domain = ['|',
-                      ('res_field', '=', False),
-                      ('res_field', '!=', False)]
-            ids = self.search(domain).ids
+        if not storage.startswith('s3'):
+            return
+        _logger.info('migrating files to the object storage')
+        domain = ['!', ('store_fname', '=like', 's3://%'),
+                  '|',
+                  ('res_field', '=', False),
+                  ('res_field', '!=', False)]
+        with self.do_in_new_env() as new_env:
+            attachment_model = new_env['ir.attachment']
+            ids = attachment_model.search(domain).ids
             for attachment_id in ids:
                 # This is a trick to avoid having the 'datas' function fields
                 # computed for every attachment on each iteration of the loop.
                 # The former issue being that it reads the content of the file
                 # of ALL the attachments on each loop.
-                self.env.clear()
-                attachment = self.browse(attachment_id)
+                new_env.clear()
+                attachment = attachment_model.browse(attachment_id)
                 _logger.info('inspecting attachment %s (%d)',
                              attachment.name, attachment.id)
                 fname = attachment.store_fname
                 if fname:
-                    # migrating from filestore
-                    s3_key = s3_bucket.get_key(fname)
-                    if s3_key:
-                        _logger.info('file %s already on the object storage',
-                                     fname)
-                    else:
-                        _logger.info('moving %s on the object storage', fname)
-                        attachment.write({'datas': attachment.datas,
-                                          # this is required otherwise the
-                                          # mimetype gets overriden with
-                                          # 'application/octet-stream'
-                                          # on assets
-                                          'mimetype': attachment.mimetype})
-                        _logger.info('moved %s on the object storage', fname)
-                        full_path = self._full_path(fname)
-                        _logger.info('cleaning fs attachment')
-                        if os.path.exists(full_path):
-                            try:
-                                os.unlink(full_path)
-                            except OSError:
-                                _logger.info(
-                                    "_file_delete could not unlink %s",
-                                    full_path, exc_info=True
-                                )
-                            except IOError:
-                                # Harmless and needed for race conditions
-                                _logger.info(
-                                    "_file_delete could not unlink %s",
-                                    full_path, exc_info=True
-                                )
+                    # migrating from filesystem filestore
+                    # or from the old 'store_fname' without the bucket name
+                    _logger.info('moving %s on the object storage', fname)
+                    attachment.write({'datas': attachment.datas,
+                                      # this is required otherwise the
+                                      # mimetype gets overriden with
+                                      # 'application/octet-stream'
+                                      # on assets
+                                      'mimetype': attachment.mimetype})
+                    _logger.info('moved %s on the object storage', fname)
+                    full_path = attachment_model._full_path(fname)
+                    _logger.info('cleaning fs attachment')
+                    if os.path.exists(full_path):
+                        try:
+                            os.unlink(full_path)
+                        except OSError:
+                            _logger.info(
+                                "_file_delete could not unlink %s",
+                                full_path, exc_info=True
+                            )
+                        except IOError:
+                            # Harmless and needed for race conditions
+                            _logger.info(
+                                "_file_delete could not unlink %s",
+                                full_path, exc_info=True
+                            )
                 elif attachment.db_datas:
                     _logger.info('moving on the object storage from database')
                     attachment.write({'datas': attachment.datas})
-            self.env.cr.commit()
+                new_env.cr.commit()
+
+    @contextmanager
+    def do_in_new_env(self):
+        """ Context manager that yields a new environment
+
+        Using a new Odoo Environment thus a new PG transaction.
+        """
+        with api.Environment.manage():
+            registry = openerp.modules.registry.RegistryManager.get(
+                self.env.cr.dbname
+            )
+            with closing(registry.cursor()) as cr:
+                try:
+                    new_env = openerp.api.Environment(cr, self.env.uid,
+                                                      self.env.context)
+                    yield new_env
+                except:
+                    cr.rollback()
+                    raise
+                else:
+                    cr.commit()
+
+    @api.model
+    def force_storage(self):
+        storage = self._storage()
+        if storage.startswith('s3'):
+            self._force_storage_s3()
         else:
             return super(IrAttachment, self).force_storage()
+
+    @api.cr
+    def _register_hook(self, cr):
+        # We need to call the migration on the loading of the model
+        # because when we are upgrading addons, some of them might
+        # add attachments, and to be sure the are migrated to S3,
+        # we need to call the migration here.
+        super(IrAttachment, self)._register_hook(cr)
+        env = api.Environment(cr, SUPERUSER_ID, {})
+        env['ir.attachment']._force_storage_s3()

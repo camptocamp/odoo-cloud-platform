@@ -7,42 +7,32 @@ other S3-compatible Object Storage.
 Configuration
 -------------
 
-With system parameters:
+Activate S3 storage:
 
 * Create or set the system parameter with the key ``ir_attachment.location``
-  and the value in the form ``s3://<access-key>:<secret-key>@<bucket-name>``
-* If the host is not AWS services, you can set the key
-  ``ir_attachment.s3.host`` to the hostname of the Object Storage
-  service
+  and the value in the form ``s3``.
 
-With environment variables:
+Configure accesses with environment variables:
 
-* Create or set the system parameter with the key ``ir_attachment.location``
-  to ``s3://`` and configure the following environment variables:
-  * ``AWS_HOST`` (not required if using AWS services)
-  * ``AWS_ACCESS_KEY_ID``
-  * ``AWS_SECRET_ACCESS_KEY``
-  * ``AWS_BUCKETNAME``
+* ``AWS_HOST`` (not required if using AWS services)
+* ``AWS_ACCESS_KEY_ID``
+* ``AWS_SECRET_ACCESS_KEY``
+* ``AWS_BUCKETNAME``
 
 Read-only mode:
 
-You can configure the storage to be only for reads on the Object Storage.
-This is convenient for replications/tests instances, that will be able to
-access to the same content than the production database without any risk to
-alter it. The files created or modified the read-only mode is active are
-created in the database.
-
-To activate the read-only mode, 2 possibilities:
-
-* create the system parameter ``ir_attachment.s3.readonly`` and set a positive
-  value (1, true)
-* set the environment variable ``AWS_ATTACHMENT_READONLY`` to a positive
-  value (1, true)
+The bucket and the file key are stored in the attachment. So if you change the
+``AWS_BUCKETNAME`` or the ``ir_attachment.location``, the existing attachments
+will still be read on their former bucket. But as soon as they are written over
+or new attachments are created, they will be created on the new bucket or on
+the other location (db or filesystem). This is a convenient way to be able to
+read the production attachments on a replication (since you have the
+credentials) without any risk to alter the production data.
 
 Limitations
 -----------
 
-When the addon is installed, files have already been created in the filesystem
-or in the database. The addon won't automatically move them over the Object
-storage. You can move them by calling the method ``force_storage`` on
-``ir.attachment`` though (it might take time if you have many attachments).
+When the ``ir.attachment`` model is started, it will automatically migrate
+the attachments which are not stored in S3 yet. This might be an issue when
+the number of attachments is huge. In that case, you might have more control
+by calling yourself ``env['ir.attachment'].force_storage()``.
