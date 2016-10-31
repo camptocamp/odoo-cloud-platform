@@ -114,7 +114,7 @@ class IrAttachment(models.Model):
     @api.model
     def _file_read(self, fname, bin_size=False):
         storage = self._storage()
-        if storage.startswith('s3') or fname.startswith('s3://'):
+        if storage == 's3' or fname.startswith('s3://'):
             read = self._file_read_s3(fname, bin_size=bin_size)
             if not read and not fname.startswith('s3://'):
                 # If the attachment has been created before the installation
@@ -134,7 +134,7 @@ class IrAttachment(models.Model):
     @api.model
     def _file_write(self, value, checksum):
         storage = self._storage()
-        if storage.startswith('s3'):
+        if storage == 's3':
             bucket = self._get_s3_bucket()
             bin_data = value.decode('base64')
             key = self._compute_checksum(bin_data)
@@ -193,7 +193,7 @@ class IrAttachment(models.Model):
             )
 
         storage = self._storage()
-        if not storage.startswith('s3'):
+        if storage != 's3':
             return
         _logger.info('migrating files to the object storage')
         domain = ['!', ('store_fname', '=like', 's3://%'),
@@ -269,7 +269,7 @@ class IrAttachment(models.Model):
     @api.model
     def force_storage(self):
         storage = self._storage()
-        if storage.startswith('s3'):
+        if storage == 's3':
             self._force_storage_s3()
         else:
             return super(IrAttachment, self).force_storage()
