@@ -87,23 +87,9 @@ class IrAttachment(models.Model):
 
     @api.model
     def _file_read_s3(self, fname, bin_size=False):
-        try:
-            s3uri = S3Uri(fname)
-        except ValueError:
-            # compatibility mode: previously we stored only the key
-            # of the object, not we store the uri:
-            # example:
-            # before: fc02f84c0db500c69204972d27356ffdf0759386
-            # now: s3://bucket/fc02f84c0db500c69204972d27356ffdf0759386
-            # where 'project-odoo-prod' is the bucket name
-            bucket_name = None
-            item_name = fname
-        else:
-            bucket_name = s3uri.bucket()
-            item_name = s3uri.item()
-
-        bucket = self._get_s3_bucket(name=bucket_name)
-        filekey = bucket.get_key(item_name)
+        s3uri = S3Uri(fname)
+        bucket = self._get_s3_bucket(name=s3uri.bucket())
+        filekey = bucket.get_key(s3uri.item())
         if filekey:
             read = base64.b64encode(filekey.get_contents_as_string())
         else:
@@ -113,23 +99,11 @@ class IrAttachment(models.Model):
 
     @api.model
     def _file_read(self, fname, bin_size=False):
-        storage = self._storage()
-        if storage == 's3' or fname.startswith('s3://'):
-            read = self._file_read_s3(fname, bin_size=bin_size)
-            if not read and not fname.startswith('s3://'):
-                # If the attachment has been created before the installation
-                # of the addon, it might still be stored on the filesystem.
-                # Fallback on the filesystem read.
-                try:
-                    _super = super(IrAttachment, self)
-                    read = _super._file_read(fname, bin_size=bin_size)
-                except (IOError, OSError):
-                    # File is missing
-                    read = ''
+        if fname.startswith('s3://'):
+            return self._file_read_s3(fname, bin_size=bin_size)
         else:
             _super = super(IrAttachment, self)
-            read = _super._file_read(fname, bin_size=bin_size)
-        return read
+            return _super._file_read(fname, bin_size=bin_size)
 
     @api.model
     def _file_write(self, value, checksum):

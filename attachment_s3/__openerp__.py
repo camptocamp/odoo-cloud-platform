@@ -5,7 +5,7 @@
 
 {'name': 'Attachments on S3 storage',
  'summary': 'Store assets and attachments on a S3 compatible object storage',
- 'version': '9.0.1.0.0',
+ 'version': '9.0.1.1.0',
  'author': 'Camptocamp',
  'license': 'AGPL-3',
  'category': 'Knowledge Management',
