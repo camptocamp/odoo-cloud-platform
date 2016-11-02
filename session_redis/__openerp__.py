@@ -11,7 +11,7 @@
  'category': 'Extra Tools',
  'depends': ['base'],
  'external_dependencies': {
-    'python': ['redis'],
+     'python': ['redis'],
  },
  'website': 'http://www.camptocamp.com',
  'data': [],
