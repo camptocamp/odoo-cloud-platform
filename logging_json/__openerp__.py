@@ -10,7 +10,7 @@
  'depends': ['base',
              ],
  'external_dependencies': {
-    'python': ['pythonjsonlogger'],
+     'python': ['pythonjsonlogger'],
  },
  'website': 'http://www.camptocamp.com',
  'data': [],
