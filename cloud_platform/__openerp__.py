@@ -14,7 +14,7 @@
      'session_redis',
      'monitoring_status',
      'logging_json',
-     #'monitoring_log_requests',
+     # 'monitoring_log_requests',
      'server_environment',  # OCA/server-tools
  ],
  'website': 'http://www.camptocamp.com',
