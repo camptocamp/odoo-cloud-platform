@@ -10,13 +10,12 @@ import xml.dom.minidom
 from contextlib import closing, contextmanager
 from functools import partial
 
-from distutils.util import strtobool
 
 import boto
 from boto.exception import S3ResponseError
 
 import openerp
-from openerp import _, api, exceptions, fields, models, SUPERUSER_ID
+from openerp import _, api, exceptions, models, SUPERUSER_ID
 from ..s3uri import S3Uri
 
 _logger = logging.getLogger(__name__)
