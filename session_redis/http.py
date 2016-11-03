@@ -7,8 +7,6 @@ import os
 
 from distutils.util import strtobool
 
-import redis
-
 import openerp
 from openerp import http
 from openerp.tools.func import lazy_property
@@ -16,6 +14,12 @@ from openerp.tools.func import lazy_property
 from .session import RedisSessionStore
 
 _logger = logging.getLogger(__name__)
+
+try:
+    import redis
+except ImportError:
+    redis = None  # noqa
+    _logger.debug("Cannot 'import redis'.")
 
 
 def is_true(strval):
