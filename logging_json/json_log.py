@@ -6,7 +6,13 @@ import threading
 
 from distutils.util import strtobool
 
-from pythonjsonlogger import jsonlogger
+_logger = logging.getLogger(__name__)
+
+try:
+    from pythonjsonlogger import jsonlogger
+except ImportError:
+    jsonlogger = None  # noqa
+    _logger.debug("Cannot 'import pythonjsonlogger'.")
 
 
 def is_true(strval):

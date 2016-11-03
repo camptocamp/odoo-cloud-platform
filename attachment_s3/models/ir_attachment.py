@@ -10,15 +10,19 @@ import xml.dom.minidom
 from contextlib import closing, contextmanager
 from functools import partial
 
-
-import boto
-from boto.exception import S3ResponseError
-
 import openerp
 from openerp import _, api, exceptions, models, SUPERUSER_ID
 from ..s3uri import S3Uri
 
 _logger = logging.getLogger(__name__)
+
+try:
+    import boto
+    from boto.exception import S3ResponseError
+except ImportError:
+    boto = None  # noqa
+    S3ResponseError = None  # noqa
+    _logger.debug("Cannot 'import boto'.")
 
 
 class IrAttachment(models.Model):
@@ -216,7 +220,8 @@ class IrAttachment(models.Model):
                 elif attachment.db_datas:
                     _logger.info('moving on the object storage from database')
                     attachment.write({'datas': attachment.datas})
-                new_env.cr.commit()
+                # we are in a new env, this is a valid commit
+                new_env.cr.commit()  # pylint: disable=invalid-commit
 
     @contextmanager
     def do_in_new_env(self):
@@ -237,7 +242,9 @@ class IrAttachment(models.Model):
                     cr.rollback()
                     raise
                 else:
-                    cr.commit()
+                    # disable pylint error because this is a valid commit,
+                    # we are in a new env
+                    cr.commit()  # pylint: disable=invalid-commit
 
     @api.model
     def force_storage(self):
