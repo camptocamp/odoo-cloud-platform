@@ -15,6 +15,7 @@
      'monitoring_status',
      'logging_json',
      # 'monitoring_log_requests',
+     'monitoring_statsd',
      'server_environment',  # OCA/server-tools
  ],
  'website': 'http://www.camptocamp.com',

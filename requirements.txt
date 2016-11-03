@@ -1,3 +1,4 @@
 boto==2.42.0
 redis==2.10.5
 python-json-logger==0.1.5
+statsd==3.2.1
