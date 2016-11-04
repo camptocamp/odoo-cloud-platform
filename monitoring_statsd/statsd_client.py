@@ -34,6 +34,7 @@ if statsd_active and statsd is None and StatsClient is not None:
         raise Exception(
             'STATSD_CUSTOMER must contain the name of the customer'
         )
+    customer = os.environ.get('STATSD_CUSTOMER')
     if os.environ.get('STATSD_ENVIRONMENT'):
         environment = os.environ['STATSD_ENVIRONMENT']
     elif config.get('running_env'):
