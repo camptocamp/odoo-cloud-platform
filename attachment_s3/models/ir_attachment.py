@@ -91,13 +91,19 @@ class IrAttachment(models.Model):
     @api.model
     def _file_read_s3(self, fname, bin_size=False):
         s3uri = S3Uri(fname)
-        bucket = self._get_s3_bucket(name=s3uri.bucket())
+        try:
+            bucket = self._get_s3_bucket(name=s3uri.bucket())
+        except exceptions.UserError:
+            _logger.exception(
+                "error reading attachment '%s' from object storage", fname
+            )
+            return ''
         filekey = bucket.get_key(s3uri.item())
         if filekey:
             read = base64.b64encode(filekey.get_contents_as_string())
         else:
             read = ''
-            _logger.info("_read_file_s3 reading %s, file missing", fname)
+            _logger.info("attachment '%s' missing on object storage", fname)
         return read
 
     @api.model
