@@ -100,6 +100,11 @@ class CloudPlatform(models.AbstractModel):
             )
 
     @api.model
+    def _check_metrics(self, environment_name):
+        if environment_name == 'prod':
+            assert is_true(os.environ.get('ODOO_STATSD'))
+
+    @api.model
     def check(self):
         if is_true(os.environ.get('ODOO_CLOUD_PLATFORM_UNSAFE')):
             _logger.warning(
@@ -117,6 +122,7 @@ class CloudPlatform(models.AbstractModel):
         environment_name = config['running_env']
         self._check_s3(environment_name)
         self._check_redis(environment_name)
+        self._check_metrics(environment_name)
 
     @api.cr
     def _register_hook(self, cr):

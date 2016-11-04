@@ -6,14 +6,13 @@ Camptocamp odoo addons used on our Cloud Platform.
 
 On the platform we want to achieve having:
 
-* no data stored on the local filesystem so we can move an instance
+* No data stored on the local filesystem so we can move an instance
   between hosts and even have several running front-ends
-* metrics read from the logs or sent to Prometheus to monitor the instances
+* Metrics read from the logs or sent to Prometheus to monitor the instances
+* Logs sent to ElasticSearch-Kibana structured as JSON for better searching
 
-For the storage, we store all the attachments on a object storage such as S3 or a S3 compatible one, and we store the werkzeug sessions on Redis.
-
-For the metrics, we produce logs as json (TODO) that is sent
-to ELK and send data to Prometheus/Grafana using statsd.
+For the storage, we store all the attachments on a object storage such as S3 or
+a S3 compatible one, and we store the werkzeug sessions on Redis.
 
 ## Setup
 
@@ -25,6 +24,7 @@ Libraries that must be added in ``requirements.txt``:
 boto==2.42.0
 redis==2.10.5
 python-json-logger==0.1.5
+statsd==3.2.1
 ```
 
 ### Server Environment
@@ -46,16 +46,16 @@ The exact naming is important, because the `cloud_platform` addon rely on these 
  * `AWS_ACCESS_KEY_ID`: depends of the platform
  * `AWS_SECRET_ACCESS_KEY`: depends of the platform
  * `AWS_BUCKETNAME`: `<client>-odoo-prod`
-* integration: stored RO in the production object storage, fallback
-  on database for the writes
+* integration:
  * `AWS_HOST`: depends of the platform
  * `AWS_ACCESS_KEY_ID`: depends of the platform
  * `AWS_SECRET_ACCESS_KEY`: depends of the platform
  * `AWS_BUCKETNAME`: `<client>-odoo-integration`
 * test: attachments are stored in database
 
-Besides, the 
- * `ir.config_parameter` `ir_attachment.location`: `s3://` (
+Besides, the attachment location should be set to `s3` (but this is
+automatically done by the `install` methods of the `cloud_platform` module.
+ * `ir.config_parameter` `ir_attachment.location`: `s3`
 
 ### Sessions in Redis
 
@@ -82,6 +82,17 @@ At least on production and integration, activate:
 * `ODOO_LOGGING_JSON`: 1
 * Add ``logging_json`` in the ``server_wide_modules`` option in the
   configuration file
+
+### Metrics (Statsd/Prometheus for Grafana)
+
+Should be active at least on the production server
+
+* `ODOO_STATSD`: 1
+* `STATSD_CUSTOMER`: `<client>`
+* `STATSD_ENVIRONMENT`: set if you want to send metrics for a special
+  environment which does not match with the `server_environment`
+* `STATSD_HOST`: depends of the platform
+* `STATSD_PORT`: depends of the platform
 
 ### Automatic Configuration
 
