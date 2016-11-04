@@ -33,7 +33,6 @@ class FilestoreKind(object):
     file = 'file'
 
 
-
 class CloudPlatform(models.AbstractModel):
     _name = 'cloud.platform'
 

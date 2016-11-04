@@ -5,7 +5,7 @@
 
 {'name': 'Monitoring: Status',
  'version': '9.0.1.0.0',
- 'author': 'Camptocamp',
+ 'author': 'Camptocamp,Odoo Community Association (OCA)',
  'license': 'AGPL-3',
  'category': 'category',
  'depends': ['base', 'web'],

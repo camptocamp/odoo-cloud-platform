@@ -24,6 +24,7 @@ Libraries that must be added in ``requirements.txt``:
 ```
 boto==2.42.0
 redis==2.10.5
+python-json-logger==0.1.5
 ```
 
 ### Server Environment
@@ -74,6 +75,13 @@ Besides, the
  * `ODOO_SESSION_REDIS_PASSWORD`: depends of the platform
  * `ODOO_SESSION_REDIS_PREFIX`: `<client>-odoo-test`
  * `ODOO_SESSION_REDIS_EXPIRATION`: `86400` (1 day)
+
+### JSON Logging
+
+At least on production and integration, activate:
+* `ODOO_LOGGING_JSON`: 1
+* Add ``logging_json`` in the ``server_wide_modules`` option in the
+  configuration file
 
 ### Automatic Configuration
 
