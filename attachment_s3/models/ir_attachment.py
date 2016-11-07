@@ -156,14 +156,10 @@ class IrAttachment(models.Model):
             if not count and filekey:
                 try:
                     filekey.delete()
-                except S3ResponseError as error:
+                except S3ResponseError:
                     # log verbose error from s3, return short message for user
                     _logger.exception(
                         'Error during deletion of the file %s' % fname
-                    )
-                    raise exceptions.UserError(
-                        _('The file could not be deleted: %s') %
-                        (self._parse_s3_error(error),)
                     )
         else:
             super(IrAttachment, self)._file_delete(fname)
