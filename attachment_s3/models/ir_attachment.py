@@ -156,6 +156,9 @@ class IrAttachment(models.Model):
             if not count and filekey:
                 try:
                     filekey.delete()
+                    _logger.info(
+                        'file %s deleted on the object storage' % (fname,)
+                    )
                 except S3ResponseError:
                     # log verbose error from s3, return short message for user
                     _logger.exception(
