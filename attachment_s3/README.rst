@@ -29,6 +29,10 @@ the other location (db or filesystem). This is a convenient way to be able to
 read the production attachments on a replication (since you have the
 credentials) without any risk to alter the production data.
 
+This addon must be added in the server wide addons with (``--load`` option):
+
+``--load=web,web_kanban,attachment_s3``
+
 Limitations
 -----------
 
