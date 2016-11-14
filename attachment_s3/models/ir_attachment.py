@@ -150,20 +150,23 @@ class IrAttachment(models.Model):
             s3uri = S3Uri(fname)
             bucket_name = s3uri.bucket()
             item_name = s3uri.item()
-
-            bucket = self._get_s3_bucket(name=bucket_name)
-            filekey = bucket.get_key(item_name)
-            if not count and filekey:
-                try:
-                    filekey.delete()
-                    _logger.info(
-                        'file %s deleted on the object storage' % (fname,)
-                    )
-                except S3ResponseError:
-                    # log verbose error from s3, return short message for user
-                    _logger.exception(
-                        'Error during deletion of the file %s' % fname
-                    )
+            # delete the file only if it is on the current configured bucket
+            # otherwise, we might delete files used on a different environment
+            if bucket_name == os.environ.get('AWS_BUCKETNAME'):
+                bucket = self._get_s3_bucket()
+                filekey = bucket.get_key(item_name)
+                if not count and filekey:
+                    try:
+                        filekey.delete()
+                        _logger.info(
+                            'file %s deleted on the object storage' % (fname,)
+                        )
+                    except S3ResponseError:
+                        # log verbose error from s3, return short message for
+                        # user
+                        _logger.exception(
+                            'Error during deletion of the file %s' % fname
+                        )
         else:
             super(IrAttachment, self)._file_delete(fname)
 
