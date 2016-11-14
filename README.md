@@ -27,6 +27,18 @@ python-json-logger==0.1.5
 statsd==3.2.1
 ```
 
+### Odoo Startup
+
+The `--load` option of Odoo must contains the following addons:
+
+* `attachment_s3`
+* `session_redis`
+* `logging_json`
+
+Example:
+
+`--load=web,web_kanban,attachment_s3,session_redis,logging_json`
+
 ### Server Environment
 
 The server environments in `server_environment_files` must be at least:

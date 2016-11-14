@@ -21,6 +21,10 @@ The storage of sessions in Redis is activated using environment variables.
 The keys are set to ``session:<session id>``.
 When a prefix is defined, the keys are ``session:<prefix>:<session id>``
 
+This addon must be added in the server wide addons with (``--load`` option):
+
+``--load=web,web_kanban,session_redis``
+
 Limitations
 -----------
 
