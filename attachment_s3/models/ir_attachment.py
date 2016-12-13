@@ -171,7 +171,7 @@ class IrAttachment(models.Model):
             super(IrAttachment, self)._file_delete(fname)
 
     @api.model
-    def _force_storage_s3(self):
+    def _force_storage_s3(self, new_cr=False):
         if not self.env['res.users'].browse(self.env.uid)._is_admin():
             raise exceptions.AccessError(
                 _('Only administrators can execute this action.')
@@ -185,7 +185,11 @@ class IrAttachment(models.Model):
                   '|',
                   ('res_field', '=', False),
                   ('res_field', '!=', False)]
-        with self.do_in_new_env() as new_env:
+        # We do a copy of the environment so we can workaround the
+        # cache issue below. We do not create a new cursor because
+        # it causes serialization issues due to concurrent updates on
+        # attachments during the installation
+        with self.do_in_new_env(new_cr=new_cr) as new_env:
             attachment_model = new_env['ir.attachment']
             ids = attachment_model.search(domain).ids
             for attachment_id in ids:
@@ -228,11 +232,9 @@ class IrAttachment(models.Model):
                 elif attachment.db_datas:
                     _logger.info('moving on the object storage from database')
                     attachment.write({'datas': attachment.datas})
-                # we are in a new env, this is a valid commit
-                new_env.cr.commit()  # pylint: disable=invalid-commit
 
     @contextmanager
-    def do_in_new_env(self):
+    def do_in_new_env(self, new_cr=False):
         """ Context manager that yields a new environment
 
         Using a new Odoo Environment thus a new PG transaction.
@@ -241,18 +243,20 @@ class IrAttachment(models.Model):
             registry = openerp.modules.registry.RegistryManager.get(
                 self.env.cr.dbname
             )
-            with closing(registry.cursor()) as cr:
-                try:
-                    new_env = openerp.api.Environment(cr, self.env.uid,
-                                                      self.env.context)
-                    yield new_env
-                except:
-                    cr.rollback()
-                    raise
-                else:
-                    # disable pylint error because this is a valid commit,
-                    # we are in a new env
-                    cr.commit()  # pylint: disable=invalid-commit
+            if new_cr:
+                with closing(registry.cursor()) as cr:
+                    try:
+                        yield self.env(cr=cr)
+                    except:
+                        cr.rollback()
+                        raise
+                    else:
+                        # disable pylint error because this is a valid commit,
+                        # we are in a new env
+                        cr.commit()  # pylint: disable=invalid-commit
+            else:
+                # make a copy
+                yield self.env()
 
     @api.model
     def force_storage(self):
