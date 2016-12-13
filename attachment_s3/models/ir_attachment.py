@@ -253,7 +253,8 @@ class IrAttachment(models.Model):
                         attachment = attachment_model_env.browse(attachment_id)
                         attachment._move_attachment_to_s3()
                 except psycopg2.OperationalError:
-                    _logger.error('Could not migrate attachment %s to S3', id)
+                    _logger.error('Could not migrate attachment %s to S3',
+                                  attachment_id)
 
     @contextmanager
     def do_in_new_env(self, new_cr=False):
