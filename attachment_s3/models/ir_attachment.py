@@ -10,6 +10,8 @@ import xml.dom.minidom
 from contextlib import closing, contextmanager
 from functools import partial
 
+import psycopg2
+
 import openerp
 from openerp import _, api, exceptions, models, SUPERUSER_ID
 from ..s3uri import S3Uri
@@ -170,6 +172,43 @@ class IrAttachment(models.Model):
         else:
             super(IrAttachment, self)._file_delete(fname)
 
+    @api.multi
+    def _move_attachment_to_s3(self):
+        self.ensure_one()
+        _logger.info('inspecting attachment %s (%d)',
+                     self.name, self.id)
+        fname = self.store_fname
+        if fname:
+            # migrating from filesystem filestore
+            # or from the old 'store_fname' without the bucket name
+            _logger.info('moving %s on the object storage', fname)
+            self.write({'datas': self.datas,
+                        # this is required otherwise the
+                        # mimetype gets overriden with
+                        # 'application/octet-stream'
+                        # on assets
+                        'mimetype': self.mimetype})
+            _logger.info('moved %s on the object storage', fname)
+            full_path = self._full_path(fname)
+            _logger.info('cleaning fs self')
+            if os.path.exists(full_path):
+                try:
+                    os.unlink(full_path)
+                except OSError:
+                    _logger.info(
+                        "_file_delete could not unlink %s",
+                        full_path, exc_info=True
+                    )
+                except IOError:
+                    # Harmless and needed for race conditions
+                    _logger.info(
+                        "_file_delete could not unlink %s",
+                        full_path, exc_info=True
+                    )
+        elif self.db_datas:
+            _logger.info('moving on the object storage from database')
+            self.write({'datas': self.datas})
+
     @api.model
     def _force_storage_s3(self, new_cr=False):
         if not self.env['res.users'].browse(self.env.uid)._is_admin():
@@ -190,48 +229,31 @@ class IrAttachment(models.Model):
         # it causes serialization issues due to concurrent updates on
         # attachments during the installation
         with self.do_in_new_env(new_cr=new_cr) as new_env:
-            attachment_model = new_env['ir.attachment']
-            ids = attachment_model.search(domain).ids
+            attachment_model_env = new_env['ir.attachment']
+            ids = attachment_model_env.search(domain).ids
             for attachment_id in ids:
-                # This is a trick to avoid having the 'datas' function fields
-                # computed for every attachment on each iteration of the loop.
-                # The former issue being that it reads the content of the file
-                # of ALL the attachments on each loop.
-                new_env.clear()
-                attachment = attachment_model.browse(attachment_id)
-                _logger.info('inspecting attachment %s (%d)',
-                             attachment.name, attachment.id)
-                fname = attachment.store_fname
-                if fname:
-                    # migrating from filesystem filestore
-                    # or from the old 'store_fname' without the bucket name
-                    _logger.info('moving %s on the object storage', fname)
-                    attachment.write({'datas': attachment.datas,
-                                      # this is required otherwise the
-                                      # mimetype gets overriden with
-                                      # 'application/octet-stream'
-                                      # on assets
-                                      'mimetype': attachment.mimetype})
-                    _logger.info('moved %s on the object storage', fname)
-                    full_path = attachment_model._full_path(fname)
-                    _logger.info('cleaning fs attachment')
-                    if os.path.exists(full_path):
-                        try:
-                            os.unlink(full_path)
-                        except OSError:
-                            _logger.info(
-                                "_file_delete could not unlink %s",
-                                full_path, exc_info=True
-                            )
-                        except IOError:
-                            # Harmless and needed for race conditions
-                            _logger.info(
-                                "_file_delete could not unlink %s",
-                                full_path, exc_info=True
-                            )
-                elif attachment.db_datas:
-                    _logger.info('moving on the object storage from database')
-                    attachment.write({'datas': attachment.datas})
+                try:
+                    with new_env.cr.savepoint():
+                        # check that no other transaction has
+                        # locked the row, don't send a file to S3
+                        # in that case
+                        self.env.cr.execute("SELECT id "
+                                            "FROM ir_attachment "
+                                            "WHERE id = %s "
+                                            "FOR UPDATE NOWAIT",
+                                            (attachment_id,),
+                                            log_exceptions=False)
+
+                        # This is a trick to avoid having the 'datas' function
+                        # fields computed for every attachment on each
+                        # iteration of the loop.  The former issue being that
+                        # it reads the content of the file of ALL the
+                        # attachments on each loop.
+                        new_env.clear()
+                        attachment = attachment_model_env.browse(attachment_id)
+                        attachment._move_attachment_to_s3()
+                except psycopg2.OperationalError:
+                    _logger.error('Could not migrate attachment %s to S3', id)
 
     @contextmanager
     def do_in_new_env(self, new_cr=False):
