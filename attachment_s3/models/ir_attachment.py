@@ -240,10 +240,10 @@ class IrAttachment(models.Model):
         Using a new Odoo Environment thus a new PG transaction.
         """
         with api.Environment.manage():
-            registry = openerp.modules.registry.RegistryManager.get(
-                self.env.cr.dbname
-            )
             if new_cr:
+                registry = openerp.modules.registry.RegistryManager.get(
+                    self.env.cr.dbname
+                )
                 with closing(registry.cursor()) as cr:
                     try:
                         yield self.env(cr=cr)
