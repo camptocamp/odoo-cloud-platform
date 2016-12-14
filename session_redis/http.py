@@ -26,15 +26,15 @@ def is_true(strval):
     return bool(strtobool(strval or '0'.lower()))
 
 
+host = os.environ.get('ODOO_SESSION_REDIS_HOST') or 'localhost'
+port = int(os.environ.get('ODOO_SESSION_REDIS_PORT') or 6379)
+prefix = os.environ.get('ODOO_SESSION_REDIS_PREFIX')
+password = os.environ.get('ODOO_SESSION_REDIS_PASSWORD')
+expiration = os.environ.get('ODOO_SESSION_REDIS_EXPIRATION')
+
+
 @lazy_property
 def session_store(self):
-    host = os.environ.get('ODOO_SESSION_REDIS_HOST') or 'localhost'
-    port = int(os.environ.get('ODOO_SESSION_REDIS_PORT') or 6379)
-    prefix = os.environ.get('ODOO_SESSION_REDIS_PREFIX')
-    password = os.environ.get('ODOO_SESSION_REDIS_PASSWORD')
-    expiration = os.environ.get('ODOO_SESSION_REDIS_EXPIRATION')
-    _logger.debug("HTTP sessions stored in Redis %s:%s with prefix '%s'",
-                  host, port, prefix or '')
     redis_client = redis.Redis(host=host, port=port, password=password)
     return RedisSessionStore(redis=redis_client, prefix=prefix,
                              expiration=expiration,
@@ -60,6 +60,8 @@ def purge_fs_sessions(path):
 
 
 if is_true(os.environ.get('ODOO_SESSION_REDIS')):
+    _logger.debug("HTTP sessions stored in Redis %s:%s with prefix '%s'",
+                  host, port, prefix or '')
     http.Root.session_store = session_store
     http.session_gc = session_gc
     # clean the existing sessions on the file system
