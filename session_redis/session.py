@@ -3,12 +3,15 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
 import json
+import logging
 
 from werkzeug.contrib.sessions import SessionStore
 
 # this is equal to the duration of the session garbage collector in
 # openerp.http.session_gc()
 DEFAULT_SESSION_TIMEOUT = 60 * 60 * 24 * 7  # 7 days in seconds
+
+_logger = logging.getLogger(__name__)
 
 
 class RedisSessionStore(SessionStore):
@@ -35,27 +38,46 @@ class RedisSessionStore(SessionStore):
 
     def save(self, session):
         key = self.build_key(session.sid)
+
+        if _logger.isEnabledFor(logging.DEBUG):
+            if session.uid:
+                user_msg = "user '%s' (id: %s)" % (
+                    session.login, session.uid)
+            else:
+                user_msg = "anonymous user"
+            _logger.debug("saving session with key '%s' and "
+                          "expiration of %s seconds for %s",
+                          key, self.expiration, user_msg)
+
         if self.redis.set(key, json.dumps(dict(session))):
             return self.redis.expire(key, self.expiration)
 
     def delete(self, session):
         key = self.build_key(session.sid)
+        _logger.debug('deleting session with key %s', key)
         return self.redis.delete(key)
 
     def get(self, sid):
         if not self.is_valid_key(sid):
+            _logger.debug("session with invalid sid '%s' has been asked, "
+                          "returning a new one", sid)
             return self.new()
 
         key = self.build_key(sid)
         saved = self.redis.get(key)
         if not saved:
+            _logger.debug("session with non-existent key '%s' has been asked, "
+                          "returning a new one", key)
             return self.new()
         try:
             data = json.loads(saved)
         except ValueError:
+            _logger.debug("session for key '%s' has been asked but its json "
+                          "content could not be read, it has been reset", key)
             data = {}
         return self.session_class(data, sid, False)
 
     def list(self):
         keys = self.redis.keys('%s*' % self.prefix)
+        _logger.debug("a listing redis keys has been called")
         return [key[len(self.prefix):] for key in keys]
