@@ -2,13 +2,16 @@
 # Copyright 2016 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
-
-{'name': 'Monitoring: Requests Logging',
- 'version': '9.0.1.0.0',
+{'name': 'JSON Logging',
+ 'version': '10.0.1.0.0',
  'author': 'Camptocamp,Odoo Community Association (OCA)',
  'license': 'AGPL-3',
- 'category': 'category',
- 'depends': ['base', 'web'],
+ 'category': 'Extra Tools',
+ 'depends': ['base',
+             ],
+ 'external_dependencies': {
+     'python': ['pythonjsonlogger'],
+ },
  'website': 'http://www.camptocamp.com',
  'data': [],
  'installable': True,

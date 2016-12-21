@@ -6,8 +6,8 @@ import json
 
 import werkzeug
 
-from openerp import http
-from openerp.addons.web.controllers.main import ensure_db
+from odoo import http
+from odoo.addons.web.controllers.main import ensure_db
 
 
 class Monitoring(http.Controller):

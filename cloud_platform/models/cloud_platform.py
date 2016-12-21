@@ -10,8 +10,8 @@ from collections import namedtuple
 
 from distutils.util import strtobool
 
-from openerp import api, models, SUPERUSER_ID
-from openerp.tools.config import config
+from odoo import api, models
+from odoo.tools.config import config
 
 
 _logger = logging.getLogger(__name__)
@@ -124,8 +124,7 @@ class CloudPlatform(models.AbstractModel):
         self._check_redis(environment_name)
         self._check_metrics(environment_name)
 
-    @api.cr
-    def _register_hook(self, cr):
-        super(CloudPlatform, self)._register_hook(cr)
-        env = api.Environment(cr, SUPERUSER_ID, {})
-        env['cloud.platform'].check()
+    @api.model_cr
+    def _register_hook(self):
+        super(CloudPlatform, self)._register_hook()
+        self.sudo().check()

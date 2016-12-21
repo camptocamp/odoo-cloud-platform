@@ -32,6 +32,6 @@ Limitations
   Redis.
 * All the users will have to login again as their previous session will be
   dropped.
-* The addon monkey-patch ``openerp.http.Root.session_store`` with a custom
+* The addon monkey-patch ``odoo.http.Root.session_store`` with a custom
   method when the Redis mode is active, so incompatibilities with other addons
   is possible if they do the same.

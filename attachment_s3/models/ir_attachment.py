@@ -12,8 +12,8 @@ from functools import partial
 
 import psycopg2
 
-import openerp
-from openerp import _, api, exceptions, models, SUPERUSER_ID
+import odoo
+from odoo import _, api, exceptions, models
 from ..s3uri import S3Uri
 
 _logger = logging.getLogger(__name__)
@@ -264,7 +264,7 @@ class IrAttachment(models.Model):
         """
         with api.Environment.manage():
             if new_cr:
-                registry = openerp.modules.registry.RegistryManager.get(
+                registry = odoo.modules.registry.RegistryManager.get(
                     self.env.cr.dbname
                 )
                 with closing(registry.cursor()) as cr:
@@ -289,12 +289,11 @@ class IrAttachment(models.Model):
         else:
             return super(IrAttachment, self).force_storage()
 
-    @api.cr
-    def _register_hook(self, cr):
+    @api.model_cr
+    def _register_hook(self):
         # We need to call the migration on the loading of the model
         # because when we are upgrading addons, some of them might
         # add attachments, and to be sure the are migrated to S3,
         # we need to call the migration here.
-        super(IrAttachment, self)._register_hook(cr)
-        env = api.Environment(cr, SUPERUSER_ID, {})
-        env['ir.attachment']._force_storage_s3()
+        super(IrAttachment, self)._register_hook()
+        self.sudo()._force_storage_s3()

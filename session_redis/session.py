@@ -8,7 +8,7 @@ import logging
 from werkzeug.contrib.sessions import SessionStore
 
 # this is equal to the duration of the session garbage collector in
-# openerp.http.session_gc()
+# odoo.http.session_gc()
 DEFAULT_SESSION_TIMEOUT = 60 * 60 * 24 * 7  # 7 days in seconds
 
 _logger = logging.getLogger(__name__)

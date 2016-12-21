@@ -7,7 +7,7 @@ import os
 
 from distutils.util import strtobool
 
-from openerp.tools.config import config
+from odoo.tools.config import config
 
 _logger = logging.getLogger(__name__)
 
