@@ -11,13 +11,14 @@ from ..statsd_client import statsd, customer, environment
 class IrHttp(models.AbstractModel):
     _inherit = 'ir.http'
 
-    def _dispatch(self):
+    @classmethod
+    def _dispatch(cls):
         if not statsd:
-            return super(IrHttp, self)._dispatch()
+            return super(IrHttp, cls)._dispatch()
 
         path_info = request.httprequest.environ.get('PATH_INFO')
         if path_info.startswith('/longpolling/'):
-            return super(IrHttp, self)._dispatch()
+            return super(IrHttp, cls)._dispatch()
 
         parts = ['http', ]
         if path_info.startswith('/web/dataset/call_button'):
@@ -38,4 +39,4 @@ class IrHttp(models.AbstractModel):
                       ]
 
         with statsd.timer('.'.join(parts)):
-            return super(IrHttp, self)._dispatch()
+            return super(IrHttp, cls)._dispatch()
