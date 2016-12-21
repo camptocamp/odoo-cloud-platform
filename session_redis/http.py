@@ -7,9 +7,9 @@ import os
 
 from distutils.util import strtobool
 
-import openerp
-from openerp import http
-from openerp.tools.func import lazy_property
+import odoo
+from odoo import http
+from odoo.tools.func import lazy_property
 
 from .session import RedisSessionStore
 
@@ -65,4 +65,4 @@ if is_true(os.environ.get('ODOO_SESSION_REDIS')):
     http.Root.session_store = session_store
     http.session_gc = session_gc
     # clean the existing sessions on the file system
-    purge_fs_sessions(openerp.tools.config.session_dir)
+    purge_fs_sessions(odoo.tools.config.session_dir)
