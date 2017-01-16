@@ -30,6 +30,68 @@ except ImportError:
 class IrAttachment(models.Model):
     _inherit = "ir.attachment"
 
+    @api.multi
+    def _store_in_db_when_s3(self):
+        """ Return whether an attachment must be stored in db
+
+        When we are using S3. This is sometimes required because
+        the object storage is slower than the database/filesystem.
+
+        We store image_small and image_medium from 'Binary' fields
+        because they should be fast to read as they are often displayed
+        in kanbans / lists. The same for web_icon_data.
+
+        We store the assets locally as well. Not only for performance,
+        but also because it improves the portability of the database:
+        when assets are invalidated, they are deleted so we don't have
+        an old database with attachments pointing to deleted assets.
+
+        """
+        self.ensure_one()
+
+        # assets
+        if self.res_model == 'ir.ui.view':
+            # assets are stored in 'ir.ui.view'
+            return True
+
+        # Binary fields
+        if self.res_field:
+            # Binary fields are stored with the name of the field in
+            # 'res_field'
+            local_fields = ('image_small', 'image_medium', 'web_icon_data')
+            # 'image' fields can be rather large and should usually
+            # not be requests in bulk in lists
+            if self.res_field and self.res_field in local_fields:
+                return True
+
+        return False
+
+    def _inverse_datas(self):
+        # override in order to store files that need fast access,
+        # we keep them in the database instead of the object storage
+        location = self._storage()
+        for attach in self:
+            if location == 's3' and self._store_in_db_when_s3():
+                # compute the fields that depend on datas
+                value = attach.datas
+                bin_data = value and value.decode('base64') or ''
+                vals = {
+                    'file_size': len(bin_data),
+                    'checksum': self._compute_checksum(bin_data),
+                    'db_datas': value,
+                    # we seriously don't need index content on those fields
+                    'index_content': False,
+                    'store_fname': False,
+                }
+                fname = attach.store_fname
+                # write as superuser, as user probably does not
+                # have write access
+                super(IrAttachment, attach.sudo()).write(vals)
+                if fname:
+                    self._file_delete(fname)
+                continue
+            super(IrAttachment, attach)._inverse_datas()
+
     @api.model
     def _get_s3_bucket(self, name=None):
         """Connect to S3 and return the bucket
@@ -288,12 +350,3 @@ class IrAttachment(models.Model):
             self._force_storage_s3()
         else:
             return super(IrAttachment, self).force_storage()
-
-    @api.model_cr
-    def _register_hook(self):
-        # We need to call the migration on the loading of the model
-        # because when we are upgrading addons, some of them might
-        # add attachments, and to be sure the are migrated to S3,
-        # we need to call the migration here.
-        super(IrAttachment, self)._register_hook()
-        self.sudo()._force_storage_s3()
