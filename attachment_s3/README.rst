@@ -36,7 +36,6 @@ This addon must be added in the server wide addons with (``--load`` option):
 Limitations
 -----------
 
-When the ``ir.attachment`` model is started, it will automatically migrate
-the attachments which are not stored in S3 yet. This might be an issue when
-the number of attachments is huge. In that case, you might have more control
-by calling yourself ``env['ir.attachment'].force_storage()``.
+* You need to call ``env['ir.attachment'].force_storage()`` after
+  having changed the ``ir_attachment.location`` configuration in order to
+  migrate the existing attachments to S3.
