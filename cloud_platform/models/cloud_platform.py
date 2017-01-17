@@ -63,11 +63,29 @@ class CloudPlatform(models.AbstractModel):
         params = self.env['ir.config_parameter'].sudo()
         use_s3 = params.get_param('ir_attachment.location') == FilestoreKind.s3
         if environment_name in ('prod', 'integration'):
-            assert use_s3
+            assert use_s3, (
+                "S3 must be used on production and integration instances. "
+                "It is activated by setting 'ir_attachment.location.' to 's3'."
+                " The 'install_exoscale()' function sets this option "
+                "automatically."
+            )
         if use_s3:
-            assert os.environ.get('AWS_ACCESS_KEY_ID')
-            assert os.environ.get('AWS_SECRET_ACCESS_KEY')
-            assert os.environ.get('AWS_BUCKETNAME')
+            assert os.environ.get('AWS_ACCESS_KEY_ID'), (
+                "AWS_ACCESS_KEY_ID environment variable is required when "
+                "ir_attachment.location is 's3'."
+            )
+            assert os.environ.get('AWS_SECRET_ACCESS_KEY'), (
+                "AWS_SECRET_ACCESS_KEY environment variable is required when "
+                "ir_attachment.location is 's3'."
+            )
+            assert os.environ.get('AWS_BUCKETNAME'), (
+                "AWS_BUCKETNAME environment variable is required when "
+                "ir_attachment.location is 's3'.\n"
+                "Normally, 's3' is activated on integration and production, "
+                "but should not be used in dev environment (or at least "
+                "not with a dev bucket, but never the "
+                "integration/prod bucket)."
+            )
             bucket_name = os.environ['AWS_BUCKETNAME']
             prod_bucket = bool(re.match(r'[a-z]+-odoo-prod', bucket_name))
             if environment_name == 'prod':
@@ -85,24 +103,41 @@ class CloudPlatform(models.AbstractModel):
 
         elif environment_name == 'test':
             # store in DB so we don't have files local to the host
-            assert params.get_param('ir_attachment.location') == 'db'
+            assert params.get_param('ir_attachment.location') == 'db', (
+                "In test instances, files must be stored in the database with "
+                "'ir_attachment.location' set to 'db'. This is "
+                "automatically set by the function 'install_exoscale()'."
+            )
 
     @api.model
     def _check_redis(self, environment_name):
         if environment_name in ('prod', 'integration', 'test'):
-            assert is_true(os.environ.get('ODOO_SESSION_REDIS'))
-            assert os.environ.get('ODOO_SESSION_REDIS_HOST')
-            assert os.environ.get('ODOO_SESSION_REDIS_PREFIX')
+            assert is_true(os.environ.get('ODOO_SESSION_REDIS')), (
+                "Redis must be activated on prod, integration, test instances."
+                "This is done by setting ODOO_SESSION_REDIS=1."
+            )
+            assert os.environ.get('ODOO_SESSION_REDIS_HOST'), (
+                "ODOO_SESSION_REDIS_HOST environment variable is required "
+                "to connect on Redis"
+            )
+            assert os.environ.get('ODOO_SESSION_REDIS_PREFIX'), (
+                "ODOO_SESSION_REDIS_PREFIX environment variable is required "
+                "to store sessions on Redis"
+            )
+
             prefix = os.environ['ODOO_SESSION_REDIS_PREFIX']
             assert re.match(r'[a-z]+-odoo-[a-z]+', prefix), (
-                "ODOO_SESSION_REDIS_PREFIX should match '<client>-odoo-<env>'"
+                "ODOO_SESSION_REDIS_PREFIX must match '<client>-odoo-<env>'"
                 ", we got: '%s'" % (prefix,)
             )
 
     @api.model
     def _check_metrics(self, environment_name):
         if environment_name == 'prod':
-            assert is_true(os.environ.get('ODOO_STATSD'))
+            assert is_true(os.environ.get('ODOO_STATSD')), (
+                "Statds metrics must be activated on prod instances."
+                "This is done by setting ODOO_STATSD=1."
+            )
 
     @api.model
     def check(self):
