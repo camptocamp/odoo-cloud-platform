@@ -14,6 +14,8 @@
      'python': ['boto'],
  },
  'website': 'http://www.camptocamp.com',
- 'data': [],
+ 'data': [
+     'views/res_partner_views.xml',
+ ],
  'installable': True,
  }

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+  <data>
+
+    <record model="ir.ui.view" id="res_partner_kanban_view">
+      <field name="name">res.partner.kanban</field>
+      <field name="model">res.partner</field>
+      <field name="inherit_id" ref="base.res_partner_kanban_view"/>
+      <field name="arch" type="xml">
+
+        <!-- Image is too slow to load, it's especially more slow with s3
+             Replace the field with the small one (that has been fixed
+             in Odoo since 10.0)
+        -->
+        <field name="image" position="replace">
+          <field name="image_small"/>
+        </field>
+
+        <t t-if="record.image.raw_value" position="attributes">
+          <attribute name="t-if">record.image_small.raw_value</attribute>
+        </t>
+
+        <t t-if="!record.image.raw_value" position="attributes">
+          <attribute name="t-if">!record.image_small.raw_value</attribute>
+        </t>
+
+      </field>
+    </record>
+
+  </data>
+</openerp>
