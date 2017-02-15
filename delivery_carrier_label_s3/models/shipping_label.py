@@ -26,13 +26,13 @@ class ShippingLabel(models.Model):
         # we keep them in the database instead of the object storage
         location = self.attachment_id._storage()
         for attach in self:
-            if location == 's3' and self._store_in_db_when_s3():
+            if location == 's3' and self.attachment_id._store_in_db_when_s3():
                 # compute the fields that depend on datas
                 value = attach.datas
                 bin_data = value and value.decode('base64') or ''
                 vals = {
                     'file_size': len(bin_data),
-                    'checksum': self._compute_checksum(bin_data),
+                    'checksum': self.attachment_id._compute_checksum(bin_data),
                     'db_datas': value,
                     # we seriously don't need index content on those fields
                     'index_content': False,
