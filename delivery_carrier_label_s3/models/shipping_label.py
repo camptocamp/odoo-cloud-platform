@@ -3,7 +3,8 @@ from openerp import api, fields, models
 
 
 class ShippingLabel(models.Model):
-    """ Inherit of shipping label to store datas in the right location if S3 activated """
+    """ Inherit of shipping label to store datas
+    in the right location if S3 activated """
 
     _inherit = 'shipping.label'
 
