@@ -17,7 +17,7 @@ class ShippingLabel(models.Model):
 
     @api.depends('store_fname', 'db_datas')
     def _compute_datas(self):
-        values = self._data_get('datas', None)
+        values = self.attachment_id._data_get('datas', None)
         for attach in self:
             attach.datas = values.get(attach.id)
 
@@ -43,6 +43,6 @@ class ShippingLabel(models.Model):
                 # have write access
                 super(ShippingLabel, attach.sudo()).write(vals)
                 if fname:
-                    self._file_delete(fname)
+                    self.attachment_id._file_delete(fname)
                 continue
             self.attachment_id._data_set('datas', attach.datas, None)
