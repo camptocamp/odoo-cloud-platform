@@ -17,18 +17,18 @@ class ShippingLabel(models.Model):
 
     @api.depends('store_fname', 'db_datas')
     def _compute_datas(self):
-        values = self.attachment_id._data_get('datas', None)
-        for attach in self:
-            attach.datas = values.get(attach.id)
+        for label in self:
+            values = label.attachment_id._data_get('datas', None)
+            label.datas = values.get(label.id)
 
     def _inverse_datas(self):
         # override in order to store files that need fast access,
         # we keep them in the database instead of the object storage
-        location = self.attachment_id._storage()
-        for attach in self:
+        for label in self:
+            location = label.attachment_id._storage()
             if location == 's3' and self.attachment_id._store_in_db_when_s3():
                 # compute the fields that depend on datas
-                value = attach.datas
+                value = label.datas
                 bin_data = value and value.decode('base64') or ''
                 vals = {
                     'file_size': len(bin_data),
@@ -38,11 +38,11 @@ class ShippingLabel(models.Model):
                     'index_content': False,
                     'store_fname': False,
                 }
-                fname = attach.store_fname
+                fname = label.store_fname
                 # write as superuser, as user probably does not
                 # have write access
-                super(ShippingLabel, attach.sudo()).write(vals)
+                super(ShippingLabel, label.sudo()).write(vals)
                 if fname:
                     self.attachment_id._file_delete(fname)
                 continue
-            self.attachment_id._data_set('datas', attach.datas, None)
+            self.attachment_id._data_set('datas', label.datas, None)
