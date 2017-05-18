@@ -116,9 +116,10 @@ class CloudPlatform(models.AbstractModel):
                 "Redis must be activated on prod, integration, test instances."
                 "This is done by setting ODOO_SESSION_REDIS=1."
             )
-            assert os.environ.get('ODOO_SESSION_REDIS_HOST'), (
-                "ODOO_SESSION_REDIS_HOST environment variable is required "
-                "to connect on Redis"
+            assert (os.environ.get('ODOO_SESSION_REDIS_HOST') or
+                    os.environ.get('ODOO_SESSION_REDIS_SENTINEL_HOST')), (
+                "ODOO_SESSION_REDIS_HOST or ODOO_SESSION_REDIS_SENTINEL_HOST "
+                "environment variable is required to connect on Redis"
             )
             assert os.environ.get('ODOO_SESSION_REDIS_PREFIX'), (
                 "ODOO_SESSION_REDIS_PREFIX environment variable is required "
