@@ -10,7 +10,6 @@
  'license': 'AGPL-3',
  'category': 'Extra Tools',
  'depends': [
-     'attachment_s3',
      'session_redis',
      'monitoring_status',
      'logging_json',

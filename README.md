@@ -12,7 +12,15 @@ On the platform we want to achieve having:
 * Logs sent to ElasticSearch-Kibana structured as JSON for better searching
 
 For the storage, we store all the attachments on a object storage such as S3 or
-a S3 compatible one, and we store the werkzeug sessions on Redis.
+ Swift, and we store the werkzeug sessions on Redis.
+
+Two providers are available for the Cloud Platform, Exoscale based in
+Switzerland and OVH in France.
+
+The main difference between the two is the Object Store they use : 
+
+* Exoscale uses S3
+* OVH uses Swift
 
 ## Setup
 
@@ -21,7 +29,10 @@ a S3 compatible one, and we store the werkzeug sessions on Redis.
 Libraries that must be added in ``requirements.txt``:
 
 ```
+# For S3 object store
 boto==2.42.0
+# For Swift object store
+python-swiftclient==3.0.0
 redis==2.10.5
 python-json-logger==0.1.5
 statsd==3.2.1
@@ -31,7 +42,7 @@ statsd==3.2.1
 
 The `--load` option of Odoo must contains the following addons:
 
-* `attachment_s3`
+* `attachment_s3` or `attachment_swift` depending of the provider used.
 * `session_redis`
 * `logging_json`
 
@@ -51,7 +62,7 @@ The server environments in `server_environment_files` must be at least:
 The exact naming is important, because the `cloud_platform` addon rely on these keys to know and check the running environment.
 
 
-### Attachments in the Object Storage
+### Attachments in the Object Storage S3
 
 * prod: stored RW in the object storage
  * `AWS_HOST`: depends of the platform
@@ -68,6 +79,25 @@ The exact naming is important, because the `cloud_platform` addon rely on these 
 Besides, the attachment location should be set to `s3` (but this is
 automatically done by the `install` methods of the `cloud_platform` module.
  * `ir.config_parameter` `ir_attachment.location`: `s3`
+
+
+### Attachments in the Object Storage Swift
+
+* prod: stored RW in the object storage
+ * `SWIFT_HOST`: depends of the platform
+ * `SWIFT_ACCOUNT`: depends of the platform
+ * `SWIFT_PASSWORD`: depends of the platform
+ * `SWIFT_WRITE_CONTAINER`: `<client>-odoo-prod`
+* integration:
+ * `SWIFT_HOST`: depends of the platform
+ * `SWIFT_ACCOUNT`: depends of the platform
+ * `SWIFT_PASSWORD`: depends of the platform
+ * `SWIFT_WRITE_CONTAINER`: `<client>-odoo-integration`
+* test: attachments are stored in database
+
+Besides, the attachment location should be set to `swift` (but this is
+automatically done by the `install` methods of the `cloud_platform` module.
+ * `ir.config_parameter` `ir_attachment.location`: `swift`
 
 ### Sessions in Redis
 
@@ -108,8 +138,11 @@ Should be active at least on the production server
 
 ### Automatic Configuration
 
-Calling `ctx.env['cloud.platform'].install_exoscale()` in an
-`anthem` song will configure some parameters such as the
+Calling 
+    `ctx.env['cloud.platform'].install_exoscale()`
+or 
+    `ctx.env['cloud.platform'].install_ovh()`
+in an `anthem` song will configure some parameters such as the
 `ir_attachment.location` and migrate the existing attachments to the
 object storage.
 
