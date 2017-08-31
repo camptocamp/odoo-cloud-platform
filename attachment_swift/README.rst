@@ -1,5 +1,5 @@
 Attachments on Swift storage
-=========================
+============================
 
 This addon allows to store the attachments (documents and assets) on 
 OpenStack Object Storage (Swift)

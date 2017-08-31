@@ -18,7 +18,8 @@ _logger = logging.getLogger(__name__)
 class IrAttachment(models.Model):
     _inherit = 'ir.attachment'
 
-    store_types = ['s3', 'swift']
+    _store_types = ['s3', 'swift']
+    _local_fields = ('image_small', 'image_medium', 'web_icon_data')
 
     @api.multi
     def _save_in_db_anyway(self):
@@ -38,7 +39,6 @@ class IrAttachment(models.Model):
 
         """
         self.ensure_one()
-
         # assets
         if self.res_model == 'ir.ui.view':
             # assets are stored in 'ir.ui.view'
@@ -48,10 +48,9 @@ class IrAttachment(models.Model):
         if self.res_field:
             # Binary fields are stored with the name of the field in
             # 'res_field'
-            local_fields = ('image_small', 'image_medium', 'web_icon_data')
             # 'image' fields can be rather large and should usually
             # not be requests in bulk in lists
-            if self.res_field and self.res_field in local_fields:
+            if self.res_field and self.res_field in self._local_fields:
                 return True
         return False
 
@@ -60,7 +59,7 @@ class IrAttachment(models.Model):
         # we keep them in the database instead of the object storage
         location = self._storage()
         for attach in self:
-            if location in self.store_types and self._save_in_db_anyway():
+            if location in self._store_types and attach._save_in_db_anyway():
                 # compute the fields that depend on datas
                 value = attach.datas
                 bin_data = value and value.decode('base64') or ''
@@ -91,7 +90,7 @@ class IrAttachment(models.Model):
 
     @api.model
     def _file_write(self, value, checksum):
-        if self._storage() in self.store_types:
+        if self._storage() in self._store_types:
             filename = self._store_file_write(value, checksum)
         else:
             filename = super(IrAttachment, self)._file_write(value, checksum)
@@ -109,8 +108,9 @@ class IrAttachment(models.Model):
         else:
             super(IrAttachment, self)._file_delete(fname)
 
+    @api.model
     def _is_file_from_a_store(self, fname):
-        for store_name in self.store_types:
+        for store_name in self._store_types:
             uri = '{}://'.format(store_name)
             if fname.startswith(uri):
                 return True
@@ -181,48 +181,46 @@ class IrAttachment(models.Model):
     def force_storage(self):
         if not self.env['res.users'].browse(self.env.uid)._is_admin():
             raise exceptions.AccessError(
-                _('Only administrators can execute this action.')
-            )
+                _('Only administrators can execute this action.'))
         storage = self._storage()
-        if storage in self.store_types:
-            _logger.info('migrating files to the object storage')
-            domain = ['!', ('store_fname', '=like', '{}://%'.format(storage)),
-                      '|',
-                      ('res_field', '=', False),
-                      ('res_field', '!=', False)]
-            # We do a copy of the environment so we can workaround the
-            # cache issue below. We do not create a new cursor because
-            # it causes serialization issues due to concurrent updates on
-            # attachments during the installation
-            with self.do_in_new_env() as new_env:
-                model_env = new_env['ir.attachment']
-                ids = model_env.search(domain).ids
-                for attachment_id in ids:
-                    try:
-                        with new_env.cr.savepoint():
-                            # check that no other transaction has
-                            # locked the row, don't send a file to S3
-                            # in that case
-                            self.env.cr.execute("SELECT id "
-                                                "FROM ir_attachment "
-                                                "WHERE id = %s "
-                                                "FOR UPDATE NOWAIT",
-                                                (attachment_id,),
-                                                log_exceptions=False)
-
-                            # This is a trick to avoid having the 'datas'
-                            # function fields computed for every attachment on
-                            # each iteration of the loop. The former issue
-                            # being that it reads the content of the file of
-                            # ALL the attachments on each loop.
-                            new_env.clear()
-                            attachment = model_env.browse(attachment_id)
-                            attachment._move_attachment_to_store()
-                    except psycopg2.OperationalError:
-                        _logger.error('Could not migrate attachment %s to S3',
-                                      attachment_id)
-        else:
+        if storage not in self._store_types:
             return super(IrAttachment, self).force_storage()
+        _logger.info('migrating files to the object storage')
+        domain = ['!', ('store_fname', '=like', '{}://%'.format(storage)),
+                  '|',
+                  ('res_field', '=', False),
+                  ('res_field', '!=', False)]
+        # We do a copy of the environment so we can workaround the
+        # cache issue below. We do not create a new cursor because
+        # it causes serialization issues due to concurrent updates on
+        # attachments during the installation
+        with self.do_in_new_env() as new_env:
+            model_env = new_env['ir.attachment']
+            ids = model_env.search(domain).ids
+            for attachment_id in ids:
+                try:
+                    with new_env.cr.savepoint():
+                        # check that no other transaction has
+                        # locked the row, don't send a file to S3
+                        # in that case
+                        self.env.cr.execute("SELECT id "
+                                            "FROM ir_attachment "
+                                            "WHERE id = %s "
+                                            "FOR UPDATE NOWAIT",
+                                            (attachment_id,),
+                                            log_exceptions=False)
+
+                        # This is a trick to avoid having the 'datas'
+                        # function fields computed for every attachment on
+                        # each iteration of the loop. The former issue
+                        # being that it reads the content of the file of
+                        # ALL the attachments on each loop.
+                        new_env.clear()
+                        attachment = model_env.browse(attachment_id)
+                        attachment._move_attachment_to_store()
+                except psycopg2.OperationalError:
+                    _logger.error('Could not migrate attachment %s to S3',
+                                  attachment_id)
 
     def _get_stores(self):
         """ To get the list of stores activated in the system  """

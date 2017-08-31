@@ -4,11 +4,7 @@
 
 
 {'name': 'Base Attachment Object Store',
- 'summary': 'Common code for various Object Store',
- 'description': '''Base module for the implementation of external object store.
-                   This module need to be install to use another specific
-                   object store module
-                ''',
+ 'summary': 'Base module for the implementation of external object store.',
  'version': '10.0.1.1.0',
  'author': 'Camptocamp,Odoo Community Association (OCA)',
  'license': 'AGPL-3',

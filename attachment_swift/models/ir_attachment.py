@@ -24,7 +24,7 @@ except ImportError:
 class IrAttachment(models.Model):
     _inherit = 'ir.attachment'
 
-    store_name = 'swift'
+    _SWIFT_STORAGE = 'swift'
 
     @api.model
     def _get_swift_connection(self):
@@ -64,7 +64,7 @@ class IrAttachment(models.Model):
             return super(IrAttachment, self)._store_file_read(fname, bin_size)
 
     def _store_file_write(self, value, checksum):
-        if self._storage() == self.store_name:
+        if self._storage() == self._SWIFT_STORAGE:
             container = os.environ.get('SWIFT_WRITE_CONTAINER')
             conn = self._get_swift_connection()
             conn.put_container(container)
@@ -98,6 +98,6 @@ class IrAttachment(models.Model):
             super(IrAttachment, self)._file_delete(fname)
 
     def _get_stores(self):
-        l = [self.store_name]
+        l = [self._SWIFT_STORAGE]
         l += super(IrAttachment, self)._get_stores()
         return l
