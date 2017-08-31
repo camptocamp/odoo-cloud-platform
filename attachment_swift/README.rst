@@ -21,7 +21,7 @@ Configure accesses with environment variables:
 
 Read-only mode:
 
-The continer name and the key are stored in the attachment. So if you change the
+The container name and the key are stored in the attachment. So if you change the
 ``SWIFT_WRITE_CONTAINER`` or the ``ir_attachment.location``, the existing attachments
 will still be read on their former container. But as soon as they are written over
 or new attachments are created, they will be created on the new container or on

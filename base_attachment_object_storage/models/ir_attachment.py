@@ -18,7 +18,6 @@ _logger = logging.getLogger(__name__)
 class IrAttachment(models.Model):
     _inherit = 'ir.attachment'
 
-    _store_types = ['s3', 'swift']
     _local_fields = ('image_small', 'image_medium', 'web_icon_data')
 
     @api.multi
@@ -59,7 +58,7 @@ class IrAttachment(models.Model):
         # we keep them in the database instead of the object storage
         location = self._storage()
         for attach in self:
-            if location in self._store_types and attach._save_in_db_anyway():
+            if location in self._get_stores() and attach._save_in_db_anyway():
                 # compute the fields that depend on datas
                 value = attach.datas
                 bin_data = value and value.decode('base64') or ''
@@ -90,7 +89,7 @@ class IrAttachment(models.Model):
 
     @api.model
     def _file_write(self, value, checksum):
-        if self._storage() in self._store_types:
+        if self._storage() in self._get_stores():
             filename = self._store_file_write(value, checksum)
         else:
             filename = super(IrAttachment, self)._file_write(value, checksum)
@@ -104,13 +103,13 @@ class IrAttachment(models.Model):
                        "WHERE store_fname = %s", (fname,))
             count = cr.fetchone()[0]
             if not count:
-                self._file_delete_from_store(fname)
+                self._store_file_delete(fname)
         else:
             super(IrAttachment, self)._file_delete(fname)
 
     @api.model
     def _is_file_from_a_store(self, fname):
-        for store_name in self._store_types:
+        for store_name in self._get_stores():
             uri = '{}://'.format(store_name)
             if fname.startswith(uri):
                 return True
@@ -183,7 +182,7 @@ class IrAttachment(models.Model):
             raise exceptions.AccessError(
                 _('Only administrators can execute this action.'))
         storage = self._storage()
-        if storage not in self._store_types:
+        if storage not in self._get_stores():
             return super(IrAttachment, self).force_storage()
         _logger.info('migrating files to the object storage')
         domain = ['!', ('store_fname', '=like', '{}://%'.format(storage)),

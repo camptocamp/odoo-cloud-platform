@@ -74,15 +74,15 @@ class IrAttachment(models.Model):
             try:
                 conn.put_object(container, key, bin_data)
             except ClientException:
-                _logger.exception('Error connecting to Swift object store')
-                raise exceptions.UserError(_('Error writting to Swift'))
+                _logger.exception('Error writing to Swift object store')
+                raise exceptions.UserError(_('Error writing to Swift'))
         else:
             _super = super(IrAttachment, self)
             filename = _super._store_file_write(value, checksum)
         return filename
 
     @api.model
-    def _file_delete_from_store(self, fname):
+    def _store_file_delete(self, fname):
         if fname.startswith('swift://'):
             swifturi = SwiftUri(fname)
             container = swifturi.container()
