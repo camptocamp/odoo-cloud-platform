@@ -6,4 +6,4 @@ def install_exoscale(ctx):
 
 
 def install_ovh(ctx):
-    ctx.env['cloud.platform'].install_ovh()
+    ctx.env['cloud.platform'].install('ovh')

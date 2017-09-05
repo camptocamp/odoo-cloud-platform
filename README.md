@@ -138,14 +138,17 @@ Should be active at least on the production server
 
 ### Automatic Configuration
 
-Calling 
-    `ctx.env['cloud.platform'].install_exoscale()`
-or 
-    `ctx.env['cloud.platform'].install_ovh()`
-in an `anthem` song will configure some parameters such as the
-`ir_attachment.location` and migrate the existing attachments to the
-object storage.
+An automatic configuration can be executed from an `anthem` song to configure
+some parameters such as the `ir_attachment.location` and migrate the existing
+attachments to the object storage.
 
+It can be called like this: 
+    `ctx.env['cloud.platform'].install(cloud_platform_kind)`
+Replacing `cloud_platform_kind` with 'exoscale' or 'ovh'
+
+When there was only Exoscale as a provider of the cloud platform the following
+would do the trick and will work until v.11 :
+    `ctx.env['cloud.platform'].install_exoscale()`
 
 ### Startup checks
 

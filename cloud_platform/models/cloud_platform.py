@@ -62,6 +62,18 @@ class CloudPlatform(models.AbstractModel):
         _logger.info('cloud platform configured for exoscale')
 
     @api.model
+    def install(self, platform_kind):
+        params = self.env['ir.config_parameter'].sudo()
+        params.set_param('cloud.platform.kind', platform_kind)
+        environment = config['running_env']
+        configs = self._config_by_server_env(environment)
+        params.set_param('ir_attachment.location', configs.filestore)
+        self.check()
+        if configs.filestore in [FilestoreKind.swift, FilestoreKind.s3]:
+            self.env['ir.attachment'].sudo().force_storage()
+        _logger.info('cloud platform configured for {}'.format(platform_kind))
+
+    @api.model
     def _check_swift(self, environment_name):
         params = self.env['ir.config_parameter'].sudo()
         use_swift = (params.get_param('ir_attachment.location') ==
