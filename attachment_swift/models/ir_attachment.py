@@ -24,7 +24,7 @@ except ImportError:
 class IrAttachment(models.Model):
     _inherit = 'ir.attachment'
 
-    _SWIFT_STORAGE = 'swift'
+    store_name = 'swift'
 
     @api.model
     def _get_swift_connection(self):
@@ -32,15 +32,19 @@ class IrAttachment(models.Model):
         host = os.environ.get('SWIFT_HOST')
         account = os.environ.get('SWIFT_ACCOUNT')
         password = os.environ.get('SWIFT_PASSWORD')
-        if not (host and account and password):
+        tenant_name = os.environ.get('SWIFT_TENANT_NAME')
+        if not (host and account and password and tenant_name):
             raise exceptions.UserError(_(
-                '''Problem connecting to Swift store, are the env variables
-                   (SWIFT_HOST, SWIFT_ACCOUNT, SWIFT_PASSWORD) properly set ?
-                '''))
+                "Problem connecting to Swift store, are the env variables "
+                "(SWIFT_HOST, SWIFT_ACCOUNT, SWIFT_PASSWORD, "
+                "SWIFT_TENANT_NAME) properly set?"
+                ))
         try:
             conn = swiftclient.client.Connection(authurl=host,
                                                  user=account,
-                                                 key=password)
+                                                 key=password,
+                                                 tenant_name=tenant_name,
+                                                 auth_version='2.0')
         except ClientException:
             _logger.exception('Error connecting to Swift object store')
             raise exceptions.UserError(_('Error on Swift connection'))
@@ -64,7 +68,7 @@ class IrAttachment(models.Model):
             return super(IrAttachment, self)._store_file_read(fname, bin_size)
 
     def _store_file_write(self, value, checksum):
-        if self._storage() == self._SWIFT_STORAGE:
+        if self._storage() == self.store_name:
             container = os.environ.get('SWIFT_WRITE_CONTAINER')
             conn = self._get_swift_connection()
             conn.put_container(container)
@@ -82,7 +86,7 @@ class IrAttachment(models.Model):
         return filename
 
     @api.model
-    def _store_file_delete(self, fname):
+    def _file_delete_from_store(self, fname):
         if fname.startswith('swift://'):
             swifturi = SwiftUri(fname)
             container = swifturi.container()
@@ -98,6 +102,6 @@ class IrAttachment(models.Model):
             super(IrAttachment, self)._file_delete(fname)
 
     def _get_stores(self):
-        l = [self._SWIFT_STORAGE]
+        l = [self.store_name]
         l += super(IrAttachment, self)._get_stores()
         return l
