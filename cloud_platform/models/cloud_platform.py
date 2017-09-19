@@ -38,14 +38,32 @@ class CloudPlatform(models.AbstractModel):
     _name = 'cloud.platform'
 
     @api.model
-    def _config_by_server_env(self, environment):
+    def _platform_kinds(self):
+        # XXX for backward compatibility, we need this one here, move
+        # it in cloud_platform_exoscale in V11
+        return ['exoscale']
+
+    # XXX for backward compatibility, we need this one here, move
+    # it in cloud_platform_exoscale in V11
+    @api.model
+    def _config_by_server_env_for_exoscale(self):
         configs = {
             'prod': PlatformConfig(filestore=FilestoreKind.s3),
             'integration': PlatformConfig(filestore=FilestoreKind.s3),
             'test': PlatformConfig(filestore=FilestoreKind.db),
             'dev': PlatformConfig(filestore=FilestoreKind.db),
         }
-        return configs.get(environment) or configs['dev']
+        return configs
+
+    @api.model
+    def _config_by_server_env(self, platform_kind, environment):
+        configs_getter = getattr(
+            self,
+            '_config_by_server_env_for_%s' % platform_kind,
+            None
+        )
+        configs = configs_getter() if configs_getter else {}
+        return configs.get(environment) or FilestoreKind.db
 
     # Due to the addition of the ovh cloud platform
     # This will be moved to cloud_platform_exoscale on v11
@@ -55,11 +73,11 @@ class CloudPlatform(models.AbstractModel):
 
     @api.model
     def install(self, platform_kind):
-        assert platform_kind in ('ovh', 'exoscale')
+        assert platform_kind in self._platform_kinds()
         params = self.env['ir.config_parameter'].sudo()
         params.set_param('cloud.platform.kind', platform_kind)
         environment = config['running_env']
-        configs = self._config_by_server_env(environment)
+        configs = self._config_by_server_env(platform_kind, environment)
         params.set_param('ir_attachment.location', configs.filestore)
         self.check()
         if configs.filestore in [FilestoreKind.swift, FilestoreKind.s3]:
