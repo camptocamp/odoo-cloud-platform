@@ -29,3 +29,7 @@ class CloudPlatform(models.AbstractModel):
             'dev': PlatformConfig(filestore=FilestoreKind.db),
         }
         return configs.get(environment) or configs['dev']
+
+    @api.model
+    def install_ovh(self):
+        self.install('ovh')

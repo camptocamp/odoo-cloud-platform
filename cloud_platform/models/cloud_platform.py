@@ -51,18 +51,11 @@ class CloudPlatform(models.AbstractModel):
     # This will be moved to cloud_platform_exoscale on v11
     @api.model
     def install_exoscale(self):
-        params = self.env['ir.config_parameter'].sudo()
-        params.set_param('cloud.platform.kind', 'exoscale')
-        environment = config['running_env']
-        configs = self._config_by_server_env(environment)
-        params.set_param('ir_attachment.location', configs.filestore)
-        self.check()
-        if configs.filestore == FilestoreKind.s3:
-            self.env['ir.attachment'].sudo().force_storage()
-        _logger.info('cloud platform configured for exoscale')
+        self.install('exoscale')
 
     @api.model
     def install(self, platform_kind):
+        assert platform_kind in ('ovh', 'exoscale')
         params = self.env['ir.config_parameter'].sudo()
         params.set_param('cloud.platform.kind', platform_kind)
         environment = config['running_env']
@@ -86,8 +79,8 @@ class CloudPlatform(models.AbstractModel):
                 "automatically."
             )
         if use_swift:
-            assert os.environ.get('SWIFT_HOST'), (
-                "SWIFT_HOST environment variable is required when "
+            assert os.environ.get('SWIFT_AUTH_URL'), (
+                "SWIFT_AUTH_URL environment variable is required when "
                 "ir_attachment.location is 'swift'."
             )
             assert os.environ.get('SWIFT_ACCOUNT'), (

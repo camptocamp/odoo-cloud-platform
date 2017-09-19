@@ -15,7 +15,7 @@
                 'keystoneclient',
                 ],
  },
- 'website': 'http://www.camptocamp.com',
+ 'website': 'https://www.camptocamp.com',
  'data': [],
  'installable': True,
  }

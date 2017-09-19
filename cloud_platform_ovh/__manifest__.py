@@ -13,7 +13,7 @@
      'cloud_platform',
      'attachment_swift',
  ],
- 'website': 'http://www.camptocamp.com',
+ 'website': 'https://www.camptocamp.com',
  'data': [],
  'installable': True,
  }

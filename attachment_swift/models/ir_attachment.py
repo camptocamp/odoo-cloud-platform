@@ -29,14 +29,14 @@ class IrAttachment(models.Model):
     @api.model
     def _get_swift_connection(self):
         """ Returns a connection object for the Swift object store """
-        host = os.environ.get('SWIFT_HOST')
+        host = os.environ.get('SWIFT_AUTH_URL')
         account = os.environ.get('SWIFT_ACCOUNT')
         password = os.environ.get('SWIFT_PASSWORD')
         tenant_name = os.environ.get('SWIFT_TENANT_NAME')
         if not (host and account and password and tenant_name):
             raise exceptions.UserError(_(
                 "Problem connecting to Swift store, are the env variables "
-                "(SWIFT_HOST, SWIFT_ACCOUNT, SWIFT_PASSWORD, "
+                "(SWIFT_AUTH_URL, SWIFT_ACCOUNT, SWIFT_PASSWORD, "
                 "SWIFT_TENANT_NAME) properly set?"
                 ))
         try:

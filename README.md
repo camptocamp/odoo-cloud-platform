@@ -146,9 +146,10 @@ It can be called like this:
     `ctx.env['cloud.platform'].install(cloud_platform_kind)`
 Replacing `cloud_platform_kind` with 'exoscale' or 'ovh'
 
-When there was only Exoscale as a provider of the cloud platform the following
-would do the trick and will work until v.11 :
-    `ctx.env['cloud.platform'].install_exoscale()`
+Or using one of the direct shortcuts:
+
+ * `ctx.env['cloud.platform'].install_exoscale()`
+ * `ctx.env['cloud.platform'].install_ovh()`
 
 ### Startup checks
 
