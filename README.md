@@ -29,13 +29,16 @@ The main difference between the two is the Object Store they use :
 Libraries that must be added in ``requirements.txt``:
 
 ```
-# For S3 object store
-boto==2.42.0
-# For Swift object store
-python-swiftclient==3.0.0
 redis==2.10.5
 python-json-logger==0.1.5
 statsd==3.2.1
+
+# For S3 object storage (Exoscale, AWS)
+boto==2.42.0
+
+# For Swift object storage (OVH)
+python-swiftclient==3.4.0
+python-keystoneclient==3.13.0
 ```
 
 ### Odoo Startup
@@ -49,6 +52,7 @@ The `--load` option of Odoo must contains the following addons:
 Example:
 
 `--load=web,web_kanban,attachment_s3,session_redis,logging_json`
+`--load=web,web_kanban,attachment_swift,session_redis,logging_json`
 
 ### Server Environment
 
@@ -84,12 +88,12 @@ automatically done by the `install` methods of the `cloud_platform` module.
 ### Attachments in the Object Storage Swift
 
 * prod: stored RW in the object storage
- * `SWIFT_HOST`: depends of the platform
+ * `SWIFT_AUTH_URL`: depends of the platform
  * `SWIFT_ACCOUNT`: depends of the platform
  * `SWIFT_PASSWORD`: depends of the platform
  * `SWIFT_WRITE_CONTAINER`: `<client>-odoo-prod`
 * integration:
- * `SWIFT_HOST`: depends of the platform
+ * `SWIFT_AUTH_URL`: depends of the platform
  * `SWIFT_ACCOUNT`: depends of the platform
  * `SWIFT_PASSWORD`: depends of the platform
  * `SWIFT_WRITE_CONTAINER`: `<client>-odoo-integration`
