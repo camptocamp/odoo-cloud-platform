@@ -63,9 +63,9 @@ class IrAttachment(models.Model):
                                                     swifturi.item())
                 read = base64.b64encode(obj_content)
             except ClientException:
+                read = ''
                 _logger.exception(
                     'Error reading object from Swift object store')
-                raise exceptions.UserError(_('Error reading on Swift'))
             return read
         else:
             return super(IrAttachment, self)._store_file_read(fname, bin_size)
