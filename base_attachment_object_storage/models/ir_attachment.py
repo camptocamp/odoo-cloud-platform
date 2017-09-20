@@ -87,10 +87,29 @@ class IrAttachment(models.Model):
             _super = super(IrAttachment, self)
             return _super._file_read(fname, bin_size=bin_size)
 
+    def _store_file_read(self, fname, bin_size=False):
+        storage = fname.partition('://')[0]
+        raise NotImplementedError(
+            'No implementation for %s' % (storage,)
+        )
+
+    def _store_file_write(self, key, bin_data):
+        raise NotImplementedError(
+            'No implementation for %s' % (self.storage(),)
+        )
+
+    def _store_file_delete(self, fname):
+        storage = fname.partition('://')[0]
+        raise NotImplementedError(
+            'No implementation for %s' % (storage,)
+        )
+
     @api.model
     def _file_write(self, value, checksum):
         if self._storage() in self._get_stores():
-            filename = self._store_file_write(value, checksum)
+            bin_data = value.decode('base64')
+            key = self._compute_checksum(bin_data)
+            filename = self._store_file_write(key, bin_data)
         else:
             filename = super(IrAttachment, self)._file_write(value, checksum)
         return filename
@@ -99,6 +118,8 @@ class IrAttachment(models.Model):
     def _file_delete(self, fname):
         if self._is_file_from_a_store(fname):
             cr = self.env.cr
+            # using SQL to include files hidden through unlink or due to record
+            # rules
             cr.execute("SELECT COUNT(*) FROM ir_attachment "
                        "WHERE store_fname = %s", (fname,))
             count = cr.fetchone()[0]
@@ -184,16 +205,21 @@ class IrAttachment(models.Model):
         storage = self._storage()
         if storage not in self._get_stores():
             return super(IrAttachment, self).force_storage()
+        self._force_storage_to_object_storage()
+
+    @api.model
+    def _force_storage_to_object_storage(self, new_cr=False):
         _logger.info('migrating files to the object storage')
+        storage = self._storage()
         domain = ['!', ('store_fname', '=like', '{}://%'.format(storage)),
                   '|',
                   ('res_field', '=', False),
                   ('res_field', '!=', False)]
-        # We do a copy of the environment so we can workaround the
-        # cache issue below. We do not create a new cursor because
-        # it causes serialization issues due to concurrent updates on
-        # attachments during the installation
-        with self.do_in_new_env() as new_env:
+        # We do a copy of the environment so we can workaround the cache issue
+        # below. We do not create a new cursor by default because it causes
+        # serialization issues due to concurrent updates on attachments during
+        # the installation
+        with self.do_in_new_env(new_cr=new_cr) as new_env:
             model_env = new_env['ir.attachment']
             ids = model_env.search(domain).ids
             for attachment_id in ids:

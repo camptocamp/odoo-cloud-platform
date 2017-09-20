@@ -9,11 +9,11 @@
  'author': 'Camptocamp,Odoo Community Association (OCA)',
  'license': 'AGPL-3',
  'category': 'Knowledge Management',
- 'depends': ['base'],
+ 'depends': ['base', 'base_attachment_object_storage'],
  'external_dependencies': {
      'python': ['boto'],
  },
- 'website': 'http://www.camptocamp.com',
+ 'website': 'https://www.camptocamp.com',
  'data': [],
  'installable': True,
  }

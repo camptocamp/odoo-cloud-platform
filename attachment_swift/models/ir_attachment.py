@@ -24,7 +24,10 @@ except ImportError:
 class IrAttachment(models.Model):
     _inherit = 'ir.attachment'
 
-    store_name = 'swift'
+    def _get_stores(self):
+        l = ['swift']
+        l += super(IrAttachment, self)._get_stores()
+        return l
 
     @api.model
     def _get_swift_connection(self):
@@ -67,13 +70,11 @@ class IrAttachment(models.Model):
         else:
             return super(IrAttachment, self)._store_file_read(fname, bin_size)
 
-    def _store_file_write(self, value, checksum):
-        if self._storage() == self.store_name:
+    def _store_file_write(self, key, bin_data):
+        if self._storage() == 'swift':
             container = os.environ.get('SWIFT_WRITE_CONTAINER')
             conn = self._get_swift_connection()
             conn.put_container(container)
-            bin_data = value.decode('base64')
-            key = self._compute_checksum(bin_data)
             filename = 'swift://{}/{}'.format(container, key)
             try:
                 conn.put_object(container, key, bin_data)
@@ -82,14 +83,16 @@ class IrAttachment(models.Model):
                 raise exceptions.UserError(_('Error writing to Swift'))
         else:
             _super = super(IrAttachment, self)
-            filename = _super._store_file_write(value, checksum)
+            filename = _super._store_file_write(key, bin_data)
         return filename
 
     @api.model
-    def _file_delete_from_store(self, fname):
+    def _store_file_delete(self, fname):
         if fname.startswith('swift://'):
             swifturi = SwiftUri(fname)
             container = swifturi.container()
+            # delete the file only if it is on the current configured bucket
+            # otherwise, we might delete files used on a different environment
             if container == os.environ.get('SWIFT_WRITE_CONTAINER'):
                 conn = self._get_swift_connection()
                 try:
@@ -97,11 +100,7 @@ class IrAttachment(models.Model):
                 except ClientException:
                     _logger.exception(
                         _('Error deleting an object on the Swift store'))
-                    raise exceptions.UserError(_('Error deleting on Swift'))
+                    # we ignore the error, file will stay on the object
+                    # storage but won't disrupt the process
         else:
-            super(IrAttachment, self)._file_delete(fname)
-
-    def _get_stores(self):
-        l = [self.store_name]
-        l += super(IrAttachment, self)._get_stores()
-        return l
+            super(IrAttachment, self)._file_delete_from_store(fname)
