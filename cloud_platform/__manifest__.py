@@ -10,7 +10,6 @@
  'license': 'AGPL-3',
  'category': 'Extra Tools',
  'depends': [
-     'attachment_s3',
      'session_redis',
      'monitoring_status',
      'logging_json',
@@ -18,7 +17,7 @@
      'monitoring_statsd',
      'server_environment',  # OCA/server-tools
  ],
- 'website': 'http://www.camptocamp.com',
+ 'website': 'https://www.camptocamp.com',
  'data': [],
  'installable': True,
  }

@@ -30,6 +30,7 @@ PlatformConfig = namedtuple(
 class FilestoreKind(object):
     db = 'db'
     s3 = 's3'  # or compatible s3 object storage
+    swift = 'swift'
     file = 'file'
 
 
@@ -37,26 +38,99 @@ class CloudPlatform(models.AbstractModel):
     _name = 'cloud.platform'
 
     @api.model
-    def _config_by_server_env(self, environment):
+    def _platform_kinds(self):
+        # XXX for backward compatibility, we need this one here, move
+        # it in cloud_platform_exoscale in V11
+        return ['exoscale']
+
+    # XXX for backward compatibility, we need this one here, move
+    # it in cloud_platform_exoscale in V11
+    @api.model
+    def _config_by_server_env_for_exoscale(self):
         configs = {
             'prod': PlatformConfig(filestore=FilestoreKind.s3),
             'integration': PlatformConfig(filestore=FilestoreKind.s3),
             'test': PlatformConfig(filestore=FilestoreKind.db),
             'dev': PlatformConfig(filestore=FilestoreKind.db),
         }
-        return configs.get(environment) or configs['dev']
+        return configs
 
     @api.model
+    def _config_by_server_env(self, platform_kind, environment):
+        configs_getter = getattr(
+            self,
+            '_config_by_server_env_for_%s' % platform_kind,
+            None
+        )
+        configs = configs_getter() if configs_getter else {}
+        return configs.get(environment) or FilestoreKind.db
+
+    # Due to the addition of the ovh cloud platform
+    # This will be moved to cloud_platform_exoscale on v11
+    @api.model
     def install_exoscale(self):
+        self.install('exoscale')
+
+    @api.model
+    def install(self, platform_kind):
+        assert platform_kind in self._platform_kinds()
         params = self.env['ir.config_parameter'].sudo()
-        params.set_param('cloud.platform.kind', 'exoscale')
+        params.set_param('cloud.platform.kind', platform_kind)
         environment = config['running_env']
-        configs = self._config_by_server_env(environment)
+        configs = self._config_by_server_env(platform_kind, environment)
         params.set_param('ir_attachment.location', configs.filestore)
         self.check()
-        if configs.filestore == FilestoreKind.s3:
+        if configs.filestore in [FilestoreKind.swift, FilestoreKind.s3]:
             self.env['ir.attachment'].sudo().force_storage()
-        _logger.info('cloud platform configured for exoscale')
+        _logger.info('cloud platform configured for {}'.format(platform_kind))
+
+    @api.model
+    def _check_swift(self, environment_name):
+        params = self.env['ir.config_parameter'].sudo()
+        use_swift = (params.get_param('ir_attachment.location') ==
+                     FilestoreKind.swift)
+        if environment_name in ('prod', 'integration'):
+            assert use_swift, (
+                "Swift must be used on production and integration instances. "
+                "It is activated, setting 'ir_attachment.location.' to 'swift'"
+                " The 'install_exoscale()' function sets this option "
+                "automatically."
+            )
+        if use_swift:
+            assert os.environ.get('SWIFT_AUTH_URL'), (
+                "SWIFT_AUTH_URL environment variable is required when "
+                "ir_attachment.location is 'swift'."
+            )
+            assert os.environ.get('SWIFT_ACCOUNT'), (
+                "SWIFT_ACCOUNT environment variable is required when "
+                "ir_attachment.location is 'swift'."
+            )
+            assert os.environ.get('SWIFT_PASSWORD'), (
+                "SWIFT_PASSWORD environment variable is required when "
+                "ir_attachment.location is 'swift'."
+            )
+            container_name = os.environ['SWIFT_WRITE_CONTAINER']
+            prod_container = bool(re.match(r'[a-z]+-odoo-prod',
+                                           container_name))
+            if environment_name == 'prod':
+                assert prod_container, (
+                    "SWIFT_WRITE_CONTAINER should match '<client>-odoo-prod', "
+                    "we got: '%s'" % (container_name,)
+                )
+            else:
+                # if we are using the prod bucket on another instance
+                # such as an integration, we must be sure to be in read only!
+                assert not prod_container, (
+                    "SWIFT_WRITE_CONTAINER should not match "
+                    "'<client>-odoo-prod', we got: '%s'" % (container_name,)
+                )
+        elif environment_name == 'test':
+            # store in DB so we don't have files local to the host
+            assert params.get_param('ir_attachment.location') == 'db', (
+                "In test instances, files must be stored in the database with "
+                "'ir_attachment.location' set to 'db'. This is "
+                "automatically set by the function 'install_ovh()'."
+            )
 
     @api.model
     def _check_s3(self, environment_name):
@@ -148,7 +222,10 @@ class CloudPlatform(models.AbstractModel):
             )
             return
         environment_name = config['running_env']
-        self._check_s3(environment_name)
+        if kind == 'exoscale':
+            self._check_s3(environment_name)
+        elif kind == 'ovh':
+            self._check_swift(environment_name)
         self._check_redis(environment_name)
 
     @api.model_cr

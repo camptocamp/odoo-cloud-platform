@@ -1,7 +1,8 @@
 Cloud Platform
 ==============
 
-Install addons required for the Camptocamp Cloud platform.
+Install addons required for the Camptocamp Cloud platform, and that are
+common to all platform providers.
 
 * Provide a quick install that we can call at the setup / migration
   of a database
