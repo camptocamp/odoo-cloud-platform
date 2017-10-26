@@ -201,7 +201,7 @@ class CloudPlatform(models.AbstractModel):
             )
 
             prefix = os.environ['ODOO_SESSION_REDIS_PREFIX']
-            assert re.match(r'[a-z]+-odoo-[a-z]+', prefix), (
+            assert re.match(r'[a-z]+[a-z0-9]*-odoo-[a-z]+[0-9]*', prefix), (
                 "ODOO_SESSION_REDIS_PREFIX must match '<client>-odoo-<env>'"
                 ", we got: '%s'" % (prefix,)
             )
