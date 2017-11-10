@@ -43,6 +43,7 @@ class TestAttachmentSwift(TestIrAttachment):
         os.environ['SWIFT_ACCOUNT'] = 'account'
         os.environ['SWIFT_PASSWORD'] = 'password'
         os.environ['SWIFT_TENANT_NAME'] = 'tenant_name'
+        os.environ['SWIFT_WRITE_CONTAINER'] = 'my_container'
         container = os.environ.get('SWIFT_WRITE_CONTAINER')
         attachment = self.Attachment
         bin_data = self.blob1_b64.decode('base64')
@@ -64,6 +65,8 @@ class TestAttachmentSwift(TestIrAttachment):
         os.environ['SWIFT_ACCOUNT'] = 'account'
         os.environ['SWIFT_PASSWORD'] = 'password'
         os.environ['SWIFT_TENANT_NAME'] = 'tenant_name'
+        os.environ['SWIFT_WRITE_CONTAINER'] = 'my_container'
+
         attachment = self.Attachment
         container = os.environ.get('SWIFT_WRITE_CONTAINER')
         with patch('swiftclient.client.Connection') as MockConnection:
