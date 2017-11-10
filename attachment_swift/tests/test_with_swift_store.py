@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2016 Camptocamp SA
+# Copyright 2017 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
 from odoo.addons.base.tests.test_ir_attachment import TestIrAttachment
@@ -8,6 +8,9 @@ from swiftclient.exceptions import ClientException
 
 
 class TestAttachmentSwift(TestIrAttachment):
+    """
+    Those tests are made to be run against a real Swift store (local or remote)
+    """
 
     def setup(self):
         super(TestAttachmentSwift, self).setUp()
@@ -20,6 +23,7 @@ class TestAttachmentSwift(TestIrAttachment):
         self.assertNotEquals(conn, False)
 
     def test_store_file_on_swift(self):
+        """ Test writing a file and then reading it """
         (self.env['ir.config_parameter'].
             set_param('ir_attachment.location', 'swift'))
         a5 = self.Attachment.create({'name': 'a5', 'datas': self.blob1_b64})
@@ -27,6 +31,7 @@ class TestAttachmentSwift(TestIrAttachment):
         self.assertEquals(a5.datas, a5bis.datas)
 
     def test_delete_file_on_swift(self):
+        """ Create a file and then test the deletion """
         (self.env['ir.config_parameter'].
             set_param('ir_attachment.location', 'swift'))
         a5 = self.Attachment.create({'name': 'a5', 'datas': self.blob1_b64})
