@@ -15,6 +15,7 @@ Activate S3 storage:
 Configure accesses with environment variables:
 
 * ``AWS_HOST`` (not required if using AWS services)
+* ``AWS_REGION`` (required if using AWS services)
 * ``AWS_ACCESS_KEY_ID``
 * ``AWS_SECRET_ACCESS_KEY``
 * ``AWS_BUCKETNAME``

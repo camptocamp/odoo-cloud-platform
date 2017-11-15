@@ -70,11 +70,11 @@ The exact naming is important, because the `cloud_platform` addon rely on these 
 
 * prod: stored RW in the object storage
  * `AWS_HOST`: depends of the platform
+ * `AWS_REGION`: region's endpoint
  * `AWS_ACCESS_KEY_ID`: depends of the platform
  * `AWS_SECRET_ACCESS_KEY`: depends of the platform
  * `AWS_BUCKETNAME`: `<client>-odoo-prod`
 * integration:
- * `AWS_HOST`: depends of the platform
  * `AWS_ACCESS_KEY_ID`: depends of the platform
  * `AWS_SECRET_ACCESS_KEY`: depends of the platform
  * `AWS_BUCKETNAME`: `<client>-odoo-integration`

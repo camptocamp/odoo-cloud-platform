@@ -7,7 +7,6 @@ import base64
 import logging
 import os
 import xml.dom.minidom
-from functools import partial
 
 from odoo import _, api, exceptions, models
 from ..s3uri import S3Uri
@@ -37,6 +36,7 @@ class IrAttachment(models.Model):
 
         The following environment variables can be set:
         * ``AWS_HOST``
+        * ``AWS_REGION``
         * ``AWS_ACCESS_KEY_ID``
         * ``AWS_SECRET_ACCESS_KEY``
         * ``AWS_BUCKETNAME``
@@ -46,17 +46,23 @@ class IrAttachment(models.Model):
 
         """
         host = os.environ.get('AWS_HOST')
-        if host:
-            connect_s3 = partial(boto.connect_s3, host=host)
-        else:
-            connect_s3 = boto.connect_s3
-
+        region_name = os.environ.get('AWS_REGION')
         access_key = os.environ.get('AWS_ACCESS_KEY_ID')
         secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
-        if name:
-            bucket_name = name
+        bucket_name = name or os.environ.get('AWS_BUCKETNAME')
+
+        params = {
+            'aws_access_key_id': access_key,
+            'aws_secret_access_key': secret_key,
+        }
+        if host:
+            params['host'] = host
+        if region_name:
+            # needs specific method for region
+            connect_s3 = boto.s3.connect_to_region
+            params['region_name'] = region_name
         else:
-            bucket_name = os.environ.get('AWS_BUCKETNAME')
+            connect_s3 = boto.connect_s3
         if not (access_key and secret_key and bucket_name):
             msg = _('If you want to read from the %s S3 bucket, the following '
                     'environment variables must be set:\n'
@@ -72,8 +78,7 @@ class IrAttachment(models.Model):
             raise exceptions.UserError(msg)
 
         try:
-            conn = connect_s3(aws_access_key_id=access_key,
-                              aws_secret_access_key=secret_key)
+            conn = connect_s3(**params)
 
         except S3ResponseError as error:
             # log verbose error from s3, return short message for user
