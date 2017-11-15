@@ -47,7 +47,8 @@ class RedisSessionStore(SessionStore):
                           "expiration of %s seconds for %s",
                           key, self.expiration, user_msg)
 
-        if self.redis.set(key, json.dumps(dict(session))):
+        data = json.dumps(dict(session)).encode('utf-8')
+        if self.redis.set(key, data):
             return self.redis.expire(key, self.expiration)
 
     def delete(self, session):
@@ -62,7 +63,7 @@ class RedisSessionStore(SessionStore):
             return self.new()
 
         key = self.build_key(sid)
-        saved = self.redis.get(key)
+        saved = self.redis.get(key).decode('utf-8')
         if not saved:
             _logger.debug("session with non-existent key '%s' has been asked, "
                           "returning a new one", key)
