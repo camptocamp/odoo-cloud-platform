@@ -20,7 +20,7 @@ class TestAttachmentSwift(TestIrAttachment):
     def test_connection(self):
         """ Test the connection to the Swift object store """
         conn = self.Attachment._get_swift_connection()
-        self.assertNotEquals(conn, False)
+        self.assertNotEqual(conn, False)
 
     def test_store_file_on_swift(self):
         """ Test writing a file and then reading it """
@@ -28,7 +28,7 @@ class TestAttachmentSwift(TestIrAttachment):
             set_param('ir_attachment.location', 'swift'))
         a5 = self.Attachment.create({'name': 'a5', 'datas': self.blob1_b64})
         a5bis = self.Attachment.browse(a5.id)[0]
-        self.assertEquals(a5.datas, a5bis.datas)
+        self.assertEqual(a5.datas, a5bis.datas)
 
     def test_delete_file_on_swift(self):
         """ Create a file and then test the deletion """

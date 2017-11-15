@@ -25,14 +25,14 @@ class RedisSessionStore(SessionStore):
             self.expiration = DEFAULT_SESSION_TIMEOUT
         else:
             self.expiration = expiration
-        self.prefix = u'session:'
+        self.prefix = 'session:'
         if prefix:
-            self.prefix = u'%s:%s:' % (
+            self.prefix = '%s:%s:' % (
                 self.prefix, prefix
             )
 
     def build_key(self, sid):
-        if isinstance(sid, unicode):
+        if isinstance(sid, str):
             sid = sid.encode('utf-8')
         return '%s%s' % (self.prefix, sid)
 
