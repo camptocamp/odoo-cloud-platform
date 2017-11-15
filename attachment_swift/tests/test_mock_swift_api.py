@@ -2,6 +2,7 @@
 # Copyright 2017 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
+import base64
 import os
 
 from mock import patch
@@ -46,7 +47,7 @@ class TestAttachmentSwift(TestIrAttachment):
         os.environ['SWIFT_WRITE_CONTAINER'] = 'my_container'
         container = os.environ.get('SWIFT_WRITE_CONTAINER')
         attachment = self.Attachment
-        bin_data = self.blob1_b64.decode('base64')
+        bin_data = base64.b64decode(self.blob1_b64)
         with patch('swiftclient.client.Connection') as MockConnection:
             conn = MockConnection.return_value
             attachment.create({'name': 'a5', 'datas': self.blob1_b64})

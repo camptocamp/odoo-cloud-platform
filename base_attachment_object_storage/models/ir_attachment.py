@@ -3,6 +3,7 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
 
+import base64
 import logging
 import os
 import psycopg2
@@ -61,7 +62,7 @@ class IrAttachment(models.Model):
             if location in self._get_stores() and attach._save_in_db_anyway():
                 # compute the fields that depend on datas
                 value = attach.datas
-                bin_data = value and value.decode('base64') or ''
+                bin_data = base64.b64decode(value) if value else ''
                 vals = {
                     'file_size': len(bin_data),
                     'checksum': self._compute_checksum(bin_data),
@@ -107,7 +108,7 @@ class IrAttachment(models.Model):
     @api.model
     def _file_write(self, value, checksum):
         if self._storage() in self._get_stores():
-            bin_data = value.decode('base64')
+            bin_data = base64.b64decode(value)
             key = self._compute_checksum(bin_data)
             filename = self._store_file_write(key, bin_data)
         else:
