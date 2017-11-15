@@ -12,6 +12,6 @@
  'depends': ['base'],
  'website': 'http://www.camptocamp.com',
  'data': [],
- 'installable': True,
+ 'installable': False,
  'auto_install': True,
  }
