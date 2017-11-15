@@ -110,6 +110,11 @@ class CloudPlatform(models.AbstractModel):
                 "ir_attachment.location is 'swift'."
             )
             container_name = os.environ['SWIFT_WRITE_CONTAINER']
+            if environment_name in ('integration', 'prod'):
+                assert container_name, (
+                    "SWIFT_WRITE_CONTAINER must not be empty for prod "
+                    "and integration"
+                )
             prod_container = bool(re.match(r'[a-z]+-odoo-prod',
                                            container_name))
             if environment_name == 'prod':
@@ -161,6 +166,11 @@ class CloudPlatform(models.AbstractModel):
                 "integration/prod bucket)."
             )
             bucket_name = os.environ['AWS_BUCKETNAME']
+            if environment_name in ('integration', 'prod'):
+                assert bucket_name, (
+                    "AWS_BUCKETNAME must not be empty for prod "
+                    "and integration"
+                )
             prod_bucket = bool(re.match(r'[a-z]+-odoo-prod', bucket_name))
             if environment_name == 'prod':
                 assert prod_bucket, (
