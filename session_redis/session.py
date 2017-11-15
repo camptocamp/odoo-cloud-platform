@@ -32,8 +32,6 @@ class RedisSessionStore(SessionStore):
             )
 
     def build_key(self, sid):
-        if isinstance(sid, str):
-            sid = sid.encode('utf-8')
         return '%s%s' % (self.prefix, sid)
 
     def save(self, session):
