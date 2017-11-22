@@ -1,10 +1,9 @@
-sudo: false
 language: python
+sudo: false
+cache: pip
 
-cache:
-  apt: true
-  directories:
-    - $HOME/.cache/pip
+python:
+  - "3.5"
 
 addons:
   apt:
@@ -14,12 +13,6 @@ addons:
       - python-simplejson
       - python-serial
       - python-yaml
-
-python:
-  - '2.7'
-
-virtualenv:
-  system_site_packages: true
 
 env:
   matrix:
