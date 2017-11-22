@@ -5,7 +5,7 @@
 
 {'name': 'Monitoring: Statsd Metrics',
  'version': '11.0.1.0.0',
- 'author': 'Camptocamp',
+ 'author': 'Camptocamp,Odoo Community Association (OCA)',
  'license': 'AGPL-3',
  'category': 'category',
  'depends': ['base',
