@@ -30,7 +30,7 @@ credentials) without any risk to alter the production data.
 
 This addon must be added in the server wide addons with (``--load`` option):
 
-``--load=web,web_kanban,attachment_swift``
+``--load=web,attachment_swift``
 
 Python Dependencies
 -------------------

@@ -32,7 +32,7 @@ credentials) without any risk to alter the production data.
 
 This addon must be added in the server wide addons with (``--load`` option):
 
-``--load=web,web_kanban,attachment_s3``
+``--load=web,attachment_s3``
 
 Limitations
 -----------
