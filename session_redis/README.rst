@@ -23,7 +23,7 @@ When a prefix is defined, the keys are ``session:<prefix>:<session id>``
 
 This addon must be added in the server wide addons with (``--load`` option):
 
-``--load=web,web_kanban,session_redis``
+``--load=web,session_redis``
 
 Limitations
 -----------

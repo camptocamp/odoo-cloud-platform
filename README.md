@@ -51,8 +51,8 @@ The `--load` option of Odoo must contains the following addons:
 
 Example:
 
-`--load=web,web_kanban,attachment_s3,session_redis,logging_json`
-`--load=web,web_kanban,attachment_swift,session_redis,logging_json`
+`--load=web,attachment_s3,session_redis,logging_json`
+`--load=web,attachment_swift,session_redis,logging_json`
 
 ### Server Environment
 
