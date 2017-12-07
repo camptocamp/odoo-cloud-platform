@@ -63,13 +63,13 @@ class RedisSessionStore(SessionStore):
             return self.new()
 
         key = self.build_key(sid)
-        saved = self.redis.get(key).decode('utf-8')
+        saved = self.redis.get(key)
         if not saved:
             _logger.debug("session with non-existent key '%s' has been asked, "
                           "returning a new one", key)
             return self.new()
         try:
-            data = json.loads(saved)
+            data = json.loads(saved.decode('utf-8'))
         except ValueError:
             _logger.debug("session for key '%s' has been asked but its json "
                           "content could not be read, it has been reset", key)
