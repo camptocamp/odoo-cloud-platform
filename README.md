@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/camptocamp/odoo-cloud-platform.svg?token=Lpp9PcS5on9AGbp76WKB&branch=10.0)](https://travis-ci.com/camptocamp/odoo-cloud-platform)
+
 # Cloud Platform
 
 Camptocamp odoo addons used on our Cloud Platform.
