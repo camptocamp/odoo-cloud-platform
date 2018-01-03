@@ -57,7 +57,13 @@ class IrAttachment(models.Model):
     def _store_file_read(self, fname, bin_size=False):
         if fname.startswith('swift://'):
             swifturi = SwiftUri(fname)
-            conn = self._get_swift_connection()
+            try:
+                conn = self._get_swift_connection()
+            except exceptions.UserError:
+                _logger.exception(
+                    "error reading attachment '%s' from object storage", fname
+                )
+                return ''
             try:
                 resp, obj_content = conn.get_object(swifturi.container(),
                                                     swifturi.item())
