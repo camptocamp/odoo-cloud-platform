@@ -39,6 +39,9 @@ class RedisSessionStore(SessionStore):
     def save(self, session):
         key = self.build_key(session.sid)
 
+        # allow to set a custom expiration for a session
+        # such as a very short one for monitoring requests
+        expiration = session.expiration or self.expiration
         if _logger.isEnabledFor(logging.DEBUG):
             if session.uid:
                 user_msg = "user '%s' (id: %s)" % (
@@ -47,10 +50,10 @@ class RedisSessionStore(SessionStore):
                 user_msg = "anonymous user"
             _logger.debug("saving session with key '%s' and "
                           "expiration of %s seconds for %s",
-                          key, self.expiration, user_msg)
+                          key, expiration, user_msg)
 
         if self.redis.set(key, json.dumps(dict(session))):
-            return self.redis.expire(key, self.expiration)
+            return self.redis.expire(key, expiration)
 
     def delete(self, session):
         key = self.build_key(session.sid)
