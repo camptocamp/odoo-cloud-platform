@@ -18,7 +18,7 @@ _logger = logging.getLogger(__name__)
 
 
 def is_true(strval):
-    return bool(strtobool(strval or '0'.lower()))
+    return bool(strtobool(strval or '0'))
 
 
 PlatformConfig = namedtuple(
