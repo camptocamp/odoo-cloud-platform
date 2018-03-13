@@ -79,10 +79,10 @@ if is_true(os.environ.get('ODOO_SESSION_REDIS')):
     if sentinel_host:
         _logger.debug("HTTP sessions stored in Redis with prefix '%s'. "
                       "Using Sentinel on %s:%s",
-                      sentinel_host, sentinel_port, prefix or '')
+                      prefix or '', sentinel_host, sentinel_port)
     else:
         _logger.debug("HTTP sessions stored in Redis with prefix '%s' on "
-                      "%s:%s", host, port, prefix or '')
+                      "%s:%s", prefix or '', host, port)
 
     http.Root.session_store = session_store
     http.session_gc = session_gc
