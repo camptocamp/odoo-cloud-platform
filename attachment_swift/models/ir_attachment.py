@@ -36,6 +36,10 @@ class IrAttachment(models.Model):
         account = os.environ.get('SWIFT_ACCOUNT')
         password = os.environ.get('SWIFT_PASSWORD')
         tenant_name = os.environ.get('SWIFT_TENANT_NAME')
+        region = os.environ.get('SWIFT_REGION_NAME')
+        os_options = {}
+        if region:
+            os_options['region_name'] = region
         if not (host and account and password and tenant_name):
             raise exceptions.UserError(_(
                 "Problem connecting to Swift store, are the env variables "
@@ -47,7 +51,9 @@ class IrAttachment(models.Model):
                                                  user=account,
                                                  key=password,
                                                  tenant_name=tenant_name,
-                                                 auth_version='2.0')
+                                                 auth_version='2.0',
+                                                 os_options=os_options,
+                                                 )
         except ClientException:
             _logger.exception('Error connecting to Swift object store')
             raise exceptions.UserError(_('Error on Swift connection'))

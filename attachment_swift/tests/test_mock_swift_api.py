@@ -24,6 +24,7 @@ class TestAttachmentSwift(TestIrAttachment):
         os.environ['SWIFT_ACCOUNT'] = 'account'
         os.environ['SWIFT_PASSWORD'] = 'password'
         os.environ['SWIFT_TENANT_NAME'] = 'tenant_name'
+        os.environ['SWIFT_REGION_NAME'] = 'NOWHERE'
         attachment = self.Attachment
         attachment._get_swift_connection()
         mock_swift_client.Connection.assert_called_once_with(
@@ -31,7 +32,8 @@ class TestAttachmentSwift(TestIrAttachment):
             user=os.environ.get('SWIFT_ACCOUNT'),
             key=os.environ.get('SWIFT_PASSWORD'),
             tenant_name=os.environ.get('SWIFT_TENANT_NAME'),
-            auth_version='2.0'
+            auth_version='2.0',
+            os_options={'region_name': os.environ.get('SWIFT_REGION_NAME')},
         )
 
     def test_store_file_on_swift(self):
