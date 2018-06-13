@@ -332,6 +332,11 @@ class IrAttachment(models.Model):
         if storage != 's3':
             return
         _logger.info('migrating files to the object storage')
+        # The weird "res_field = False OR res_field != False" domain
+        # is required! It's because of an override of _search in ir.attachment
+        # which adds ('res_field', '=', False) when the domain does not
+        # contain 'res_field'.
+        # https://github.com/odoo/odoo/blob/9032617120138848c63b3cfa5d1913c5e5ad76db/odoo/addons/base/ir/ir_attachment.py#L344-L347
         domain = ['!', ('store_fname', '=like', 's3://%'),
                   '|',
                   ('res_field', '=', False),
