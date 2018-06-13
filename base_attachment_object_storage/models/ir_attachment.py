@@ -2,8 +2,8 @@
 # Copyright 2017 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
-
 import base64
+import inspect
 import logging
 import os
 import psycopg2
@@ -39,6 +39,33 @@ class IrAttachment(models.Model):
     _inherit = 'ir.attachment'
 
     _local_fields = ('image_small', 'image_medium', 'web_icon_data')
+
+    @api.cr
+    def _register_hook(self):
+        super(IrAttachment, self)._register_hook()
+        # ignore if we are not using an object storage
+        if self._storage() not in self._get_stores():
+            return
+        curframe = inspect.currentframe()
+        calframe = inspect.getouterframes(curframe, 2)
+        # the caller of _register_hook is 'load_modules' in
+        # odoo/modules/loading.py
+        load_modules_frame = calframe[1][0]
+        # 'update_module' is an argument that 'load_modules' receives with a
+        # True-ish value meaning that an install or upgrade of addon has been
+        # done during the initialization. We need to move the attachments that
+        # could have been created or updated in other addons before this addon
+        # was loaded
+        update_module = load_modules_frame.f_locals.get('update_module')
+
+        # We need to call the migration on the loading of the model because
+        # when we are upgrading addons, some of them might add attachments.
+        # To be sure they are migrated to the storage we need to call the
+        # migration here.
+        # Typical example is images of ir.ui.menu which are updated in
+        # ir.attachment at every upgrade of the addons
+        if update_module:
+            self.env['ir.attachment'].sudo()._force_storage_to_object_storage()
 
     @api.multi
     def _save_in_db_anyway(self):
