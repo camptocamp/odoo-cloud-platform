@@ -4,6 +4,7 @@
 
 
 import base64
+import inspect
 import logging
 import os
 import xml.dom.minidom
@@ -90,6 +91,31 @@ class IrAttachment(models.Model):
                     self._file_delete(fname)
                 continue
             self._data_set('datas', attach.datas, None)
+
+    def _register_hook(self, cr):
+        super(IrAttachment, self)._register_hook(cr)
+        curframe = inspect.currentframe()
+        calframe = inspect.getouterframes(curframe, 2)
+        # the caller of _register_hook is 'load_modules' in
+        # odoo/modules/loading.py
+        # We have to go up 2 stacks because of the old api wrapper
+        load_modules_frame = calframe[2][0]
+        # 'update_module' is an argument that 'load_modules' receives with a
+        # True-ish value meaning that an install or upgrade of addon has been
+        # done during the initialization. We need to move the attachments that
+        # could have been created or updated in other addons before this addon
+        # was loaded
+        update_module = load_modules_frame.f_locals.get('update_module')
+
+        # We need to call the migration on the loading of the model because
+        # when we are upgrading addons, some of them might add attachments.
+        # To be sure they are migrated to the storage we need to call the
+        # migration here.
+        # Typical example is images of ir.ui.menu which are updated in
+        # ir.attachment at every upgrade of the addons
+        if update_module:
+            env = api.Environment(cr, openerp.SUPERUSER_ID, {})
+            env['ir.attachment']._force_storage_s3()
 
     @api.multi
     def _store_in_db_when_s3(self):
