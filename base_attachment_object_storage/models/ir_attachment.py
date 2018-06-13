@@ -243,6 +243,11 @@ class IrAttachment(models.Model):
     def _force_storage_to_object_storage(self, new_cr=False):
         _logger.info('migrating files to the object storage')
         storage = self._storage()
+        # The weird "res_field = False OR res_field != False" domain
+        # is required! It's because of an override of _search in ir.attachment
+        # which adds ('res_field', '=', False) when the domain does not
+        # contain 'res_field'.
+        # https://github.com/odoo/odoo/blob/9032617120138848c63b3cfa5d1913c5e5ad76db/odoo/addons/base/ir/ir_attachment.py#L344-L347
         domain = ['!', ('store_fname', '=like', '{}://%'.format(storage)),
                   '|',
                   ('res_field', '=', False),
