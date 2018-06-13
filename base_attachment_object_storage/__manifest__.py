@@ -5,7 +5,7 @@
 
 {'name': 'Base Attachment Object Store',
  'summary': 'Base module for the implementation of external object store.',
- 'version': '10.0.1.1.0',
+ 'version': '10.0.1.2.0',
  'author': 'Camptocamp,Odoo Community Association (OCA)',
  'license': 'AGPL-3',
  'category': 'Knowledge Management',
