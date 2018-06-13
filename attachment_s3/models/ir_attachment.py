@@ -27,6 +27,25 @@ except ImportError:
     _logger.debug("Cannot 'import boto'.")
 
 
+def clean_fs(files):
+    _logger.info('cleaning old files from filestore')
+    for full_path in files:
+        if os.path.exists(full_path):
+            try:
+                os.unlink(full_path)
+            except OSError:
+                _logger.info(
+                    "_file_delete could not unlink %s",
+                    full_path, exc_info=True
+                )
+            except IOError:
+                # Harmless and needed for race conditions
+                _logger.info(
+                    "_file_delete could not unlink %s",
+                    full_path, exc_info=True
+                )
+
+
 class IrAttachment(models.Model):
     _inherit = "ir.attachment"
 
@@ -271,22 +290,7 @@ class IrAttachment(models.Model):
                         # on assets
                         'mimetype': self.mimetype})
             _logger.info('moved %s on the object storage', fname)
-            full_path = self._full_path(fname)
-            _logger.info('cleaning fs self')
-            if os.path.exists(full_path):
-                try:
-                    os.unlink(full_path)
-                except OSError:
-                    _logger.info(
-                        "_file_delete could not unlink %s",
-                        full_path, exc_info=True
-                    )
-                except IOError:
-                    # Harmless and needed for race conditions
-                    _logger.info(
-                        "_file_delete could not unlink %s",
-                        full_path, exc_info=True
-                    )
+            return self._full_path(fname)
         elif self.db_datas:
             _logger.info('moving on the object storage from database')
             self.write({'datas': self.datas})
@@ -313,6 +317,7 @@ class IrAttachment(models.Model):
         with self.do_in_new_env(new_cr=new_cr) as new_env:
             attachment_model_env = new_env['ir.attachment']
             ids = attachment_model_env.search(domain).ids
+            files_to_clean = []
             for attachment_id in ids:
                 try:
                     with new_env.cr.savepoint():
@@ -333,10 +338,20 @@ class IrAttachment(models.Model):
                         # attachments on each loop.
                         new_env.clear()
                         attachment = attachment_model_env.browse(attachment_id)
-                        attachment._move_attachment_to_s3()
+                        path = attachment._move_attachment_to_s3()
+                        if path:
+                            files_to_clean.append(path)
                 except psycopg2.OperationalError:
                     _logger.error('Could not migrate attachment %s to S3',
                                   attachment_id)
+
+            def clean():
+                clean_fs(files_to_clean)
+
+            # delete the files from the filesystem once we know the changes
+            # have been committed in ir.attachment
+            if files_to_clean:
+                new_env.cr.after('commit', clean)
 
     @contextmanager
     def do_in_new_env(self, new_cr=False):
