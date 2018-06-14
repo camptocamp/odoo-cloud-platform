@@ -4,6 +4,7 @@
 
 
 import base64
+import inspect
 import logging
 import os
 import xml.dom.minidom
@@ -25,6 +26,25 @@ except ImportError:
     boto = None  # noqa
     S3ResponseError = None  # noqa
     _logger.debug("Cannot 'import boto'.")
+
+
+def clean_fs(files):
+    _logger.info('cleaning old files from filestore')
+    for full_path in files:
+        if os.path.exists(full_path):
+            try:
+                os.unlink(full_path)
+            except OSError:
+                _logger.info(
+                    "_file_delete could not unlink %s",
+                    full_path, exc_info=True
+                )
+            except IOError:
+                # Harmless and needed for race conditions
+                _logger.info(
+                    "_file_delete could not unlink %s",
+                    full_path, exc_info=True
+                )
 
 
 class IrAttachment(models.Model):
@@ -71,6 +91,31 @@ class IrAttachment(models.Model):
                     self._file_delete(fname)
                 continue
             self._data_set('datas', attach.datas, None)
+
+    def _register_hook(self, cr):
+        super(IrAttachment, self)._register_hook(cr)
+        curframe = inspect.currentframe()
+        calframe = inspect.getouterframes(curframe, 2)
+        # the caller of _register_hook is 'load_modules' in
+        # odoo/modules/loading.py
+        # We have to go up 2 stacks because of the old api wrapper
+        load_modules_frame = calframe[2][0]
+        # 'update_module' is an argument that 'load_modules' receives with a
+        # True-ish value meaning that an install or upgrade of addon has been
+        # done during the initialization. We need to move the attachments that
+        # could have been created or updated in other addons before this addon
+        # was loaded
+        update_module = load_modules_frame.f_locals.get('update_module')
+
+        # We need to call the migration on the loading of the model because
+        # when we are upgrading addons, some of them might add attachments.
+        # To be sure they are migrated to the storage we need to call the
+        # migration here.
+        # Typical example is images of ir.ui.menu which are updated in
+        # ir.attachment at every upgrade of the addons
+        if update_module:
+            env = api.Environment(cr, openerp.SUPERUSER_ID, {})
+            env['ir.attachment']._force_storage_s3()
 
     @api.multi
     def _store_in_db_when_s3(self):
@@ -271,22 +316,7 @@ class IrAttachment(models.Model):
                         # on assets
                         'mimetype': self.mimetype})
             _logger.info('moved %s on the object storage', fname)
-            full_path = self._full_path(fname)
-            _logger.info('cleaning fs self')
-            if os.path.exists(full_path):
-                try:
-                    os.unlink(full_path)
-                except OSError:
-                    _logger.info(
-                        "_file_delete could not unlink %s",
-                        full_path, exc_info=True
-                    )
-                except IOError:
-                    # Harmless and needed for race conditions
-                    _logger.info(
-                        "_file_delete could not unlink %s",
-                        full_path, exc_info=True
-                    )
+            return self._full_path(fname)
         elif self.db_datas:
             _logger.info('moving on the object storage from database')
             self.write({'datas': self.datas})
@@ -302,6 +332,11 @@ class IrAttachment(models.Model):
         if storage != 's3':
             return
         _logger.info('migrating files to the object storage')
+        # The weird "res_field = False OR res_field != False" domain
+        # is required! It's because of an override of _search in ir.attachment
+        # which adds ('res_field', '=', False) when the domain does not
+        # contain 'res_field'.
+        # https://github.com/odoo/odoo/blob/9032617120138848c63b3cfa5d1913c5e5ad76db/odoo/addons/base/ir/ir_attachment.py#L344-L347
         domain = ['!', ('store_fname', '=like', 's3://%'),
                   '|',
                   ('res_field', '=', False),
@@ -313,6 +348,7 @@ class IrAttachment(models.Model):
         with self.do_in_new_env(new_cr=new_cr) as new_env:
             attachment_model_env = new_env['ir.attachment']
             ids = attachment_model_env.search(domain).ids
+            files_to_clean = []
             for attachment_id in ids:
                 try:
                     with new_env.cr.savepoint():
@@ -333,10 +369,20 @@ class IrAttachment(models.Model):
                         # attachments on each loop.
                         new_env.clear()
                         attachment = attachment_model_env.browse(attachment_id)
-                        attachment._move_attachment_to_s3()
+                        path = attachment._move_attachment_to_s3()
+                        if path:
+                            files_to_clean.append(path)
                 except psycopg2.OperationalError:
                     _logger.error('Could not migrate attachment %s to S3',
                                   attachment_id)
+
+            def clean():
+                clean_fs(files_to_clean)
+
+            # delete the files from the filesystem once we know the changes
+            # have been committed in ir.attachment
+            if files_to_clean:
+                new_env.cr.after('commit', clean)
 
     @contextmanager
     def do_in_new_env(self, new_cr=False):
