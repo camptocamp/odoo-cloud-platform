@@ -10,48 +10,44 @@ from distutils.util import strtobool
 _logger = logging.getLogger(__name__)
 
 try:
-    import jaeger_client
-    from opentracing_instrumentation.client_hooks import install_all_patches
+    import opencensus
+    from opencensus.trace import tracer as tracer_module
+    from opencensus.trace.exporters import jaeger_exporter
 except ImportError:
-    jaeger_client = None  # noqa
-    _logger.debug("Cannot 'import jaeger_client'.")
+    opencensus = execution_context = None  # noqa
+    _logger.debug("Cannot 'import opencensus'.")
 
 
 def is_true(strval):
     return bool(strtobool(strval or '0'.lower()))
 
 
-odoo_jaeger = is_true(os.environ.get('ODOO_JAEGER_TRACING'))
-
-_tracers = {}
-
 SERVICE_PATTERN = 'odoo.%s'
+DEFAULT_IGNORE_PATH = '/longpolling'
+DEFAULT_JAEGER_AGENT = 'jaeger-agent'
+DEFAULT_JAEGER_PORT = jaeger_exporter.DEFAULT_AGENT_PORT  # 6831
 
-
-# TODO lock
-def init_tracer(dbname):
-    service_name = SERVICE_PATTERN % (dbname,)
-    tracer_config = jaeger_client.Config(
-        config={  # usually read from some yaml config
-            'sampler': {
-                'type': 'const',
-                'param': 1,
-            },
-            'logging': False,
-        },
-        service_name=service_name,
-        validate=True,
-    )
-    tracer = _tracers[dbname] = tracer_config.new_tracer()
-    return tracer
+use_opencensus = is_true(os.environ.get('ODOO_OPENCENSUS_TRACING'))
+ignore_paths = [
+    path.strip() for path in
+    os.environ.get('ODOO_OPENCENSUS_IGNORE_PATH',
+                   DEFAULT_IGNORE_PATH).split(',')
+]
+jaeger_agent = os.environ.get('ODOO_OPENCENSUS_JAEGER_AGENT',
+                              DEFAULT_JAEGER_AGENT)
+jaeger_port = os.environ.get('ODOO_OPENCENSUS_JAEGER_PORT',
+                             DEFAULT_JAEGER_PORT)
 
 
 def get_tracer(dbname):
-    if not odoo_jaeger:
+    if not use_opencensus:
         return None
-    return _tracers.get(dbname)
-
-
-# TODO multiprocess compatible?
-if odoo_jaeger:
-    install_all_patches()
+    exporter = jaeger_exporter.JaegerExporter(
+        service_name=SERVICE_PATTERN % (dbname,),
+        agent_host_name=jaeger_agent,
+        agent_port=jaeger_port,
+    )
+    tracer = tracer_module.Tracer(
+        exporter=exporter,
+    )
+    return tracer
