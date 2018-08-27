@@ -9,7 +9,7 @@ import sys
 from odoo import api, models
 from odoo.http import request
 
-from ..http import get_tracer, ignore_paths
+from ..tracer import get_tracer, ignore_paths
 
 from google.rpc import code_pb2
 

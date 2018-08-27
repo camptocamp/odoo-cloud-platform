@@ -3,8 +3,8 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
 
-{'name': 'Jaeger Tracing',
- 'summary': 'Tracing application code with jaeger tracing',
+{'name': 'Opencensus Tracing',
+ 'summary': 'Tracing application code with opencensus tracing',
  'version': '10.0.1.0.0',
  'author': 'Camptocamp,Odoo Community Association (OCA)',
  'license': 'AGPL-3',
@@ -12,10 +12,9 @@
  'depends': ['base'],
  'external_dependencies': {
      'python': [
-         'jaeger_client',  # jaeger-client
-         'opentracing_instrumentation',
+         'opencensus',
          'past',  # futures
-    ],
+         ],
  },
  'website': 'https://www.camptocamp.com',
  'data': [],
