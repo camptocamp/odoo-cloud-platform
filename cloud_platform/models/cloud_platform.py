@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# Copyright 2016 Camptocamp SA
+# Copyright 2018 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
 import logging
@@ -39,21 +38,7 @@ class CloudPlatform(models.AbstractModel):
 
     @api.model
     def _platform_kinds(self):
-        # XXX for backward compatibility, we need this one here, move
-        # it in cloud_platform_exoscale in V11
-        return ['exoscale']
-
-    # XXX for backward compatibility, we need this one here, move
-    # it in cloud_platform_exoscale in V11
-    @api.model
-    def _config_by_server_env_for_exoscale(self):
-        configs = {
-            'prod': PlatformConfig(filestore=FilestoreKind.s3),
-            'integration': PlatformConfig(filestore=FilestoreKind.s3),
-            'test': PlatformConfig(filestore=FilestoreKind.db),
-            'dev': PlatformConfig(filestore=FilestoreKind.db),
-        }
-        return configs
+        return []
 
     @api.model
     def _config_by_server_env(self, platform_kind, environment):
@@ -64,12 +49,6 @@ class CloudPlatform(models.AbstractModel):
         )
         configs = configs_getter() if configs_getter else {}
         return configs.get(environment) or FilestoreKind.db
-
-    # Due to the addition of the ovh cloud platform
-    # This will be moved to cloud_platform_exoscale on v11
-    @api.model
-    def install_exoscale(self):
-        self.install('exoscale')
 
     @api.model
     def install(self, platform_kind):
