@@ -5,7 +5,7 @@
 
 {'name': 'Attachments on Swift storage',
  'summary': 'Store assets and attachments on a Swift compatible object store',
- 'version': '10.0.1.1.0',
+ 'version': '9.0.1.1.0',
  'author': 'Camptocamp,Odoo Community Association (OCA)',
  'license': 'AGPL-3',
  'category': 'Knowledge Management',

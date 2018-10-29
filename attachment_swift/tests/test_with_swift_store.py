@@ -2,7 +2,7 @@
 # Copyright 2017 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
-from odoo.addons.base.tests.test_ir_attachment import TestIrAttachment
+from openerp.addons.base.tests.test_ir_attachment import TestIrAttachment
 from ..swift_uri import SwiftUri
 from swiftclient.exceptions import ClientException
 

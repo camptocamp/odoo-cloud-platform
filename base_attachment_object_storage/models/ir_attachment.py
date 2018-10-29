@@ -9,7 +9,8 @@ import psycopg2
 import odoo
 
 from contextlib import closing, contextmanager
-from odoo import api, exceptions, models, _
+from openerp import api, exceptions, models, _
+from openerp import SUPERUSER_ID
 
 
 _logger = logging.getLogger(__name__)
@@ -40,10 +41,14 @@ class IrAttachment(models.Model):
     _local_fields = ('image_small', 'image_medium', 'web_icon_data')
 
     @api.cr
-    def _register_hook(self):
-        super(IrAttachment, self)._register_hook()
+    def _register_hook(self, cr):
+        super(IrAttachment, self)._register_hook(cr)
         # ignore if we are not using an object storage
-        if self._storage() not in self._get_stores():
+        # Use directly SUPERUSER_ID
+        # because the uid parameter is required
+        # in function _storage and
+        # the SUPERUSER_ID is used directly instead of use the uid parameter.
+        if self._storage(cr, SUPERUSER_ID) not in self._get_stores():
             return
         curframe = inspect.currentframe()
         calframe = inspect.getouterframes(curframe, 2)
