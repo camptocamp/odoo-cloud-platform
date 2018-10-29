@@ -8,7 +8,7 @@ import logging
 import os
 from ..swift_uri import SwiftUri
 
-from odoo import api, exceptions, models, _
+from openerp import api, exceptions, models, _
 
 _logger = logging.getLogger(__name__)
 

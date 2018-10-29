@@ -10,7 +10,7 @@
  'license': 'AGPL-3',
  'category': 'Extra Tools',
  'depends': [
-     'attachment_s3',
+     'base_attachment_object_storage',
      'session_redis',
      'monitoring_status',
      'logging_json',

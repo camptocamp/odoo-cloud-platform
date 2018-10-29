@@ -4,13 +4,15 @@
 
 import logging
 
-from odoo import api, models
+from openerp import api, models
 
 _logger = logging.getLogger(__name__)
 
 try:
-    from odoo.addons.cloud_platform.models.cloud_platform import FilestoreKind
-    from odoo.addons.cloud_platform.models.cloud_platform import PlatformConfig
+    from openerp.addons.cloud_platform.models.cloud_platform \
+        import FilestoreKind
+    from openerp.addons.cloud_platform.models.cloud_platform \
+        import PlatformConfig
 except ImportError:
     FilestoreKind = None
     PlatformConfig = None
