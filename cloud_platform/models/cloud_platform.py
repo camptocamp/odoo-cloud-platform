@@ -171,7 +171,7 @@ class CloudPlatform(models.AbstractModel):
                     "AWS_BUCKETNAME must not be empty for prod "
                     "and integration"
                 )
-            prod_bucket = bool(re.match(r'[a-z]+-odoo-prod', bucket_name))
+            prod_bucket = bool(re.match(r'[a-z0-9-_]+-odoo-prod', bucket_name))
             if environment_name == 'prod':
                 assert prod_bucket, (
                     "AWS_BUCKETNAME should match '<client>-odoo-prod', "
