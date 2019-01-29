@@ -15,6 +15,7 @@ _logger = logging.getLogger(__name__)
 
 try:
     import boto
+    from boto.s3.connection import OrdinaryCallingFormat
     from boto.exception import S3ResponseError
 except ImportError:
     boto = None  # noqa
@@ -46,6 +47,8 @@ class IrAttachment(models.Model):
 
         """
         host = os.environ.get('AWS_HOST')
+        port = os.environ.get('AWS_PORT')
+        is_secure = os.environ.get('AWS_IS_SECURE', 'true').lower() == 'true'
         region_name = os.environ.get('AWS_REGION')
         access_key = os.environ.get('AWS_ACCESS_KEY_ID')
         secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
@@ -57,6 +60,14 @@ class IrAttachment(models.Model):
         }
         if host:
             params['host'] = host
+            params['calling_format'] = OrdinaryCallingFormat()
+
+        if port:
+            params['port'] = int(port)
+
+        if not is_secure:
+            params['is_secure'] = False
+
         if region_name:
             # needs specific method for region
             connect_s3 = boto.s3.connect_to_region
