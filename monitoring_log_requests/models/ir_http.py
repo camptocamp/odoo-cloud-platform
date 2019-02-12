@@ -16,26 +16,30 @@ _logger = logging.getLogger('monitoring.http.requests')
 class IrHttp(models.AbstractModel):
     _inherit = 'ir.http'
 
-    def _dispatch(self):
+    @classmethod
+    def _dispatch(cls):
         begin = time.time()
-        response = super(IrHttp, self)._dispatch()
+        response = super(IrHttp, cls)._dispatch()
         end = time.time()
-        if (not self._monitoring_blacklist(http_request) and
-                self._monitoring_filter(http_request)):
-            info = self._monitoring_info(http_request, response, begin, end)
-            self._monitoring_log(info)
+        if (not cls._monitoring_blacklist(http_request) and
+                cls._monitoring_filter(http_request)):
+            info = cls._monitoring_info(http_request, response, begin, end)
+            cls._monitoring_log(info)
         return response
 
-    def _monitoring_blacklist(self, request):
+    @classmethod
+    def _monitoring_blacklist(cls, request):
         path_info = request.httprequest.environ.get('PATH_INFO')
         if path_info.startswith('/longpolling/'):
             return True
         return False
 
-    def _monitoring_filter(self, request):
+    @classmethod
+    def _monitoring_filter(cls, _):
         return True
 
-    def _monitoring_info(self, request, response, begin, end):
+    @classmethod
+    def _monitoring_info(cls, request, response, begin, end):
         path = request.httprequest.environ.get('PATH_INFO')
         info = {
             # timing
@@ -74,5 +78,6 @@ class IrHttp(models.AbstractModel):
             })
         return info
 
-    def _monitoring_log(self, info):
+    @classmethod
+    def _monitoring_log(cls, info):
         _logger.info(json.dumps(info))
