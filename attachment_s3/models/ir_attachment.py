@@ -8,7 +8,7 @@ import logging
 import os
 import xml.dom.minidom
 
-from odoo import _, api, exceptions, models
+from odoo import _, api, exceptions, models, tools
 from ..s3uri import S3Uri
 
 _logger = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ class IrAttachment(models.Model):
         region_name = os.environ.get('AWS_REGION')
         access_key = os.environ.get('AWS_ACCESS_KEY_ID')
         secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
-        bucket_name = name or os.environ.get('AWS_BUCKETNAME')
+        bucket_name = name or tools.config.get('ir_attachment.bucketname') or os.environ.get('AWS_BUCKETNAME')
 
         params = {
             'aws_access_key_id': access_key,

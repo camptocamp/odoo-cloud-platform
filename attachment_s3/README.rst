@@ -20,7 +20,7 @@ Configure accesses with environment variables:
 * ``AWS_REGION`` (required if using AWS services)
 * ``AWS_ACCESS_KEY_ID``
 * ``AWS_SECRET_ACCESS_KEY``
-* ``AWS_BUCKETNAME``
+* ``AWS_BUCKETNAME`` (or system parameter ``ir_attachment.bucketname``)
 
 Read-only mode:
 
