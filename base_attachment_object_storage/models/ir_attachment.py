@@ -42,8 +42,9 @@ class IrAttachment(models.Model):
     @api.cr
     def _register_hook(self):
         super(IrAttachment, self)._register_hook()
+        location = self.env.context.get('storage_location') or self._storage()
         # ignore if we are not using an object storage
-        if self._storage() not in self._get_stores():
+        if location not in self._get_stores():
             return
         curframe = inspect.currentframe()
         calframe = inspect.getouterframes(curframe, 2)
@@ -102,7 +103,7 @@ class IrAttachment(models.Model):
     def _inverse_datas(self):
         # override in order to store files that need fast access,
         # we keep them in the database instead of the object storage
-        location = self._storage()
+        location = self.env.context.get('storage_location') or self._storage()
         for attach in self:
             if location in self._get_stores() and attach._save_in_db_anyway():
                 # compute the fields that depend on datas
@@ -152,7 +153,8 @@ class IrAttachment(models.Model):
 
     @api.model
     def _file_write(self, value, checksum):
-        if self._storage() in self._get_stores():
+        location = self.env.context.get('storage_location') or self._storage()
+        if location in self._get_stores():
             bin_data = base64.b64decode(value)
             key = self._compute_checksum(bin_data)
             filename = self._store_file_write(key, bin_data)
@@ -233,15 +235,15 @@ class IrAttachment(models.Model):
         if not self.env['res.users'].browse(self.env.uid)._is_admin():
             raise exceptions.AccessError(
                 _('Only administrators can execute this action.'))
-        storage = self._storage()
-        if storage not in self._get_stores():
+        location = self.env.context.get('storage_location') or self._storage()
+        if location not in self._get_stores():
             return super(IrAttachment, self).force_storage()
         self._force_storage_to_object_storage()
 
     @api.model
     def _force_storage_to_object_storage(self, new_cr=False):
         _logger.info('migrating files to the object storage')
-        storage = self._storage()
+        storage = self.env.context.get('storage_location') or self._storage()
         # The weird "res_field = False OR res_field != False" domain
         # is required! It's because of an override of _search in ir.attachment
         # which adds ('res_field', '=', False) when the domain does not

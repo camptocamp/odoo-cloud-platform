@@ -124,7 +124,8 @@ class IrAttachment(models.Model):
 
     @api.model
     def _store_file_write(self, key, bin_data):
-        if self._storage() == 's3':
+        location = self.env.context.get('storage_location') or self._storage()
+        if location == 's3':
             bucket = self._get_s3_bucket()
             filekey = bucket.get_key(key) or bucket.new_key(key)
             filename = 's3://%s/%s' % (bucket.name, key)
