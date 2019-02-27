@@ -5,7 +5,7 @@
 import base64
 import logging
 import os
-import xml.dom.minidom
+import io
 
 from odoo import _, api, exceptions, models
 from ..s3uri import S3Uri
@@ -13,12 +13,13 @@ from ..s3uri import S3Uri
 _logger = logging.getLogger(__name__)
 
 try:
-    import boto
-    from boto.exception import S3ResponseError
+    import boto3
+    from botocore.exceptions import ClientError, EndpointConnectionError
 except ImportError:
-    boto = None  # noqa
-    S3ResponseError = None  # noqa
-    _logger.debug("Cannot 'import boto'.")
+    boto3 = None  # noqa
+    ClientError = None  # noqa
+    EndpointConnectionError = None  # noqa
+    _logger.debug("Cannot 'import boto3'.")
 
 
 class IrAttachment(models.Model):
@@ -55,13 +56,9 @@ class IrAttachment(models.Model):
             'aws_secret_access_key': secret_key,
         }
         if host:
-            params['host'] = host
+            params['endpoint_url'] = host
         if region_name:
-            # needs specific method for region
-            connect_s3 = boto.s3.connect_to_region
             params['region_name'] = region_name
-        else:
-            connect_s3 = boto.connect_s3
         if not (access_key and secret_key and bucket_name):
             msg = _('If you want to read from the %s S3 bucket, the following '
                     'environment variables must be set:\n'
@@ -75,29 +72,33 @@ class IrAttachment(models.Model):
                     ) % (bucket_name, bucket_name)
 
             raise exceptions.UserError(msg)
-
+        # try:
+        s3 = boto3.resource('s3', **params)
+        bucket = s3.Bucket(bucket_name)
+        exists = True
         try:
-            conn = connect_s3(**params)
-
-        except S3ResponseError as error:
+            s3.meta.client.head_bucket(Bucket=bucket_name)
+        except ClientError as e:
+            # If a client error is thrown, then check that it was a 404 error.
+            # If it was a 404 error, then the bucket does not exist.
+            error_code = e.response['Error']['Code']
+            if error_code == '404':
+                exists = False
+        except EndpointConnectionError as error:
             # log verbose error from s3, return short message for user
             _logger.exception('Error during connection on S3')
-            raise exceptions.UserError(self._parse_s3_error(error))
+            raise exceptions.UserError(str(error))
 
-        bucket = conn.lookup(bucket_name)
-        if not bucket:
-            bucket = conn.create_bucket(bucket_name)
+        if not exists:
+            if not region_name:
+                bucket = s3.create_bucket(Bucket=bucket_name)
+            else:
+                bucket = s3.create_bucket(
+                    Bucket=bucket_name,
+                    CreateBucketConfiguration={
+                        'LocationConstraint': region_name
+                    })
         return bucket
-
-    @staticmethod
-    def _parse_s3_error(s3error):
-        msg = s3error.reason
-        # S3 error message is a XML message...
-        doc = xml.dom.minidom.parseString(s3error.body)
-        msg_node = doc.getElementsByTagName('Message')
-        if msg_node:
-            msg = '%s: %s' % (msg, msg_node[0].childNodes[0].data)
-        return msg
 
     @api.model
     def _store_file_read(self, fname, bin_size=False):
@@ -110,10 +111,16 @@ class IrAttachment(models.Model):
                     "error reading attachment '%s' from object storage", fname
                 )
                 return ''
-            filekey = bucket.get_key(s3uri.item())
-            if filekey:
-                read = base64.b64encode(filekey.get_contents_as_string())
-            else:
+            try:
+                key = s3uri.item()
+                bucket.meta.client.head_object(
+                    Bucket=bucket.name,  Key=key
+                )
+                res = io.BytesIO()
+                bucket.download_fileobj(key, res)
+                res.seek(0)
+                read = base64.b64encode(res.read())
+            except ClientError:
                 read = ''
                 _logger.info(
                     "attachment '%s' missing on object storage", fname
@@ -126,19 +133,21 @@ class IrAttachment(models.Model):
     def _store_file_write(self, key, bin_data):
         if self._storage() == 's3':
             bucket = self._get_s3_bucket()
-            filekey = bucket.get_key(key) or bucket.new_key(key)
+            obj = bucket.Object(key=key)
+            file = io.BytesIO()
+            file.write(bin_data)
+            file.seek(0)
             filename = 's3://%s/%s' % (bucket.name, key)
             try:
-                filekey.set_contents_from_string(bin_data)
-            except S3ResponseError as error:
+                obj.upload_fileobj(file)
+            except ClientError as error:
                 # log verbose error from s3, return short message for user
-                    _logger.exception(
-                        'Error during storage of the file %s' % filename
-                    )
-                    raise exceptions.UserError(
-                        _('The file could not be stored: %s') %
-                        (self._parse_s3_error(error),)
-                    )
+                _logger.exception(
+                    'Error during storage of the file %s' % filename
+                )
+                raise exceptions.UserError(
+                    _('The file could not be stored: %s') % str(error)
+                )
         else:
             _super = super(IrAttachment, self)
             filename = _super._store_file_write(key, bin_data)
@@ -154,18 +163,20 @@ class IrAttachment(models.Model):
             # otherwise, we might delete files used on a different environment
             if bucket_name == os.environ.get('AWS_BUCKETNAME'):
                 bucket = self._get_s3_bucket()
-                filekey = bucket.get_key(item_name)
-                if filekey:
-                    try:
-                        filekey.delete()
-                        _logger.info(
-                            'file %s deleted on the object storage' % (fname,)
-                        )
-                    except S3ResponseError:
-                        # log verbose error from s3, return short message for
-                        # user
-                        _logger.exception(
-                            'Error during deletion of the file %s' % fname
-                        )
+                obj = bucket.Object(key=item_name)
+                try:
+                    bucket.meta.client.head_object(
+                        Bucket=bucket.name, Key=item_name
+                    )
+                    obj.delete()
+                    _logger.info(
+                        'file %s deleted on the object storage' % (fname,)
+                    )
+                except ClientError:
+                    # log verbose error from s3, return short message for
+                    # user
+                    _logger.exception(
+                        'Error during deletion of the file %s' % fname
+                    )
         else:
             super(IrAttachment, self)._store_file_delete(fname)
