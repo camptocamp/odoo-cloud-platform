@@ -156,7 +156,9 @@ class IrAttachment(models.Model):
         location = self.env.context.get('storage_location') or self._storage()
         if location in self._get_stores():
             bin_data = base64.b64decode(value)
-            key = self._compute_checksum(bin_data)
+            key = self.env.context.get('force_storage_key')
+            if not key:
+                key = self._compute_checksum(bin_data)
             filename = self._store_file_write(key, bin_data)
         else:
             filename = super(IrAttachment, self)._file_write(value, checksum)
