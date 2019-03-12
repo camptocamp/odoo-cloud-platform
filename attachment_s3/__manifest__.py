@@ -10,7 +10,7 @@
  'category': 'Knowledge Management',
  'depends': ['base', 'base_attachment_object_storage'],
  'external_dependencies': {
-     'python': ['boto'],
+     'python': ['boto3'],
  },
  'website': 'https://www.camptocamp.com',
  'data': [],
