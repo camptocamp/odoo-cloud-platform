@@ -27,7 +27,7 @@ class TestFileUrlFields(TransactionCase):
         with open(file_path, 'rb') as f:
             self.assertEqual(base64.decodebytes(partner.url_file), f.read())
 
-        with open(image_path, 'rb') as image:
+        with open(image_path, 'rb') as i:
             self.assertEqual(base64.decodebytes(partner.url_image), i.read())
 
         partner2 = self.env.ref('base.partner_admin')
