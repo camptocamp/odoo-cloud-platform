@@ -58,9 +58,7 @@ class FileURL(fields.Binary):
                     fname = record[self.filename]
                     vals['datas_fname'] = fname
                     if fname and self.storage_path:
-                        storage_key = self._build_storage_key(
-                            record[self.filename]
-                        )
+                        storage_key = self._build_storage_key(fname)
                 if not fname:
                     storage_key = False
                 env['ir.attachment'].sudo().with_context(
@@ -75,8 +73,7 @@ class FileURL(fields.Binary):
             if self.filename:
                 fname = record[self.filename]
                 if fname and self.storage_path:
-                    storage_key = self._build_storage_key(
-                        record[self.filename])
+                    storage_key = self._build_storage_key(fname)
             super().write(
                 records.with_context(
                     storage_location=self.storage_location,
