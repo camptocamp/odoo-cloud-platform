@@ -1,18 +1,18 @@
 Base FileURL Field
 ==================
 
-This module adds a new field type FileURL to odoo.
+This module adds a new field type FileURL to Odoo.
 FileURL is an extension of field type Binary, with the aim to store its
-value on any kind external storage.
+value on any kind of external storage.
 It's been built with the focus on Amazon S3 but could be used with
-other storage solution as long as it extends the functionaly of
+other storage solution as long as it extends the functionality of
 base_attachment_object_storage.
 
 Usage
 -----
 
 FileURL fields is intended to store Binary data on an external storage
- with the possibility to be accessed outside of odoo.
+ with the possibility to be accessed outside of Odoo.
 
 :param storage_location: Required external storage that must be
  activated on the system (cf base_attachment_storage)

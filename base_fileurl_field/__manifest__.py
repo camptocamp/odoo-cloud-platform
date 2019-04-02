@@ -2,7 +2,7 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl)
 {
     "name": "Base FileURL Field",
-    "summary": "Implements of FileURL type fields",
+    "summary": "Implementation of FileURL type fields",
     "version": "12.0.1.0.0",
     "category": "Technical Settings",
     'author': 'Camptocamp, Odoo Community Association (OCA)',
