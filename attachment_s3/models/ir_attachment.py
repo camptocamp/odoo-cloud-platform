@@ -6,6 +6,7 @@ import base64
 import logging
 import os
 import io
+from urllib.parse import urlsplit
 
 from odoo import _, api, exceptions, models
 from ..s3uri import S3Uri
@@ -46,6 +47,11 @@ class IrAttachment(models.Model):
 
         """
         host = os.environ.get('AWS_HOST')
+
+        # Ensure host is prefixed with a scheme (use https as default)
+        if not urlsplit(host).scheme:
+            host = 'https://%s' % host
+
         region_name = os.environ.get('AWS_REGION')
         access_key = os.environ.get('AWS_ACCESS_KEY_ID')
         secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
