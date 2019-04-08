@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_partner_form_inherit" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page name="fileurl_test" string="FileURL Test fields">
+                    <group string="Default widget">
+                        <field name="url_file" filename="url_file_fname" />
+                        <field name="url_file_fname" invisible="1"/>
+                    </group>
+                    <group string="Image widget">
+                        <field name="url_image" widget="image" filename="url_image_fname" />
+                        <field name="url_image_fname" invisible="1"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
