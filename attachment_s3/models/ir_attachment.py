@@ -49,7 +49,7 @@ class IrAttachment(models.Model):
         host = os.environ.get('AWS_HOST')
 
         # Ensure host is prefixed with a scheme (use https as default)
-        if not urlsplit(host).scheme:
+        if host and not urlsplit(host).scheme:
             host = 'https://%s' % host
 
         region_name = os.environ.get('AWS_REGION')
