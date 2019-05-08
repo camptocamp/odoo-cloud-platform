@@ -1,1 +1,2 @@
+boto==2.42.0
 python-json-logger==0.1.5
