@@ -13,7 +13,6 @@ addons:
       - python-lxml # because pip installation is slow
       - python-simplejson
       - python-serial
-      - python-yaml
 
 env:
   matrix:

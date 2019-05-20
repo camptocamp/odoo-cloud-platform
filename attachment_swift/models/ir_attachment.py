@@ -13,11 +13,62 @@ _logger = logging.getLogger(__name__)
 
 try:
     import swiftclient
+    import keystoneauth1
+    import keystoneauth1.identity
+    import keystoneauth1.session
     from swiftclient.exceptions import ClientException
 except ImportError:
     swiftclient = None
     ClientException = None
     _logger.debug("Cannot 'import swiftclient'.")
+
+
+SWIFT_TIMEOUT = 15
+
+
+class SwiftSessionStore(object):
+    """Keep in memory the current Swift Auth session
+
+    The auth endpoint has a rate limit on swift, if every operation
+    on the filestore authenticate, the limit is exhausted and
+    operations rejected with an HTTP error code 429.
+
+    Swift connections can reuse the same session by asking a session
+    matching their connection parameters with ``get_session``.
+
+    The keystoneauth1's session automatically creates a new token
+    if the previous one is expired.
+
+    The best documentation I found about sessions is
+    https://docs.openstack.org/keystoneauth/latest/using-sessions.html
+    """
+
+    def __init__(self):
+        self._sessions = {}
+
+    def _get_key(self, auth_url, username, password, tenant_name):
+        return (auth_url, username, password, tenant_name)
+
+    def get_session(self, auth_url=None, username=None, password=None,
+                    tenant_name=None):
+        key = self._get_key(auth_url, username, password, tenant_name)
+        session = self._sessions.get(key)
+        if not session:
+            auth = keystoneauth1.identity.v2.Password(
+                username=username,
+                password=password,
+                tenant_name=tenant_name,
+                auth_url=auth_url,
+            )
+            session = keystoneauth1.session.Session(
+                auth=auth,
+                timeout=SWIFT_TIMEOUT,
+            )
+            self._sessions[key] = session
+        return session
+
+
+swift_session_store = SwiftSessionStore()
 
 
 class IrAttachment(models.Model):
@@ -44,15 +95,18 @@ class IrAttachment(models.Model):
                 "Problem connecting to Swift store, are the env variables "
                 "(SWIFT_AUTH_URL, SWIFT_ACCOUNT, SWIFT_PASSWORD, "
                 "SWIFT_TENANT_NAME) properly set?"
-                ))
+            ))
         try:
-            conn = swiftclient.client.Connection(authurl=host,
-                                                 user=account,
-                                                 key=password,
-                                                 tenant_name=tenant_name,
-                                                 auth_version='2.0',
-                                                 os_options=os_options,
-                                                 )
+            session = swift_session_store.get_session(
+                username=account,
+                password=password,
+                tenant_name=tenant_name,
+                auth_url=host,
+            )
+            conn = swiftclient.client.Connection(
+                session=session,
+                os_options=os_options,
+            )
         except ClientException:
             _logger.exception('Error connecting to Swift object store')
             raise exceptions.UserError(_('Error on Swift connection'))

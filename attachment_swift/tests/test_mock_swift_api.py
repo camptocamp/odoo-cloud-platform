@@ -2,11 +2,16 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
 import base64
+import mock
 import os
 
 from mock import patch
+
+import keystoneauth1
+
 from odoo.addons.base.tests.test_ir_attachment import TestIrAttachment
-from ..swift_uri import SwiftUri
+from odoo.addons.attachment_swift.models.ir_attachment import SwiftSessionStore
+from odoo.addons.attachment_swift.swift_uri import SwiftUri
 
 
 class TestAttachmentSwift(TestIrAttachment):
@@ -15,6 +20,34 @@ class TestAttachmentSwift(TestIrAttachment):
         super(TestAttachmentSwift, self).setUp()
         self.env['ir.config_parameter'].set_param('ir_attachment.location',
                                                   'swift')
+
+    def test_session_store_get_session(self):
+        auth_url = 'auth_url'
+        username = 'username'
+        password = 'password'
+        tenant_name = 'tenant_name'
+        store = SwiftSessionStore()
+        session = store.get_session(
+            auth_url=auth_url,
+            username=username,
+            password=password,
+            tenant_name=tenant_name,
+        )
+        self.assertEqual(session.auth.auth_url, auth_url)
+        self.assertEqual(session.auth.username, username)
+        self.assertEqual(session.auth.password, password)
+        self.assertEqual(session.auth.tenant_name, tenant_name)
+
+        # get the same session on a second call
+        self.assertEqual(
+            store.get_session(
+                auth_url=auth_url,
+                username=username,
+                password=password,
+                tenant_name=tenant_name,
+            ),
+            session
+        )
 
     @patch('swiftclient.client')
     def test_connection(self, mock_swift_client):
@@ -27,13 +60,17 @@ class TestAttachmentSwift(TestIrAttachment):
         attachment = self.Attachment
         attachment._get_swift_connection()
         mock_swift_client.Connection.assert_called_once_with(
-            authurl=os.environ.get('SWIFT_AUTH_URL'),
-            user=os.environ.get('SWIFT_ACCOUNT'),
-            key=os.environ.get('SWIFT_PASSWORD'),
-            tenant_name=os.environ.get('SWIFT_TENANT_NAME'),
-            auth_version='2.0',
+            session=mock.ANY,
             os_options={'region_name': os.environ.get('SWIFT_REGION_NAME')},
         )
+        __, kwargs = mock_swift_client.Connection.call_args
+        session = kwargs['session']
+        self.assertTrue(isinstance(session, keystoneauth1.session.Session))
+        self.assertEqual(session.auth.auth_url, os.environ['SWIFT_AUTH_URL'])
+        self.assertEqual(session.auth.username, os.environ['SWIFT_ACCOUNT'])
+        self.assertEqual(session.auth.password, os.environ['SWIFT_PASSWORD'])
+        self.assertEqual(session.auth.tenant_name,
+                         os.environ['SWIFT_TENANT_NAME'])
 
     def test_store_file_on_swift(self):
         """
