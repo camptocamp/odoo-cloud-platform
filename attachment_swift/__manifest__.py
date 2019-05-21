@@ -13,6 +13,7 @@
  'external_dependencies': {
      'python': ['swiftclient',
                 'keystoneclient',
+                'keystoneauth1',
                 ],
  },
  'website': 'https://www.camptocamp.com',
