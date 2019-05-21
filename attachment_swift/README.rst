@@ -16,6 +16,7 @@ Configure accesses with environment variables:
 * ``SWIFT_TENANT_NAME``
 * ``SWIFT_ACCOUNT``
 * ``SWIFT_PASSWORD``
+* ``SWIFT_REGION_NAME``         : optional region
 * ``SWIFT_WRITE_CONTAINER``     : Name of the container to use in the store (created if not existing)
 
 Read-only mode:
@@ -44,6 +45,7 @@ The python-swiftclient can be used from the command line, useful to test:
     export OS_USERNAME={SWIFT_ACCOUNT}
     export OS_PASSWORD={SWIFT_PASSWORD}
     export OS_TENANT_NAME={SWIFT_TENANT_NAME}
+    export SWIFT_REGION_NAME={SWIFT_REGION_NAME}
     export OS_AUTH_URL=https://auth.cloud.ovh.net/v2.0
     swift stat
 
