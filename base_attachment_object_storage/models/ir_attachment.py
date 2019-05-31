@@ -9,7 +9,7 @@ import psycopg2
 import odoo
 
 from contextlib import closing, contextmanager
-from openerp import api, exceptions, models, _
+from openerp import api, exceptions, fields, models, _
 from openerp import SUPERUSER_ID
 
 
@@ -39,6 +39,19 @@ class IrAttachment(models.Model):
     _inherit = 'ir.attachment'
 
     _local_fields = ('image_small', 'image_medium', 'web_icon_data')
+
+    datas = fields.Binary(
+        compute='_compute_datas',
+        inverse='_inverse_datas',
+        string='File Content',
+        nodrop=True,
+    )
+
+    @api.depends('store_fname', 'db_datas')
+    def _compute_datas(self):
+        values = self._data_get('datas', None)
+        for attach in self:
+            attach.datas = values.get(attach.id)
 
     @api.cr
     def _register_hook(self, cr):
@@ -128,7 +141,7 @@ class IrAttachment(models.Model):
                 if fname:
                     self._file_delete(fname)
                 continue
-            super(IrAttachment, attach)._inverse_datas()
+            attach._data_set('datas', attach.datas, None)
 
     @api.model
     def _file_read(self, fname, bin_size=False):
