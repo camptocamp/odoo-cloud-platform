@@ -316,7 +316,7 @@ class IrAttachment(models.Model):
                 # write them back in the DB (the logic for location to write is
                 # in the 'datas' inverse computed field)
                 attachment.write({'datas': attachment.datas})
-                # as the file will potentially be dropped on the bucket,
+                # as the file will potentially be deleted from the bucket,
                 # we should commit the changes here
                 new_env.cr.commit()
                 if current % 100 == 0 or total - current == 0:
