@@ -90,7 +90,7 @@ class IrAttachment(models.Model):
                 if fname:
                     self._file_delete(fname)
                 continue
-            self._data_set('datas', attach.datas, None)
+            attach._data_set('datas', attach.datas, None)
 
     def _register_hook(self, cr):
         super(IrAttachment, self)._register_hook(cr)
