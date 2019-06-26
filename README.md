@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/camptocamp/odoo-cloud-platform.svg?token=Lpp9PcS5on9AGbp76WKB&branch=8.0)](https://travis-ci.com/camptocamp/odoo-cloud-platform)
+[![Build Status](https://travis-ci.com/camptocamp/odoo-cloud-platform.svg?token=Lpp9PcS5on9AGbp76WKB&branch=7.0)](https://travis-ci.com/camptocamp/odoo-cloud-platform)
 
 # Odoo Cloud Addons
 
