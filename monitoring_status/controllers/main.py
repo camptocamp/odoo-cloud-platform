@@ -2,12 +2,28 @@
 # Copyright 2016 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
+import logging
 import json
 
 import werkzeug
 
 from openerp.addons.web import http as oeweb
 from openerp.addons.web.controllers.main import db_monodb_redirect
+
+
+class HealthCheckFilter(logging.Filter):
+
+    def __init__(self, path, name=''):
+        super().__init__(name)
+        self.path = path
+
+    def filter(self, record):
+        return self.path not in record.getMessage()
+
+
+logging.getLogger('werkzeug').addFilter(
+    HealthCheckFilter('"GET /monitoring/status HTTP/1.1"')
+)
 
 
 class Monitoring(oeweb.Controller):
