@@ -94,7 +94,7 @@ class CloudPlatform(models.AbstractModel):
                     "SWIFT_WRITE_CONTAINER must not be empty for prod "
                     "and integration"
                 )
-            prod_container = bool(re.match(r'[a-z]+-odoo-prod',
+            prod_container = bool(re.match(r'[a-z-]+-odoo-prod',
                                            container_name))
             if environment_name == 'prod':
                 assert prod_container, (
@@ -150,7 +150,7 @@ class CloudPlatform(models.AbstractModel):
                     "AWS_BUCKETNAME must not be empty for prod "
                     "and integration"
                 )
-            prod_bucket = bool(re.match(r'[a-z0-9]+-odoo-prod', bucket_name))
+            prod_bucket = bool(re.match(r'[a-z-0-9]+-odoo-prod', bucket_name))
             if environment_name == 'prod':
                 assert prod_bucket, (
                     "AWS_BUCKETNAME should match '<client>-odoo-prod', "
@@ -190,7 +190,7 @@ class CloudPlatform(models.AbstractModel):
             )
 
             prefix = os.environ['ODOO_SESSION_REDIS_PREFIX']
-            assert re.match(r'[a-z0-9]+-odoo-[a-z0-9]+[0-9]*', prefix), (
+            assert re.match(r'[a-z-0-9]+-odoo-[a-z0-9]+[0-9]*', prefix), (
                 "ODOO_SESSION_REDIS_PREFIX must match '<client>-odoo-<env>'"
                 ", we got: '%s'" % (prefix,)
             )
