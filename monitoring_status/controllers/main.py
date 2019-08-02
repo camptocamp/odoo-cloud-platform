@@ -21,7 +21,7 @@ class HealthCheckFilter(logging.Filter):
 
 
 logging.getLogger('werkzeug').addFilter(
-    HealthCheckFilter('"GET /monitoring/status HTTP"')
+    HealthCheckFilter('GET /monitoring/status HTTP')
 )
 
 
