@@ -94,7 +94,7 @@ class CloudPlatform(models.AbstractModel):
                     "SWIFT_WRITE_CONTAINER must not be empty for prod "
                     "and integration"
                 )
-            prod_container = bool(re.match(r'[a-z-]+-odoo-prod',
+            prod_container = bool(re.match(r'[a-z0-9-]+-odoo-prod',
                                            container_name))
             if environment_name == 'prod':
                 assert prod_container, (
