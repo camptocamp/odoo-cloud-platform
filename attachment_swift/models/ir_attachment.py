@@ -1,4 +1,4 @@
-# Copyright 2017-2018 Camptocamp SA
+# Copyright 2017-2019 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
 
@@ -76,7 +76,7 @@ class IrAttachment(models.Model):
 
     def _get_stores(self):
         l = ['swift']
-        l += super(IrAttachment, self)._get_stores()
+        l += super()._get_stores()
         return l
 
     @api.model
@@ -133,7 +133,7 @@ class IrAttachment(models.Model):
                     'Error reading object from Swift object store')
             return read
         else:
-            return super(IrAttachment, self)._store_file_read(fname, bin_size)
+            return super()._store_file_read(fname, bin_size)
 
     def _store_file_write(self, key, bin_data):
         if self._storage() == 'swift':
@@ -147,7 +147,7 @@ class IrAttachment(models.Model):
                 _logger.exception('Error writing to Swift object store')
                 raise exceptions.UserError(_('Error writing to Swift'))
         else:
-            _super = super(IrAttachment, self)
+            _super = super()
             filename = _super._store_file_write(key, bin_data)
         return filename
 
@@ -168,4 +168,4 @@ class IrAttachment(models.Model):
                     # we ignore the error, file will stay on the object
                     # storage but won't disrupt the process
         else:
-            super(IrAttachment, self)._file_delete_from_store(fname)
+            super()._file_delete_from_store(fname)
