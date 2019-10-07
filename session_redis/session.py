@@ -1,4 +1,4 @@
-# Copyright 2016-2018 Camptocamp SA
+# Copyright 2016-2019 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
 import json
@@ -18,7 +18,7 @@ class RedisSessionStore(SessionStore):
 
     def __init__(self, redis, session_class=None,
                  prefix='', expiration=None):
-        super(RedisSessionStore, self).__init__(session_class=session_class)
+        super().__init__(session_class=session_class)
         self.redis = redis
         if expiration is None:
             self.expiration = DEFAULT_SESSION_TIMEOUT
