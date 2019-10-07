@@ -3,7 +3,7 @@
 {
     "name": "Base FileURL Field",
     "summary": "Implementation of FileURL type fields",
-    "version": "12.0.1.0.0",
+    "version": "13.0.1.0.0",
     "category": "Technical Settings",
     'author': 'Camptocamp, Odoo Community Association (OCA)',
     'license': 'AGPL-3',
@@ -11,5 +11,5 @@
         "base_attachment_object_storage",
     ],
     "auto_install": False,
-    "installable": False,
+    "installable": True,
 }
