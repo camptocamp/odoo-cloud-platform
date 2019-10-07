@@ -16,5 +16,5 @@
  'external_dependencies': {
      'python': ['statsd'],
  },
- 'installable': True,
+ 'installable': False,
  }
