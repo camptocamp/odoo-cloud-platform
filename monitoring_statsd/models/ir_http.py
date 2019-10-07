@@ -1,4 +1,4 @@
-# Copyright 2016-2018 Camptocamp SA
+# Copyright 2016-2019 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
 from odoo import models
@@ -13,11 +13,11 @@ class IrHttp(models.AbstractModel):
     @classmethod
     def _dispatch(cls):
         if not statsd:
-            return super(IrHttp, cls)._dispatch()
+            return super()._dispatch()
 
         path_info = request.httprequest.environ.get('PATH_INFO')
         if path_info.startswith('/longpolling/'):
-            return super(IrHttp, cls)._dispatch()
+            return super()._dispatch()
 
         parts = ['http', ]
         if path_info.startswith('/web/dataset/call_button'):
@@ -38,4 +38,4 @@ class IrHttp(models.AbstractModel):
                       ]
 
         with statsd.timer('.'.join(parts)):
-            return super(IrHttp, cls)._dispatch()
+            return super()._dispatch()
