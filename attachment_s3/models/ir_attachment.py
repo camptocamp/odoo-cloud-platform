@@ -51,10 +51,11 @@ class IrAttachment(models.Model):
         secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
         bucket_name = name or os.environ.get('AWS_BUCKETNAME')
 
-        params = {
-            'aws_access_key_id': access_key,
-            'aws_secret_access_key': secret_key,
-        }
+        if access_key and secret_key:
+            params = {
+                'aws_access_key_id': access_key,
+                'aws_secret_access_key': secret_key,
+            }
         if host:
             params['host'] = host
         if region_name:
@@ -63,19 +64,6 @@ class IrAttachment(models.Model):
             params['region_name'] = region_name
         else:
             connect_s3 = boto.connect_s3
-        if not (access_key and secret_key and bucket_name):
-            msg = _('If you want to read from the %s S3 bucket, the following '
-                    'environment variables must be set:\n'
-                    '* AWS_ACCESS_KEY_ID\n'
-                    '* AWS_SECRET_ACCESS_KEY\n'
-                    'If you want to write in the %s S3 bucket, this variable '
-                    'must be set as well:\n'
-                    '* AWS_BUCKETNAME\n'
-                    'Optionally, the S3 host can be changed with:\n'
-                    '* AWS_HOST\n'
-                    ) % (bucket_name, bucket_name)
-
-            raise exceptions.UserError(msg)
 
         try:
             conn = connect_s3(**params)
