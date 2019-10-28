@@ -1,4 +1,4 @@
-# Copyright 2016-2018 Camptocamp SA
+# Copyright 2016-2019 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
 import logging
@@ -217,7 +217,6 @@ class CloudPlatform(models.AbstractModel):
             self._check_swift(environment_name)
         self._check_redis(environment_name)
 
-    @api.model_cr
     def _register_hook(self):
         super(CloudPlatform, self)._register_hook()
         self.sudo().check()
