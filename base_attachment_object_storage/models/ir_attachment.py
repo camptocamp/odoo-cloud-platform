@@ -1,4 +1,4 @@
-# Copyright 2017-2018 Camptocamp SA
+# Copyright 2017-2019 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
 import base64
@@ -39,9 +39,8 @@ class IrAttachment(models.Model):
 
     _local_fields = ('image_small', 'image_medium', 'web_icon_data')
 
-    @api.cr
     def _register_hook(self):
-        super(IrAttachment, self)._register_hook()
+        super()._register_hook()
         location = self.env.context.get('storage_location') or self._storage()
         # ignore if we are not using an object storage
         if location not in self._get_stores():
@@ -67,7 +66,6 @@ class IrAttachment(models.Model):
         if update_module:
             self.env['ir.attachment'].sudo()._force_storage_to_object_storage()
 
-    @api.multi
     def _save_in_db_anyway(self):
         """ Return whether an attachment must be stored in db
 
@@ -131,8 +129,7 @@ class IrAttachment(models.Model):
         if self._is_file_from_a_store(fname):
             return self._store_file_read(fname, bin_size=bin_size)
         else:
-            _super = super(IrAttachment, self)
-            return _super._file_read(fname, bin_size=bin_size)
+            return super()._file_read(fname, bin_size=bin_size)
 
     def _store_file_read(self, fname, bin_size=False):
         storage = fname.partition('://')[0]
@@ -161,7 +158,7 @@ class IrAttachment(models.Model):
                 key = self._compute_checksum(bin_data)
             filename = self._store_file_write(key, bin_data)
         else:
-            filename = super(IrAttachment, self)._file_write(value, checksum)
+            filename = super()._file_write(value, checksum)
         return filename
 
     @api.model
@@ -176,7 +173,7 @@ class IrAttachment(models.Model):
             if not count:
                 self._store_file_delete(fname)
         else:
-            super(IrAttachment, self)._file_delete(fname)
+            super()._file_delete(fname)
 
     @api.model
     def _is_file_from_a_store(self, fname):
@@ -211,7 +208,6 @@ class IrAttachment(models.Model):
                 # make a copy
                 yield self.env()
 
-    @api.multi
     def _move_attachment_to_store(self):
         self.ensure_one()
         _logger.info('inspecting attachment %s (%d)', self.name, self.id)
@@ -239,7 +235,7 @@ class IrAttachment(models.Model):
                 _('Only administrators can execute this action.'))
         location = self.env.context.get('storage_location') or self._storage()
         if location not in self._get_stores():
-            return super(IrAttachment, self).force_storage()
+            return super().force_storage()
         self._force_storage_to_object_storage()
 
     @api.model
