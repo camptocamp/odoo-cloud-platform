@@ -1,4 +1,4 @@
-# Copyright 2016-2018 Camptocamp SA
+# Copyright 2016-2019 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
 
@@ -28,7 +28,7 @@ class IrAttachment(models.Model):
 
     def _get_stores(self):
         l = ['s3']
-        l += super(IrAttachment, self)._get_stores()
+        l += super()._get_stores()
         return l
 
     @api.model
@@ -133,7 +133,7 @@ class IrAttachment(models.Model):
                 )
             return read
         else:
-            return super(IrAttachment, self)._store_file_read(fname, bin_size)
+            return super()._store_file_read(fname, bin_size)
 
     @api.model
     def _store_file_write(self, key, bin_data):
@@ -156,7 +156,7 @@ class IrAttachment(models.Model):
                     _('The file could not be stored: %s') % str(error)
                 )
         else:
-            _super = super(IrAttachment, self)
+            _super = super()
             filename = _super._store_file_write(key, bin_data)
         return filename
 
@@ -186,4 +186,4 @@ class IrAttachment(models.Model):
                         'Error during deletion of the file %s' % fname
                     )
         else:
-            super(IrAttachment, self)._store_file_delete(fname)
+            super()._store_file_delete(fname)
