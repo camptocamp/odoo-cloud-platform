@@ -5,12 +5,9 @@
 import logging
 import json
 
-import psycopg2
-
 import werkzeug
 
 from openerp import http
-from openerp.http import request
 from openerp.addons.web.controllers.main import ensure_db
 
 
@@ -34,24 +31,10 @@ class Monitoring(http.Controller):
     @http.route('/monitoring/status', type='http', auth='none')
     def status(self):
         ensure_db()
-        http_status = 200
         # TODO: add 'sub-systems' status and infos:
         # queue job, cron, database, ...
         headers = {'Content-Type': 'application/json'}
         info = {'status': 1}
-        # check the database connection
-        try:
-            cr = request.env.cr
-            cr.execute(
-                'SELECT value '
-                'FROM ir_config_parameter '
-                'WHERE key=%s',
-                ('web.base.url',))
-            result = cr.fetchone()
-            info['web.base.url'] = result or ''
-        except psycopg2.OperationalError as exc:
-            info['database_error'] = str(exc)
-            http_status = 503
         session = http.request.session
         # We set a custom expiration of 1 second for this request, as we do a
         # lot of health checks, we don't want those anonymous sessions to be
@@ -61,6 +44,4 @@ class Monitoring(http.Controller):
         # Redis.
         if not session.uid:
             session.expiration = 1
-        return werkzeug.wrappers.Response(
-            json.dumps(info), status=http_status, headers=headers
-        )
+        return werkzeug.wrappers.Response(json.dumps(info), headers=headers)
