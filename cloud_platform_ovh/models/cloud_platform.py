@@ -1,4 +1,4 @@
-# Copyright 2017-2018 Camptocamp SA
+# Copyright 2017-2019 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
 import logging
@@ -21,7 +21,7 @@ class CloudPlatform(models.AbstractModel):
 
     @api.model
     def _platform_kinds(self):
-        kinds = super(CloudPlatform, self)._platform_kinds()
+        kinds = super()._platform_kinds()
         kinds.append('ovh')
         return kinds
 
