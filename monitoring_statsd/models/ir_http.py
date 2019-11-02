@@ -6,6 +6,7 @@ from openerp import models
 from openerp.http import request
 from datetime import datetime
 from ..statsd_client import statsd, customer, environment
+from ..sql_tracker import get_cursor_tracker
 
 
 class IrHttp(models.AbstractModel):
@@ -31,17 +32,25 @@ class IrHttp(models.AbstractModel):
             action = 'undefined'
 
         parts = [
-            'http',
             path_info.replace('.', '-'),
             customer,
             environment,
             request.params.get('model', 'undefined').replace('.', '_'),
             action
             ]
+
+        def build_name(prefix):
+            return '.'.join([prefix] + parts)
+
         with statsd.pipeline() as pipe:
             start = datetime.now()
             res = super(IrHttp, self)._dispatch()
             duration = datetime.now() - start
-            pipe.timing('.'.join(parts), duration)
+            pipe.timing(build_name('http'), duration)
             pipe.timing('request', duration)
+            tracker = get_cursor_tracker()
+            pipe.timing(build_name('http_sql'), tracker.duration)
+            pipe.timing('request_sql', tracker.duration)
+            pipe.incr(build_name('http_sql_total'), tracker.count)
+            pipe.incr("request_sql_total", tracker.count)
             return res
