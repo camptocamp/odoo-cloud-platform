@@ -4,7 +4,7 @@
 
 from openerp import models
 from openerp.http import request
-
+from datetime import datetime
 from ..statsd_client import statsd, customer, environment
 
 
@@ -18,24 +18,30 @@ class IrHttp(models.AbstractModel):
         path_info = request.httprequest.environ.get('PATH_INFO')
         if path_info.startswith('/longpolling/'):
             return super(IrHttp, self)._dispatch()
+        elif path_info.startswith('/web/dataset/call_kw'):
+            # remove useless duplicated information
+            path_info = '/web/dataset/call_kw'
 
-        parts = ['http', ]
-        if path_info.startswith('/web/dataset/call_button'):
-            parts += ['button',
-                      customer, environment,
-                      request.params['model'].replace('.', '_'),
-                      request.params['method'],
-                      ]
-        elif path_info.startswith('/web/dataset/exec_workflow'):
-            parts += ['workflow',
-                      customer, environment,
-                      request.params['model'].replace('.', '_'),
-                      request.params['signal'],
-                      ]
+        params = request.params
+        if params.get('method'):
+            action = params['method']
+        elif params.get('signal'):
+            action = params['signal']
         else:
-            parts += ['request',
-                      customer, environment,
-                      ]
+            action = 'undefined'
 
-        with statsd.timer('.'.join(parts)):
-            return super(IrHttp, self)._dispatch()
+        parts = [
+            'http',
+            path_info.replace('.', '-'),
+            customer,
+            environment,
+            request.params.get('model', 'undefined').replace('.', '_'),
+            action
+            ]
+        with statsd.pipeline() as pipe:
+            start = datetime.now()
+            res = super(IrHttp, self)._dispatch()
+            duration = datetime.now() - start
+            pipe.timing('.'.join(parts), duration)
+            pipe.timing('request', duration)
+            return res
