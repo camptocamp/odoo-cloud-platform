@@ -53,4 +53,9 @@ class IrHttp(models.AbstractModel):
             pipe.timing('request_sql', tracker.duration)
             pipe.incr(build_name('http_sql_total'), tracker.count)
             pipe.incr("request_sql_total", tracker.count)
+            if tracker.slow_active:
+                pipe.timing(build_name('http_sql_slow'), tracker.duration)
+                pipe.timing('request_sql_slow', tracker.duration)
+                pipe.incr(build_name('http_sql_slow_total'), tracker.count)
+                pipe.incr("request_sql_slow_total", tracker.count)
             return res
