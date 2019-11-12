@@ -31,6 +31,22 @@ class CursorTracker(object):
         self.count_slow += 1
         self.duration_slow += duration
 
+    def add_metric(self, pipe, prefix, name=None):
+
+        def metric_name(prefix, surfixe, name):
+            if surfixe:
+                prefix = "{}_{}".format(prefix, surfixe)
+            if name:
+                return "{}.{}".format(prefix, name)
+            else:
+                return prefix
+
+        pipe.timing(metric_name(prefix, None, name), self.duration)
+        pipe.incr(metric_name(prefix, 'total', name), self.count)
+        if self.slow_active:
+            pipe.timing(metric_name(prefix, "slow", name), self.duration)
+            pipe.incr(metric_name(prefix, "slow_total", name), self.count)
+
 
 def get_cursor_tracker():
     current_local = request

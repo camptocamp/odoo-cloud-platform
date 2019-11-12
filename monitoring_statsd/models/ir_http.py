@@ -8,6 +8,11 @@ from datetime import datetime
 from ..statsd_client import statsd, customer, environment
 from ..sql_tracker import get_cursor_tracker
 
+SKIP_PATH = [
+    "/connector/runjob",
+    "/longpolling/",
+    ]
+
 
 class IrHttp(models.AbstractModel):
     _inherit = 'ir.http'
@@ -17,9 +22,11 @@ class IrHttp(models.AbstractModel):
             return super(IrHttp, self)._dispatch()
 
         path_info = request.httprequest.environ.get('PATH_INFO')
-        if path_info.startswith('/longpolling/'):
-            return super(IrHttp, self)._dispatch()
-        elif path_info.startswith('/web/dataset/call_kw'):
+        for path in SKIP_PATH:
+            if path_info.startswith(path):
+                return super(IrHttp, self)._dispatch()
+
+        if path_info.startswith('/web/dataset/call_kw'):
             # remove useless duplicated information
             path_info = '/web/dataset/call_kw'
 
@@ -31,31 +38,21 @@ class IrHttp(models.AbstractModel):
         else:
             action = 'undefined'
 
-        parts = [
+        name = '.'.join([
             path_info.replace('.', '-'),
             customer,
             environment,
             request.params.get('model', 'undefined').replace('.', '_'),
             action
-            ]
-
-        def build_name(prefix):
-            return '.'.join([prefix] + parts)
+            ])
 
         with statsd.pipeline() as pipe:
             start = datetime.now()
             res = super(IrHttp, self)._dispatch()
             duration = datetime.now() - start
-            pipe.timing(build_name('http'), duration)
-            pipe.timing('request', duration)
+            pipe.timing('http', duration)
+            pipe.timing("http_detail.{}".format(name), duration)
             tracker = get_cursor_tracker()
-            pipe.timing(build_name('http_sql'), tracker.duration)
-            pipe.timing('request_sql', tracker.duration)
-            pipe.incr(build_name('http_sql_total'), tracker.count)
-            pipe.incr("request_sql_total", tracker.count)
-            if tracker.slow_active:
-                pipe.timing(build_name('http_sql_slow'), tracker.duration)
-                pipe.timing('request_sql_slow', tracker.duration)
-                pipe.incr(build_name('http_sql_slow_total'), tracker.count)
-                pipe.incr("request_sql_slow_total", tracker.count)
+            tracker.add_metric(pipe, 'http_sql')
+            tracker.add_metric(pipe, 'http_sql_detail', name)
             return res
