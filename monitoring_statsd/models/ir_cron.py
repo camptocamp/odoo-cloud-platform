@@ -28,6 +28,6 @@ class IrCron(models.Model):
 
             timer.stop()
             tracker = get_cursor_tracker()
-            tracker.add_metric(pipe, 'cron', name)
+            tracker.add_metric(pipe, 'cron_sql', name)
             pipe.gauge("cron_state.{}".format(name), 0)
         return res
