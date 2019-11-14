@@ -7,6 +7,7 @@ from openerp import _, api, fields, models
 from datetime import datetime
 from ..statsd_client import statsd, customer, environment
 from ..sql_tracker import get_cursor_tracker
+from unidecode import unidecode
 
 
 class IrCron(models.Model):
@@ -14,7 +15,7 @@ class IrCron(models.Model):
 
     def _process_job(self, job_cr, job, cron_cr):
         name = u".".join([
-            job['name'].replace('.', ' '),
+            unidecode(job['name'].replace('.', ' ')),
             customer,
             environment,
             ])
