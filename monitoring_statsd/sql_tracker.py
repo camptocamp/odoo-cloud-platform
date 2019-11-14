@@ -35,17 +35,17 @@ class CursorTracker(object):
 
         def metric_name(prefix, surfixe, name):
             if surfixe:
-                prefix = "{}_{}".format(prefix, surfixe)
+                prefix = u"{}_{}".format(prefix, surfixe)
             if name:
-                return "{}.{}".format(prefix, name)
+                return u"{}.{}".format(prefix, name)
             else:
                 return prefix
 
         pipe.timing(metric_name(prefix, None, name), self.duration)
-        pipe.incr(metric_name(prefix, 'total', name), self.count)
+        pipe.incr(metric_name(prefix, u"total", name), self.count)
         if self.slow_active:
-            pipe.timing(metric_name(prefix, "slow", name), self.duration)
-            pipe.incr(metric_name(prefix, "slow_total", name), self.count)
+            pipe.timing(metric_name(prefix, u"slow", name), self.duration)
+            pipe.incr(metric_name(prefix, u"slow_total", name), self.count)
 
 
 def get_cursor_tracker():

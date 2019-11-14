@@ -38,7 +38,7 @@ class IrHttp(models.AbstractModel):
         else:
             action = 'undefined'
 
-        name = '.'.join([
+        name = u".".join([
             path_info.replace('.', '-'),
             customer,
             environment,
@@ -50,9 +50,9 @@ class IrHttp(models.AbstractModel):
             start = datetime.now()
             res = super(IrHttp, self)._dispatch()
             duration = datetime.now() - start
-            pipe.timing('http', duration)
-            pipe.timing("http_detail.{}".format(name), duration)
+            pipe.timing(u"http", duration)
+            pipe.timing(u"http_detail.{}".format(name), duration)
             tracker = get_cursor_tracker()
-            tracker.add_metric(pipe, 'http_sql')
-            tracker.add_metric(pipe, 'http_sql_detail', name)
+            tracker.add_metric(pipe, u"http_sql")
+            tracker.add_metric(pipe, u"http_sql_detail", name)
             return res

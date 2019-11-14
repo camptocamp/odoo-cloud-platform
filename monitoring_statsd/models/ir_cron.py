@@ -13,21 +13,21 @@ class IrCron(models.Model):
     _inherit = 'ir.cron'
 
     def _process_job(self, job_cr, job, cron_cr):
-        name = ".".join([
+        name = u".".join([
             job['name'].replace('.', ' '),
             customer,
             environment,
             ])
 
         with statsd.pipeline() as pipe:
-            pipe.gauge("cron_state.{}".format(name), 1)
+            pipe.gauge(u"cron_state.{}".format(name), 1)
             pipe.send()
 
-            timer = pipe.timer("cron.{}".format(name)).start()
+            timer = pipe.timer(u"cron.{}".format(name)).start()
             res = super(IrCron, self)._process_job(job_cr, job, cron_cr)
 
             timer.stop()
             tracker = get_cursor_tracker()
-            tracker.add_metric(pipe, 'cron_sql', name)
-            pipe.gauge("cron_state.{}".format(name), 0)
+            tracker.add_metric(pipe, u"cron_sql", name)
+            pipe.gauge(u"cron_state.{}".format(name), 0)
         return res
