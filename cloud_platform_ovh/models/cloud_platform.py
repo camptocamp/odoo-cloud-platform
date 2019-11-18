@@ -30,6 +30,7 @@ class CloudPlatform(models.AbstractModel):
         configs = {
             'prod': PlatformConfig(filestore=FilestoreKind.swift),
             'integration': PlatformConfig(filestore=FilestoreKind.swift),
+            'labs': PlatformConfig(filestore=FilestoreKind.swift),
             'test': PlatformConfig(filestore=FilestoreKind.db),
             'dev': PlatformConfig(filestore=FilestoreKind.db),
         }

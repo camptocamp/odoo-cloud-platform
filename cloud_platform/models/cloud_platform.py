@@ -50,13 +50,21 @@ class CloudPlatform(models.AbstractModel):
         configs = configs_getter() if configs_getter else {}
         return configs.get(environment) or FilestoreKind.db
 
+    def _get_running_env(self):
+        environment_name = config['running_env']
+        if environment_name.startswith('labs'):
+            # We allow to have environments such as 'labs-logistics'
+            # or 'labs-finance', in order to have the matching ribbon.
+            environment_name = 'labs'
+        return environment_name
+
     @api.model
     def install(self, platform_kind):
         assert platform_kind in self._platform_kinds()
         params = self.env['ir.config_parameter'].sudo()
         params.set_param('cloud.platform.kind', platform_kind)
-        environment = config['running_env']
-        configs = self._config_by_server_env(platform_kind, environment)
+        environment_name = self._get_running_env()
+        configs = self._config_by_server_env(platform_kind, environment_name)
         params.set_param('ir_attachment.location', configs.filestore)
         self.check()
         if configs.filestore in [FilestoreKind.swift, FilestoreKind.s3]:
@@ -69,6 +77,9 @@ class CloudPlatform(models.AbstractModel):
         use_swift = (params.get_param('ir_attachment.location') ==
                      FilestoreKind.swift)
         if environment_name in ('prod', 'integration'):
+            # Labs instances use swift or s3 by default, but we don't want
+            # to enforce it in case we want to test something with a different
+            # storage. At your own risks!
             assert use_swift, (
                 "Swift must be used on production and integration instances. "
                 "It is activated, setting 'ir_attachment.location.' to 'swift'"
@@ -88,12 +99,15 @@ class CloudPlatform(models.AbstractModel):
                 "SWIFT_PASSWORD environment variable is required when "
                 "ir_attachment.location is 'swift'."
             )
-            container_name = os.environ['SWIFT_WRITE_CONTAINER']
-            if environment_name in ('integration', 'prod'):
-                assert container_name, (
-                    "SWIFT_WRITE_CONTAINER must not be empty for prod "
-                    "and integration"
-                )
+            container_name = os.environ.get('SWIFT_WRITE_CONTAINER')
+            assert container_name, (
+                "SWIFT_WRITE_CONTAINER environment variable is required when "
+                "ir_attachment.location is 'swift'.\n"
+                "Normally, 'swift' is activated on labs, integration "
+                "and production, but should not be used in dev environment"
+                " (or using a dedicated dev bucket, never using the "
+                "integration/prod bucket)."
+            )
             prod_container = bool(re.match(r'[a-z0-9-]+-odoo-prod',
                                            container_name))
             if environment_name == 'prod':
@@ -121,6 +135,9 @@ class CloudPlatform(models.AbstractModel):
         params = self.env['ir.config_parameter'].sudo()
         use_s3 = params.get_param('ir_attachment.location') == FilestoreKind.s3
         if environment_name in ('prod', 'integration'):
+            # Labs instances use swift or s3 by default, but we don't want
+            # to enforce it in case we want to test something with a different
+            # storage. At your own risks!
             assert use_s3, (
                 "S3 must be used on production and integration instances. "
                 "It is activated by setting 'ir_attachment.location.' to 's3'."
@@ -136,20 +153,15 @@ class CloudPlatform(models.AbstractModel):
                 "AWS_SECRET_ACCESS_KEY environment variable is required when "
                 "ir_attachment.location is 's3'."
             )
-            assert os.environ.get('AWS_BUCKETNAME'), (
+            bucket_name = os.environ.get('AWS_BUCKETNAME')
+            assert bucket_name, (
                 "AWS_BUCKETNAME environment variable is required when "
                 "ir_attachment.location is 's3'.\n"
-                "Normally, 's3' is activated on integration and production, "
-                "but should not be used in dev environment (or at least "
-                "not with a dev bucket, but never the "
+                "Normally, 's3' is activated on labs, integration "
+                "and production, but should not be used in dev environment"
+                " (or using a dedicated dev bucket, never using the "
                 "integration/prod bucket)."
             )
-            bucket_name = os.environ['AWS_BUCKETNAME']
-            if environment_name in ('integration', 'prod'):
-                assert bucket_name, (
-                    "AWS_BUCKETNAME must not be empty for prod "
-                    "and integration"
-                )
             prod_bucket = bool(re.match(r'[a-z-0-9]+-odoo-prod', bucket_name))
             if environment_name == 'prod':
                 assert prod_bucket, (
@@ -174,10 +186,10 @@ class CloudPlatform(models.AbstractModel):
 
     @api.model
     def _check_redis(self, environment_name):
-        if environment_name in ('prod', 'integration', 'test'):
+        if environment_name in ('prod', 'integration', 'labs', 'test'):
             assert is_true(os.environ.get('ODOO_SESSION_REDIS')), (
-                "Redis must be activated on prod, integration, test instances."
-                "This is done by setting ODOO_SESSION_REDIS=1."
+                "Redis must be activated on prod, integration, labs,"
+                " test instances. This is done by setting ODOO_SESSION_REDIS=1."
             )
             assert (os.environ.get('ODOO_SESSION_REDIS_HOST') or
                     os.environ.get('ODOO_SESSION_REDIS_SENTINEL_HOST')), (
@@ -190,7 +202,7 @@ class CloudPlatform(models.AbstractModel):
             )
 
             prefix = os.environ['ODOO_SESSION_REDIS_PREFIX']
-            assert re.match(r'[a-z-0-9]+-odoo-[a-z0-9]+[0-9]*', prefix), (
+            assert re.match(r'^[a-z-0-9]+-odoo-[a-z-0-9]+$', prefix), (
                 "ODOO_SESSION_REDIS_PREFIX must match '<client>-odoo-<env>'"
                 ", we got: '%s'" % (prefix,)
             )
@@ -210,7 +222,7 @@ class CloudPlatform(models.AbstractModel):
                 "probably run 'env['cloud.platform'].install_exoscale()'"
             )
             return
-        environment_name = config['running_env']
+        environment_name = self._get_running_env()
         if kind == 'exoscale':
             self._check_s3(environment_name)
         elif kind == 'ovh':
