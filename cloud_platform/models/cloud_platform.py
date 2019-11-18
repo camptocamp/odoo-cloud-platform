@@ -128,7 +128,9 @@ class CloudPlatform(models.AbstractModel):
                 "Normally, 'swift' is activated on labs, integration "
                 "and production, but should not be used in dev environment"
                 " (or using a dedicated dev bucket, never using the "
-                "integration/prod bucket)."
+                "integration/prod bucket).\n"
+                "If you don't actually need a bucket, change the"
+                " 'ir_attachment.location' parameter."
             )
             prod_container = bool(re.match(r'[a-z0-9-]+-odoo-prod',
                                            container_name))
@@ -182,7 +184,9 @@ class CloudPlatform(models.AbstractModel):
                 "Normally, 's3' is activated on labs, integration "
                 "and production, but should not be used in dev environment"
                 " (or using a dedicated dev bucket, never using the "
-                "integration/prod bucket)."
+                "integration/prod bucket).\n"
+                "If you don't actually need a bucket, change the"
+                " 'ir_attachment.location' parameter."
             )
             prod_bucket = bool(re.match(r'[a-z-0-9]+-odoo-prod', bucket_name))
             if environment_name == 'prod':
