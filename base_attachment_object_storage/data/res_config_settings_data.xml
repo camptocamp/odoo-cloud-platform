@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo noupdate="1">
+    <record id="default_mimes_type_storedb" model="ir.config_parameter">
+        <field name="key">mimetypes.list.storedb</field>
+        <field name="value">image</field>
+    </record>
+    <record id="default_file_maxsize_storedb" model="ir.config_parameter">
+        <field name="key">file.maxsize.storedb</field>
+        <field name="value">50000</field>
+    </record>
+    <record id="excluded_model_storedb" model="ir.config_parameter">
+        <field name="key">excluded.models.storedb</field>
+        <field name="value">mail.message,mail.mail</field>
+    </record>
+
+</odoo>

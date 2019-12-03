@@ -10,6 +10,7 @@ import odoo
 
 from contextlib import closing, contextmanager
 from odoo import api, exceptions, models, _
+from odoo.tools.mimetypes import guess_mimetype
 
 
 _logger = logging.getLogger(__name__)
@@ -36,8 +37,6 @@ def clean_fs(files):
 
 class IrAttachment(models.Model):
     _inherit = 'ir.attachment'
-
-    _local_fields = ('image_small', 'image_medium', 'web_icon_data')
 
     def _register_hook(self):
         super()._register_hook()
@@ -87,14 +86,25 @@ class IrAttachment(models.Model):
         if self.res_model == 'ir.ui.view':
             # assets are stored in 'ir.ui.view'
             return True
-
-        # Binary fields
-        if self.res_field:
-            # Binary fields are stored with the name of the field in
-            # 'res_field'
-            # 'image' fields can be rather large and should usually
-            # not be requests in bulk in lists
-            if self.res_field and self.res_field in self._local_fields:
+        # Check if model must never be stored on DB
+        excluded_model_settings = self.env['ir.config_parameter'].sudo().\
+            get_param('excluded.models.storedb', default='')
+        excluded_model_for_db_store = excluded_model_settings.split(',')
+        if self.res_model in excluded_model_for_db_store:
+            return False
+        # Check if file size and mimetype fit requirements
+        data_to_store = self.datas
+        bin_data = base64.b64decode(data_to_store) if data_to_store else ''
+        current_mimetype = guess_mimetype(bin_data)
+        mimetypes_settings = self.env['ir.config_parameter'].sudo().get_param(
+            'mimetypes.list.storedb', default='')
+        mimetypes_for_db_store = mimetypes_settings.split(',')
+        if any(current_mimetype.startswith(val) for val in
+               mimetypes_for_db_store):
+            # get allowed size
+            filesize = self.env['ir.config_parameter'].sudo().get_param(
+                'file.maxsize.storedb', default='0')
+            if len(bin_data) < int(filesize):
                 return True
         return False
 
