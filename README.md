@@ -104,6 +104,10 @@ Besides, the attachment location should be set to `swift` (this is
 automatically done by the `install` methods of the `cloud_platform` module).
  * `ir.config_parameter` `ir_attachment.location`: `swift`
 
+Structure of container name is checked against environment.
+It is possible to by-pass this behavior by using the following environment variable:
+`SWIFT_WRITE_CONTAINER_UNSTRUCTURED`.
+
 ### Sessions in Redis
 
 * prod:
