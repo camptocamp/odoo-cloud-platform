@@ -81,6 +81,10 @@ Besides, the attachment location should be set to `s3` (this is
 automatically done by the `install` methods of the `cloud_platform` module).
  * `ir.config_parameter` `ir_attachment.location`: `s3`
 
+Structure of bucket name is checked against environment.
+It is possible to by-pass this behavior by using the following environment variable:
+`AWS_BUCKETNAME_UNSTRUCTURED`.
+
 
 ### Attachments in the Object Storage Swift
 
