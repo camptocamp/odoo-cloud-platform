@@ -35,6 +35,7 @@ class FilestoreKind(object):
 
 class CloudPlatform(models.AbstractModel):
     _name = 'cloud.platform'
+    _description = 'cloud.platform'
 
     @api.model
     def _platform_kinds(self):
