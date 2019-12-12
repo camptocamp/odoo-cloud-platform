@@ -33,6 +33,7 @@ class FileURL(fields.Binary):
         'storage_location': '',  # External storage activated on the system (cf base_attachment_storage)  # noqa
         'storage_path': '',  # Path to be used as storage key (prefix of filename)  # noqa
         'filename': '',  # Field to use to store the filename on ir.attachment
+        'acl_public_read': True,  # Set public-read ACL by default
     }
 
     def create(self, record_values):
@@ -61,11 +62,13 @@ class FileURL(fields.Binary):
                         storage_key = self._build_storage_key(fname)
                 if not fname:
                     storage_key = False
-                env['ir.attachment'].sudo().with_context(
+                attachment = env['ir.attachment'].sudo().with_context(
                     binary_field_real_user=env.user,
                     storage_location=self.storage_location,
                     force_storage_key=storage_key,
                 ).create(vals)
+                if self.acl_public_read:
+                    attachment._store_file_set_acl('public-read')
 
     def write(self, records, value):
         for record in records:
