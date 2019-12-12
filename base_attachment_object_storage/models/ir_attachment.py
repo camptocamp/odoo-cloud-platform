@@ -5,11 +5,14 @@ import base64
 import inspect
 import logging
 import os
+import time
+
 import psycopg2
 import odoo
 
 from contextlib import closing, contextmanager
 from odoo import api, exceptions, models, _
+from odoo.osv.expression import AND, normalize_domain
 
 
 _logger = logging.getLogger(__name__)
@@ -67,6 +70,26 @@ class IrAttachment(models.Model):
         if update_module:
             self.env['ir.attachment'].sudo()._force_storage_to_object_storage()
 
+    @api.model
+    def _save_in_db_domain(self):
+        """Return a domain for attachments that must be forced to DB
+
+        Read the docstring of ``_save_in_db_anyway`` for more details.
+
+        The domain must be inline with the conditions in
+        ``_save_in_db_anyway``.
+        """
+        return [
+            '|',
+            # assets are stored in 'ir.ui.view'
+            ('res_model', '=', 'ir.ui.view'),
+            # Binary fields are stored with the name of the field in
+            # 'res_field'
+            # 'image' fields can be rather large and should usually
+            # not be requests in bulk in lists
+            ('res_field', 'in', self._local_fields)
+        ]
+
     @api.multi
     def _save_in_db_anyway(self):
         """ Return whether an attachment must be stored in db
@@ -83,8 +106,13 @@ class IrAttachment(models.Model):
         when assets are invalidated, they are deleted so we don't have
         an old database with attachments pointing to deleted assets.
 
+        The conditions must be inline with the domain in
+        ``_save_in_db_domain``.
+
         """
         self.ensure_one()
+        # Note: we cannot use _save_in_db_domain because we can be working
+        # with new records here. The conditions must stay inline though.
         # assets
         if self.res_model == 'ir.ui.view':
             # assets are stored in 'ir.ui.view'
@@ -241,6 +269,65 @@ class IrAttachment(models.Model):
         if location not in self._get_stores():
             return super(IrAttachment, self).force_storage()
         self._force_storage_to_object_storage()
+
+    @api.model
+    def force_storage_to_db_for_special_fields(self, new_cr=False):
+        """Migrate special attachments from Object Storage back to database
+
+        The access to a file stored on the objects storage is slower
+        than a local disk or database access. For attachments like
+        image_small that are accessed in batch for kanban views, this
+        is too slow. We store this type of attachment in the database.
+
+        This method can be used when migrating a filestore where all the files,
+        including the special files (assets, image_small, ...) have been pushed
+        to the Object Storage and we want to write them back in the database.
+
+        It is not called anywhere, but can be called by RPC or scripts.
+        """
+        storage = self._storage()
+        if storage not in self._get_stores():
+            return
+
+        domain = AND((
+            normalize_domain(
+                [('store_fname', '=like', '{}://%'.format(storage))]
+            ),
+            normalize_domain(self._save_in_db_domain())
+        ))
+
+        with self.do_in_new_env(new_cr=new_cr) as new_env:
+            model_env = new_env['ir.attachment'].with_context(
+                prefetch_fields=False
+            )
+            attachment_ids = model_env.search(domain).ids
+            if not attachment_ids:
+                return
+            total = len(attachment_ids)
+            start_time = time.time()
+            _logger.info('Moving %d attachments from %s to'
+                         ' DB for fast access', total, storage)
+            current = 0
+            for attachment_id in attachment_ids:
+                current += 1
+                # if we browse attachments outside of the loop, the first
+                # access to 'datas' will compute all the 'datas' fields at
+                # once, which means reading hundreds or thousands of files at
+                # once, exhausting memory
+                attachment = model_env.browse(attachment_id)
+                # this write will read the datas from the Object Storage and
+                # write them back in the DB (the logic for location to write is
+                # in the 'datas' inverse computed field)
+                attachment.write({'datas': attachment.datas})
+                # as the file will potentially be deleted from the bucket,
+                # we should commit the changes here
+                new_env.cr.commit()
+                if current % 100 == 0 or total - current == 0:
+                    _logger.info(
+                        'attachment %s/%s after %.2fs',
+                        current, total,
+                        time.time() - start_time
+                    )
 
     @api.model
     def _force_storage_to_object_storage(self, new_cr=False):
