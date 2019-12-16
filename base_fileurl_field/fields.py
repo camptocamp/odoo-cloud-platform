@@ -52,6 +52,7 @@ class FileURL(fields.Binary):
                     'res_field': self.name,
                     'res_id': record.id,
                     'type': 'binary',
+                    'public': self.acl_public_read,
                     'datas': value,
                 }
                 fname = False
