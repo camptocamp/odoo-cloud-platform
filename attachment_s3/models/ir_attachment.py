@@ -123,7 +123,7 @@ class IrAttachment(models.Model):
                 obj = bucket.Object(key=key)
                 obj.Acl().put(ACL=acl)
                 _logger.info(
-                    "ACL public-read successfully set on object %s" % fname
+                    "ACL %s successfully set on object %s" % (acl, fname)
                 )
                 return True
             except ClientError:
