@@ -83,9 +83,10 @@ class IrAttachment(osv.osv):
         else:
             return super(IrAttachment, self)._store_file_read(fname, bin_size)
 
-    def _store_file_write(self, storage, key, bin_data):
+    def _store_file_write(self, storage, key, bin_data, container=None):
         if storage == 'swift':
-            container = os.environ.get('SWIFT_WRITE_CONTAINER')
+            if container is None:
+                container = os.environ.get('SWIFT_WRITE_CONTAINER')
             conn = self._get_swift_connection()
             conn.put_container(container)
             filename = 'swift://{}/{}'.format(container, key)
@@ -101,13 +102,15 @@ class IrAttachment(osv.osv):
             filename = _super._store_file_write(key, bin_data)
         return filename
 
-    def _store_file_delete(self, fname):
+    def _store_file_delete(self, fname, container=None):
         if fname.startswith('swift://'):
             swifturi = SwiftUri(fname)
-            container = swifturi.container()
+            uri_container = swifturi.container()
+            if container is None:
+                container = os.environ.get('SWIFT_WRITE_CONTAINER')
             # delete the file only if it is on the current configured bucket
             # otherwise, we might delete files used on a different environment
-            if container == os.environ.get('SWIFT_WRITE_CONTAINER'):
+            if uri_container == container:
                 conn = self._get_swift_connection()
                 try:
                     conn.delete_object(container, swifturi.item())
