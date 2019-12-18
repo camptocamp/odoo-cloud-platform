@@ -38,14 +38,20 @@ class RedisSessionStore(SessionStore):
 
     def save(self, session):
         key = self.build_key(session.sid)
+        # `session` is the Werkzeug wrapper that contains
+        # the "real" session object `OpenERPSession`.
+        # That's why we need to look for the first item in it to get the
+        # expiration parameter
+        session_oe = session.itervalues().next()
+        expiration = getattr(session_oe, 'expiration', self.expiration)
 
         if _logger.isEnabledFor(logging.DEBUG):
             _logger.debug("saving session with key '%s' and "
                           "expiration of %s seconds",
-                          key, self.expiration)
+                          key, expiration)
 
         if self.redis.set(key, dumps(dict(session), HIGHEST_PROTOCOL)):
-            return self.redis.expire(key, self.expiration)
+            return self.redis.expire(key, expiration)
 
     def delete(self, session):
         key = self.build_key(session.sid)
