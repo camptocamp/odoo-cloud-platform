@@ -83,6 +83,12 @@ class IrAttachment(models.Model):
             '|',
             # assets are stored in 'ir.ui.view'
             ('res_model', '=', 'ir.ui.view'),
+            # less files customized through 'web_editor' are saved as
+            # attachments, in any case, we'll always want less files in DB (or
+            # in /static directories) rather than in the object storage.
+            # It seems the 'text/less' mimetype is not always correct, so
+            # rely on the url.
+            ('url', '=like', '%.less'),
             # Binary fields are stored with the name of the field in
             # 'res_field'
             # 'image' fields can be rather large and should usually
@@ -101,6 +107,10 @@ class IrAttachment(models.Model):
         because they should be fast to read as they are often displayed
         in kanbans / lists. The same for web_icon_data.
 
+        .less files customized through the "web_editor" interface must
+        be stored in DB too (normally this kind of file is stored in the
+        /static directories of modules).
+
         We store the assets locally as well. Not only for performance,
         but also because it improves the portability of the database:
         when assets are invalidated, they are deleted so we don't have
@@ -116,6 +126,9 @@ class IrAttachment(models.Model):
         # assets
         if self.res_model == 'ir.ui.view':
             # assets are stored in 'ir.ui.view'
+            return True
+
+        if self.url and self.url.endswith('.less'):
             return True
 
         # Binary fields
