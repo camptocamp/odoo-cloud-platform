@@ -10,6 +10,7 @@ from werkzeug.contrib.sessions import SessionStore
 # this is equal to the duration of the session garbage collector in
 # openerp.http.session_gc()
 DEFAULT_SESSION_TIMEOUT = 60 * 60 * 24 * 7  # 7 days in seconds
+DEFAULT_SESSION_TIMEOUT_ANONYMOUS = 60 * 60 * 3  # 3 hours in seconds
 
 _logger = logging.getLogger(__name__)
 
@@ -18,13 +19,17 @@ class RedisSessionStore(SessionStore):
     """ SessionStore that saves session to redis """
 
     def __init__(self, redis, session_class=None,
-                 prefix='', expiration=None):
+                 prefix='', expiration=None, anon_expiration=None):
         super(RedisSessionStore, self).__init__(session_class=session_class)
         self.redis = redis
         if expiration is None:
             self.expiration = DEFAULT_SESSION_TIMEOUT
         else:
             self.expiration = expiration
+        if anon_expiration is None:
+            self.anon_expiration = DEFAULT_SESSION_TIMEOUT_ANONYMOUS
+        else:
+            self.anon_expiration = anon_expiration
         self.prefix = u'session:'
         if prefix:
             self.prefix = u'%s:%s:' % (
@@ -43,8 +48,15 @@ class RedisSessionStore(SessionStore):
         # That's why we need to look for the first item in it to get the
         # expiration parameter
         session_oe = session.itervalues().next()
-        expiration = getattr(session_oe, 'expiration', self.expiration)
 
+        # allow to set a custom expiration for a session
+        # such as a very short one for monitoring requests
+        if session._uid:
+            expiration = getattr(session_oe, 'expiration', self.expiration)
+        else:
+            expiration = getattr(
+                session_oe, 'expiration', self.anon_expiration
+            )
         if _logger.isEnabledFor(logging.DEBUG):
             _logger.debug("saving session with key '%s' and "
                           "expiration of %s seconds",
