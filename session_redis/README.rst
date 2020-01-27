@@ -16,6 +16,8 @@ The storage of sessions in Redis is activated using environment variables.
 * ``ODOO_SESSION_REDIS_PREFIX`` is the prefix for the session keys (optional)
 * ``ODOO_SESSION_REDIS_EXPIRATION`` is the time in seconds before expiration of
   the sessions (default is 7 days)
+* ``ODOO_SESSION_REDIS_EXPIRATION_ANONYMOUS`` is the time in seconds before expiration of
+  the anonymous sessions (default is 3 hours)
 
 
 The keys are set to ``session:<session id>``.
