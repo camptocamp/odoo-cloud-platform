@@ -16,6 +16,7 @@ _logger = logging.getLogger(__name__)
 try:
     import boto3
     from botocore.exceptions import ClientError, EndpointConnectionError
+    from botocore.errorfactory import NoSuchKey
 except ImportError:
     boto3 = None  # noqa
     ClientError = None  # noqa
@@ -118,6 +119,7 @@ class IrAttachment(models.Model):
                 _logger.exception(
                     "error getting bucket from object storage"
                 )
+                return False
             key = s3uri.item()
             try:
                 obj = bucket.Object(key=key)
@@ -126,6 +128,10 @@ class IrAttachment(models.Model):
                     "ACL %s successfully set on object %s" % (acl, fname)
                 )
                 return True
+            except NoSuchKey:
+                _logger.exception(
+                    "Object %s does not exists on S3 bucket" % fname
+                )
             except ClientError:
                 _logger.exception(
                     "Cannot set ACL %s on object %s" % (acl, fname)
