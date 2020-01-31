@@ -42,6 +42,7 @@ port = int(os.environ.get('ODOO_SESSION_REDIS_PORT', 6379))
 prefix = os.environ.get('ODOO_SESSION_REDIS_PREFIX')
 password = os.environ.get('ODOO_SESSION_REDIS_PASSWORD')
 expiration = os.environ.get('ODOO_SESSION_REDIS_EXPIRATION')
+anon_expiration = os.environ.get('ODOO_SESSION_REDIS_EXPIRATION_ANONYMOUS')
 
 
 def session_store():
@@ -53,6 +54,7 @@ def session_store():
         redis_client = redis.Redis(host=host, port=port, password=password)
     return RedisSessionStore(redis=redis_client, prefix=prefix,
                              expiration=expiration,
+                             anon_expiration=anon_expiration,
                              session_class=Session)
 
 
