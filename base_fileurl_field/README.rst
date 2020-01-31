@@ -24,6 +24,8 @@ FileURL fields is intended to store Binary data on an external storage
  Will be used to set fname on ir.attachment and, if storage_path is
  defined, will be passed to force the storage key.
 
+:param acl_public_read: Set public-read ACL by default
+
 Limitations / Issues
 --------------------
 
