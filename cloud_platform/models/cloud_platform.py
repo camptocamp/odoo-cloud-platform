@@ -33,6 +33,9 @@ class FilestoreKind(object):
     file = 'file'
 
 
+DefaultConfig = PlatformConfig(filestore=FilestoreKind.db)
+
+
 class CloudPlatform(models.AbstractModel):
     _name = 'cloud.platform'
     _description = 'cloud.platform'
@@ -49,7 +52,7 @@ class CloudPlatform(models.AbstractModel):
             None
         )
         configs = configs_getter() if configs_getter else {}
-        return configs.get(environment) or FilestoreKind.db
+        return configs.get(environment) or DefaultConfig
 
     def _get_running_env(self):
         environment_name = config['running_env']
