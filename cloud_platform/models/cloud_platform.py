@@ -100,19 +100,18 @@ class CloudPlatform(models.AbstractModel):
                 "SWIFT_PASSWORD environment variable is required when "
                 "ir_attachment.location is 'swift'."
             )
-            container_name = os.environ.get('SWIFT_WRITE_CONTAINER')
-            assert container_name, (
-                "SWIFT_WRITE_CONTAINER environment variable is required when "
-                "ir_attachment.location is 'swift'.\n"
-                "Normally, 'swift' is activated on labs, integration "
-                "and production, but should not be used in dev environment"
-                " (or using a dedicated dev bucket, never using the "
-                "integration/prod bucket).\n"
-                "If you don't actually need a bucket, change the"
-                " 'ir_attachment.location' parameter."
-            )
-            prod_container = bool(re.match(r'[a-z0-9-]+-odoo-prod',
-                                           container_name))
+            container_name = os.environ.get('SWIFT_WRITE_CONTAINER', '')
+            if environment_name in ('prod', 'integration', 'labs'):
+                assert container_name, (
+                    "SWIFT_WRITE_CONTAINER environment variable is required when "
+                    "ir_attachment.location is 'swift'.\n"
+                    "Normally, 'swift' is activated on labs, integration "
+                    "and production, but should not be used in dev environment"
+                    " (or using a dedicated dev bucket, never using the "
+                    "integration/prod bucket).\n"
+                    "If you don't actually need a bucket, change the"
+                    " 'ir_attachment.location' parameter."
+                )
             # A bucket name is defined under the following format
             # <client>-odoo-<env>
             #
@@ -120,6 +119,8 @@ class CloudPlatform(models.AbstractModel):
             # structure
             if os.environ.get('SWIFT_WRITE_CONTAINER_UNSTRUCTURED'):
                 return
+            prod_container = bool(re.match(r'[a-z0-9-]+-odoo-prod',
+                                           container_name))
             if environment_name == 'prod':
                 assert prod_container, (
                     "SWIFT_WRITE_CONTAINER should match '<client>-odoo-prod', "
@@ -163,17 +164,18 @@ class CloudPlatform(models.AbstractModel):
                 "AWS_SECRET_ACCESS_KEY environment variable is required when "
                 "ir_attachment.location is 's3'."
             )
-            bucket_name = os.environ.get('AWS_BUCKETNAME')
-            assert bucket_name, (
-                "AWS_BUCKETNAME environment variable is required when "
-                "ir_attachment.location is 's3'.\n"
-                "Normally, 's3' is activated on labs, integration "
-                "and production, but should not be used in dev environment"
-                " (or using a dedicated dev bucket, never using the "
-                "integration/prod bucket).\n"
-                "If you don't actually need a bucket, change the"
-                " 'ir_attachment.location' parameter."
-            )
+            bucket_name = os.environ.get('AWS_BUCKETNAME', '')
+            if environment_name in ('prod', 'integration', 'labs'):
+                assert bucket_name, (
+                    "AWS_BUCKETNAME environment variable is required when "
+                    "ir_attachment.location is 's3'.\n"
+                    "Normally, 's3' is activated on labs, integration "
+                    "and production, but should not be used in dev environment"
+                    " (or using a dedicated dev bucket, never using the "
+                    "integration/prod bucket).\n"
+                    "If you don't actually need a bucket, change the"
+                    " 'ir_attachment.location' parameter."
+                )
             # A bucket name is defined under the following format
             # <client>-odoo-<env>
             #
