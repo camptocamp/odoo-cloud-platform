@@ -133,10 +133,15 @@ class IrAttachment(models.Model):
                     _logger.exception(
                         "Object %s does not exists on S3 bucket" % fname
                     )
+                elif error_code == 'NotImplemented':
+                    _logger.exception(
+                        "S3 storage does not implement ACL" % fname
+                    )
                 else:
                     _logger.exception(
                         "Cannot set ACL %s on object %s" % (acl, fname)
                     )
+                return False
         else:
             _logger.warning("Cannot set ACL on object not stored on S3")
             return False
