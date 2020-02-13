@@ -1,7 +1,7 @@
 Attachments on Swift storage
 ============================
 
-This addon enables storing attachments (documents and assets) on OpenStack Object Storage (Swift).
+This addon enable storing attachments (documents and assets) on OpenStack Object Storage (Swift)
 
 Configuration
 -------------
@@ -13,9 +13,11 @@ Activate Swift storage:
 Configure accesses with environment variables:
 
 * ``SWIFT_AUTH_URL``            : URL of the Swift server
-* ``SWIFT_TENANT_NAME``
+* ``SWIFT_TENANT_NAME``         : **!** DEPRECATED **!** Use ``SWIFT_PROJECT_NAME`` instead
+* ``SWIFT_PROJECT_NAME``
 * ``SWIFT_ACCOUNT``
 * ``SWIFT_PASSWORD``
+* ``SWIFT_REGION_NAME``         : optional region
 * ``SWIFT_WRITE_CONTAINER``     : Name of the container to use in the store (created if not existing)
 
 Read-only mode:
@@ -30,21 +32,24 @@ credentials) without any risk to alter the production data.
 
 This addon must be added in the server wide addons with (``--load`` option):
 
-``--load=web,web_kanban,attachment_swift``
+``--load=web,attachment_swift``
 
 Python Dependencies
 -------------------
 
-This module needs the python-swiftclient and the python-keystoneclient (For auth v2.0) to work.
+This module needs the python-swiftclient and the python-keystoneclient (For auth v3.0) to work.
 The python-keystoneclient needs the linux package build-essential and python-dev to install properly.
 
 The python-swiftclient can be used from the command line, useful to test:
 
-    export AUTH_VERSION=2.0
+.. code-block:: sh
+
+    export AUTH_VERSION=3.0
     export OS_USERNAME={SWIFT_ACCOUNT}
     export OS_PASSWORD={SWIFT_PASSWORD}
-    export OS_TENANT_NAME={SWIFT_TENANT_NAME}
-    export OS_AUTH_URL=https://auth.cloud.ovh.net/v2.0
+    export OS_PROJECT_NAME={SWIFT_PROJECT_NAME}
+    export OS_REGION_NAME={SWIFT_REGION_NAME}
+    export OS_AUTH_URL=https://auth.cloud.ovh.net/v3
     swift stat
 
 More information at
