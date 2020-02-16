@@ -28,6 +28,8 @@ class OdooJsonFormatter(jsonlogger.JsonFormatter):
     def add_fields(self, log_record, record, message_dict):
         record.pid = os.getpid()
         record.dbname = getattr(threading.currentThread(), 'dbname', '?')
+        if hasattr(record, "perf_info"):
+            delattr(record, "perf_info")
         _super = super(OdooJsonFormatter, self)
         return _super.add_fields(log_record, record, message_dict)
 
@@ -42,8 +44,6 @@ class JsonPerfFilter(logging.Filter):
             record.query_time = round(
                 threading.current_thread().query_time, TIMING_DP)
             delattr(threading.current_thread(), "query_count")
-            if hasattr(record, "perf_info"):
-                delattr(record, "perf_info")
         return True
 
 
