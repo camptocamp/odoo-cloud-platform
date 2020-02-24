@@ -11,7 +11,7 @@
  'category': 'Knowledge Management',
  'depends': ['base'],
  'external_dependencies': {
-     'python': ['boto'],
+     'python': ['boto3'],
  },
  'website': 'http://www.camptocamp.com',
  'data': [
