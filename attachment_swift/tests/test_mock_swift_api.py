@@ -25,18 +25,20 @@ class TestAttachmentSwift(TestIrAttachment):
         auth_url = 'auth_url'
         username = 'username'
         password = 'password'
-        tenant_name = 'tenant_name'
+        project_name = 'project_name'
         store = SwiftSessionStore()
         session = store.get_session(
             auth_url=auth_url,
             username=username,
             password=password,
-            tenant_name=tenant_name,
+            project_name=project_name,
         )
         self.assertEqual(session.auth.auth_url, auth_url)
-        self.assertEqual(session.auth.username, username)
-        self.assertEqual(session.auth.password, password)
-        self.assertEqual(session.auth.tenant_name, tenant_name)
+        self.assertEqual(session.auth.get_cache_id_elements().get(
+            'password_username'), username)
+        self.assertEqual(session.auth.get_cache_id_elements().get(
+            'password_password'), password)
+        self.assertEqual(session.auth.project_name, project_name)
 
         # get the same session on a second call
         self.assertEqual(
@@ -44,7 +46,7 @@ class TestAttachmentSwift(TestIrAttachment):
                 auth_url=auth_url,
                 username=username,
                 password=password,
-                tenant_name=tenant_name,
+                project_name=project_name,
             ),
             session
         )
@@ -55,7 +57,7 @@ class TestAttachmentSwift(TestIrAttachment):
         os.environ['SWIFT_AUTH_URL'] = 'auth_url'
         os.environ['SWIFT_ACCOUNT'] = 'account'
         os.environ['SWIFT_PASSWORD'] = 'password'
-        os.environ['SWIFT_TENANT_NAME'] = 'tenant_name'
+        os.environ['SWIFT_PROJECT_NAME'] = 'project_name'
         os.environ['SWIFT_REGION_NAME'] = 'NOWHERE'
         attachment = self.Attachment
         attachment._get_swift_connection()
@@ -67,10 +69,12 @@ class TestAttachmentSwift(TestIrAttachment):
         session = kwargs['session']
         self.assertTrue(isinstance(session, keystoneauth1.session.Session))
         self.assertEqual(session.auth.auth_url, os.environ['SWIFT_AUTH_URL'])
-        self.assertEqual(session.auth.username, os.environ['SWIFT_ACCOUNT'])
-        self.assertEqual(session.auth.password, os.environ['SWIFT_PASSWORD'])
-        self.assertEqual(session.auth.tenant_name,
-                         os.environ['SWIFT_TENANT_NAME'])
+        self.assertEqual(session.auth.get_cache_id_elements().get(
+            'password_username'), os.environ['SWIFT_ACCOUNT'])
+        self.assertEqual(session.auth.get_cache_id_elements().get(
+            'password_password'), os.environ['SWIFT_PASSWORD'])
+        self.assertEqual(session.auth.project_name,
+                         os.environ['SWIFT_PROJECT_NAME'])
 
     def test_store_file_on_swift(self):
         """
@@ -81,7 +85,7 @@ class TestAttachmentSwift(TestIrAttachment):
         os.environ['SWIFT_AUTH_URL'] = 'auth_url'
         os.environ['SWIFT_ACCOUNT'] = 'account'
         os.environ['SWIFT_PASSWORD'] = 'password'
-        os.environ['SWIFT_TENANT_NAME'] = 'tenant_name'
+        os.environ['SWIFT_PROJECT_NAME'] = 'project_name'
         os.environ['SWIFT_WRITE_CONTAINER'] = 'my_container'
         container = os.environ.get('SWIFT_WRITE_CONTAINER')
         attachment = self.Attachment
@@ -103,7 +107,7 @@ class TestAttachmentSwift(TestIrAttachment):
         os.environ['SWIFT_AUTH_URL'] = 'auth_url'
         os.environ['SWIFT_ACCOUNT'] = 'account'
         os.environ['SWIFT_PASSWORD'] = 'password'
-        os.environ['SWIFT_TENANT_NAME'] = 'tenant_name'
+        os.environ['SWIFT_PROJECT_NAME'] = 'project_name'
         os.environ['SWIFT_WRITE_CONTAINER'] = 'my_container'
 
         attachment = self.Attachment
