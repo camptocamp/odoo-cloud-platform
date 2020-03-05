@@ -116,6 +116,13 @@ class CloudPlatform(models.AbstractModel):
             )
             prod_container = bool(re.match(r'[a-z0-9-]+-odoo-prod',
                                            container_name))
+            # A bucket name is defined under the following format
+            # <client>-odoo-<env>
+            #
+            # Use SWIFT_WRITE_CONTAINER_UNSTRUCTURED to by-pass check on bucket name
+            # structure
+            if os.environ.get('SWIFT_WRITE_CONTAINER_UNSTRUCTURED'):
+                return
             if environment_name == 'prod':
                 assert prod_container, (
                     "SWIFT_WRITE_CONTAINER should match '<client>-odoo-prod', "
@@ -170,6 +177,13 @@ class CloudPlatform(models.AbstractModel):
                 "If you don't actually need a bucket, change the"
                 " 'ir_attachment.location' parameter."
             )
+            # A bucket name is defined under the following format
+            # <client>-odoo-<env>
+            #
+            # Use AWS_BUCKETNAME_UNSTRUCTURED to by-pass check on bucket name
+            # structure
+            if os.environ.get('AWS_BUCKETNAME_UNSTRUCTURED'):
+                return
             prod_bucket = bool(re.match(r'[a-z-0-9]+-odoo-prod', bucket_name))
             if environment_name == 'prod':
                 assert prod_bucket, (
