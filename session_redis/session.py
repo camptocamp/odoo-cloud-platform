@@ -51,7 +51,7 @@ class RedisSessionStore(SessionStore):
 
         # allow to set a custom expiration for a session
         # such as a very short one for monitoring requests
-        if session._uid:
+        if session_oe._uid:
             expiration = getattr(session_oe, 'expiration', self.expiration)
         else:
             expiration = getattr(
