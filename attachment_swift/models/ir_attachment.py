@@ -17,9 +17,12 @@ _logger = logging.getLogger(__name__)
 try:
     import swiftclient
     import keystoneauth1
+    from keystoneauth1 import identity
     from swiftclient.exceptions import ClientException
 except ImportError:
     swiftclient = None
+    keystoneauth1 = None
+    identity = None
     ClientException = None
     _logger.debug("Cannot 'import swiftclient'.")
 
@@ -55,7 +58,7 @@ class SwiftSessionStore(object):
         key = self._get_key(auth_url, username, password, project_name)
         session = self._sessions.get(key)
         if not session:
-            auth = keystoneauth1.identity.v3.Password(
+            auth = identity.v3.Password(
                 username=username,
                 password=password,
                 project_name=project_name,
