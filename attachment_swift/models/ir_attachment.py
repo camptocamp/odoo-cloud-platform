@@ -59,6 +59,8 @@ class SwiftSessionStore(object):
                 password=password,
                 project_name=project_name,
                 auth_url=auth_url,
+                project_domain_id='default',
+                user_domain_id='default',
             )
             session = keystoneauth1.session.Session(
                 auth=auth,
