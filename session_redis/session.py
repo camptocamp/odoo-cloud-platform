@@ -1,10 +1,13 @@
 # Copyright 2016-2018 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
+import datetime
 import json
 import logging
 
 from werkzeug.contrib.sessions import SessionStore
+
+from odoo import fields
 
 # this is equal to the duration of the session garbage collector in
 # odoo.http.session_gc()
@@ -35,6 +38,12 @@ class RedisSessionStore(SessionStore):
                 self.prefix, prefix
             )
 
+    def json_converter(self, o):
+        if isinstance(o, datetime.datetime):
+            return fields.Datetime.to_string(o)
+        elif isinstance(o, datetime.date):
+            return fields.Date.to_string(o)
+
     def build_key(self, sid):
         return '%s%s' % (self.prefix, sid)
 
@@ -57,8 +66,8 @@ class RedisSessionStore(SessionStore):
                           "expiration of %s seconds for %s",
                           key, expiration, user_msg)
 
-        data = json.dumps(dict(session)).encode('utf-8')
-        if self.redis.set(key, data):
+        data = json.dumps(dict(session), default=self.json_converter)
+        if self.redis.set(key, data.encode('utf-8')):
             return self.redis.expire(key, expiration)
 
     def delete(self, session):
