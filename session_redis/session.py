@@ -20,6 +20,9 @@ _logger = logging.getLogger(__name__)
 class RedisSessionStore(SessionStore):
     """ SessionStore that saves session to redis """
 
+    py_date_prefix = '__py__date_'
+    py_datetime_prefix = '__py__datetime_'
+
     def __init__(self, redis, session_class=None,
                  prefix='', expiration=None, anon_expiration=None):
         super(RedisSessionStore, self).__init__(session_class=session_class)
@@ -38,11 +41,31 @@ class RedisSessionStore(SessionStore):
                 self.prefix, prefix
             )
 
-    def json_converter(self, o):
-        if isinstance(o, datetime.datetime):
-            return fields.Datetime.to_string(o)
-        elif isinstance(o, datetime.date):
-            return fields.Date.to_string(o)
+    def session_json_pack(self, session):
+        """Attempt to store python objects as json serializable values"""
+        session_jsonified = {}
+        for key, val in session.items():
+            if isinstance(val, datetime.datetime):
+                key = self.py_datetime_prefix + key
+                val = fields.Datetime.to_string(val)
+            elif isinstance(val, datetime.date):
+                key = self.py_date_prefix + key
+                val = fields.Date.to_string(val)
+            session_jsonified[key] = val
+        return session_jsonified
+
+    def session_json_unpack(self, session):
+        """Attempt to restore python objects from json serialized vals"""
+        session_py = {}
+        for key, val in session.items():
+            if key.startswith(self.py_datetime_prefix):
+                key = key.split(self.py_datetime_prefix)[1]
+                val = fields.Datetime.from_string(val)
+            elif key.startswith(self.py_date_prefix):
+                key = key.split(self.py_date_prefix)[1]
+                val = fields.Date.from_string(val)
+            session_py[key] = val
+        return session_py
 
     def build_key(self, sid):
         return '%s%s' % (self.prefix, sid)
@@ -66,8 +89,9 @@ class RedisSessionStore(SessionStore):
                           "expiration of %s seconds for %s",
                           key, expiration, user_msg)
 
-        data = json.dumps(dict(session), default=self.json_converter)
-        if self.redis.set(key, data.encode('utf-8')):
+        session_jsonified = self.session_json_pack(dict(session))
+        data = json.dumps(session_jsonified).encode('utf-8')
+        if self.redis.set(key, data):
             return self.redis.expire(key, expiration)
 
     def delete(self, session):
@@ -89,6 +113,7 @@ class RedisSessionStore(SessionStore):
             return self.new()
         try:
             data = json.loads(saved.decode('utf-8'))
+            data = self.session_json_unpack(data)
         except ValueError:
             _logger.debug("session for key '%s' has been asked but its json "
                           "content could not be read, it has been reset", key)
