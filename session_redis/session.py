@@ -22,6 +22,7 @@ class RedisSessionStore(SessionStore):
 
     py_date_prefix = '__py__date_'
     py_datetime_prefix = '__py__datetime_'
+    py_set_prefix = '__py__set'
 
     def __init__(self, redis, session_class=None,
                  prefix='', expiration=None, anon_expiration=None):
@@ -51,6 +52,9 @@ class RedisSessionStore(SessionStore):
             elif isinstance(val, datetime.date):
                 key = self.py_date_prefix + key
                 val = fields.Date.to_string(val)
+            elif isinstance(val, set):
+                key = self.py_set_prefix + key
+                val = list(val)
             session_jsonified[key] = val
         return session_jsonified
 
@@ -64,6 +68,9 @@ class RedisSessionStore(SessionStore):
             elif key.startswith(self.py_date_prefix):
                 key = key.split(self.py_date_prefix)[1]
                 val = fields.Date.from_string(val)
+            elif key.startswith(self.py_set_prefix):
+                key = key.split(self.py_set_prefix)[1]
+                val = set(val)
             session_py[key] = val
         return session_py
 
