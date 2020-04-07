@@ -18,6 +18,10 @@ The storage of sessions in Redis is activated using environment variables.
   the sessions (default is 7 days)
 * ``ODOO_SESSION_REDIS_EXPIRATION_ANONYMOUS`` is the time in seconds before expiration of
   the anonymous sessions (default is 3 hours)
+* ``ODOO_SESSION_REDIS_COPY_EXISTING_FS_SESSIONS`` when ``1`` or ``true`` copies the existing odoo sessions from
+  the filesystem to redis when starting
+* ``ODOO_SESSION_REDIS_PURGE_EXISTING_FS_SESSIONS`` when ``1`` or ``true`` deletes the existing odoo sessions from
+  the filesystem to redis when starting
 
 
 The keys are set to ``session:<session id>``.
@@ -32,8 +36,12 @@ Limitations
 
 * The server has to be restarted in order for the sessions to be stored in
   Redis.
-* All the users will have to login again as their previous session will be
-  dropped.
 * The addon monkey-patch ``odoo.http.Root.session_store`` with a custom
   method when the Redis mode is active, so incompatibilities with other addons
   is possible if they do the same.
+
+Preseve Sessions
+----------------
+
+In order to preserve sessions when switching to redis run odoo with
+``ODOO_SESSION_REDIS_COPY_EXISTING_FS_SESSIONS=true odoo --load session_redis --stop-after-init``
