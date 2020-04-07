@@ -77,6 +77,20 @@ def purge_fs_sessions(path):
             pass
 
 
+def copy_fs_sessions(path):
+    from odoo.http import OpenERPSession
+    import werkzeug.contrib.sessions
+    werkzeug_session_store = werkzeug.contrib.sessions.FilesystemSessionStore(path, session_class=OpenERPSession)
+    session_store = http.Root().session_store
+    filename_prefix='werkzeug_'
+    filename_suffix = '.sess'
+
+    for fname in os.listdir(path):
+        path = os.path.join(path, fname)
+        session = werkzeug_session_store.get(fname[len(filename_prefix):len(filename_suffix) * -1])
+        session_store.save(session)
+
+
 if is_true(os.environ.get('ODOO_SESSION_REDIS')):
     if sentinel_host:
         _logger.debug("HTTP sessions stored in Redis with prefix '%s'. "
@@ -88,5 +102,9 @@ if is_true(os.environ.get('ODOO_SESSION_REDIS')):
 
     http.Root.session_store = session_store
     http.session_gc = session_gc
-    # clean the existing sessions on the file system
-    purge_fs_sessions(odoo.tools.config.session_dir)
+
+    if is_true(os.environ.get('ODOO_SESSION_REDIS_COPY_EXISTING_FS_SESSIONS')):
+        copy_fs_sessions(odoo.tools.config.session_dir)
+    if is_true(os.environ.get('ODOO_SESSION_REDIS_PURGE_EXISTING_FS_SESSIONS')):
+        # clean the existing sessions on the file system
+        purge_fs_sessions(odoo.tools.config.session_dir)
