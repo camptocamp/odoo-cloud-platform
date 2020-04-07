@@ -16,4 +16,5 @@
  'website': 'http://www.camptocamp.com',
  'data': [],
  'installable': True,
+ 'post_load': False,
  }
