@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2016 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
@@ -79,15 +78,15 @@ def purge_fs_sessions(path):
 
 def copy_fs_sessions(path):
     from odoo.http import OpenERPSession
-    import werkzeug.contrib.sessions
-    werkzeug_session_store = werkzeug.contrib.sessions.FilesystemSessionStore(path, session_class=OpenERPSession)
+    from werkzeug.contrib.sessions import FilesystemSessionStore
+    werkzeug_session_store = FilesystemSessionStore(path, session_class=OpenERPSession)
     session_store = http.Root().session_store
-    filename_prefix='werkzeug_'
-    filename_suffix = '.sess'
+    filename_prefix_len = len('werkzeug_')
+    filename_suffix_len = len('.sess')
 
     for fname in os.listdir(path):
-        path = os.path.join(path, fname)
-        session = werkzeug_session_store.get(fname[len(filename_prefix):len(filename_suffix) * -1])
+        session_file = fname[filename_prefix_len:filename_suffix_len * -1]
+        session = werkzeug_session_store.get(session_file)
         session_store.save(session)
 
 
