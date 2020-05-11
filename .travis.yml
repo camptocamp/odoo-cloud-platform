@@ -28,8 +28,6 @@ install:
   - git clone --depth=1 https://github.com/OCA/maintainer-quality-tools.git ${HOME}/maintainer-quality-tools
   - export PATH=${HOME}/maintainer-quality-tools/travis:${PATH}
   - travis_install_nightly
-  - if [ "$LINT_CHECK" != "1" ] ; then ln -s ${HOME}/dependencies/server-env/server_environment_files_sample ${HOME}/dependencies/server-env/server_environment_files; fi
-  - printf '[options]\n\nrunning_env = dev' > ${HOME}/.openerp_serverrc
 
 script:
   - travis_run_tests
