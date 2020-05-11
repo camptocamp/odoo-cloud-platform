@@ -19,6 +19,8 @@ class SessionEncoder(json.JSONEncoder):
             return {"_type": "datetime_isoformat", "value": obj.isoformat()}
         elif isinstance(obj, date):
             return {"_type": "date_isoformat", "value": obj.isoformat()}
+        elif isinstance(obj, set):
+            return {"_type": "set", "value": tuple(obj)}
         return json.JSONEncoder.default(self, obj)
 
 
@@ -36,4 +38,6 @@ class SessionDecoder(json.JSONDecoder):
             return dateutil.parser.parse(obj["value"])
         elif type_ == "date_isoformat":
             return dateutil.parser.parse(obj["value"]).date()
+        elif type_ == "set":
+            return set(obj["value"])
         return obj
