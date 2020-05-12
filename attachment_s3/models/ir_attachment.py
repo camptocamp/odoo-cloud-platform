@@ -9,6 +9,7 @@ import io
 from urllib.parse import urlsplit
 
 from odoo import _, api, exceptions, models
+from odoo.tools import config
 from ..s3uri import S3Uri
 
 _logger = logging.getLogger(__name__)
@@ -46,16 +47,16 @@ class IrAttachment(models.Model):
         from the environment variable ``AWS_BUCKETNAME`` will be read.
 
         """
-        host = os.environ.get('AWS_HOST')
+        host = config.get('aws_host') or os.environ.get('AWS_HOST')
 
         # Ensure host is prefixed with a scheme (use https as default)
         if host and not urlsplit(host).scheme:
             host = 'https://%s' % host
 
-        region_name = os.environ.get('AWS_REGION')
-        access_key = os.environ.get('AWS_ACCESS_KEY_ID')
-        secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
-        bucket_name = name or os.environ.get('AWS_BUCKETNAME')
+        region_name = config.get('aws_region') or os.environ.get('AWS_REGION')
+        access_key = config.get('aws_access_key_id') or os.environ.get('AWS_ACCESS_KEY_ID')
+        secret_key = config.get('aws_secret_access_key') or os.environ.get('AWS_SECRET_ACCESS_KEY')
+        bucket_name = config.get('aws_bucketname') or os.environ.get('AWS_BUCKETNAME')
 
         params = {
             'aws_access_key_id': access_key,
