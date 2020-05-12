@@ -20,6 +20,14 @@ Configure accesses with environment variables:
 * ``AWS_SECRET_ACCESS_KEY``
 * ``AWS_BUCKETNAME``
 
+Alternatively you can set them in Odoo config file using lower case:
+
+* ``aws_region=``
+* ``aws_access_key_id=``
+* ``aws_secret_access_key=``
+* ``aws_bucketname=``
+
+
 Read-only mode:
 
 The bucket and the file key are stored in the attachment. So if you change the
