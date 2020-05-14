@@ -39,6 +39,7 @@ sentinel_port = int(os.environ.get('ODOO_SESSION_REDIS_SENTINEL_PORT', 26379))
 host = os.environ.get('ODOO_SESSION_REDIS_HOST', 'localhost')
 port = int(os.environ.get('ODOO_SESSION_REDIS_PORT', 6379))
 prefix = os.environ.get('ODOO_SESSION_REDIS_PREFIX')
+url = os.environ.get('ODOO_SESSION_REDIS_URL')
 password = os.environ.get('ODOO_SESSION_REDIS_PASSWORD')
 expiration = os.environ.get('ODOO_SESSION_REDIS_EXPIRATION')
 anon_expiration = os.environ.get('ODOO_SESSION_REDIS_EXPIRATION_ANONYMOUS')
@@ -50,6 +51,8 @@ def session_store(self):
         sentinel = Sentinel([(sentinel_host, sentinel_port)],
                             password=password)
         redis_client = sentinel.master_for(sentinel_master_name)
+    elif url:
+        redis_client = redis.from_url(url)
     else:
         redis_client = redis.Redis(host=host, port=port, password=password)
     return RedisSessionStore(redis=redis_client, prefix=prefix,
