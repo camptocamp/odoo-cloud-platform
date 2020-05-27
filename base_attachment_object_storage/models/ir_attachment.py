@@ -94,8 +94,8 @@ class IrAttachment(models.Model):
             ('res_model', 'not in', excluded_model_for_db_store),
         ]
         domain += ['|'] * (len(mimetypes_for_db_store) - 1)
-        domain += [('mimetype', '=like', mimetype) for mimetype in
-                   mimetypes_for_db_store]
+        domain += [('mimetype', '=like', '{}%'.format(mimetype))
+                   for mimetype in mimetypes_for_db_store]
         return domain
 
     def _save_in_db_anyway(self):
