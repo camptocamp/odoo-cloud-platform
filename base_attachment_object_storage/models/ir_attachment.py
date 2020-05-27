@@ -12,8 +12,8 @@ import odoo
 
 from contextlib import closing, contextmanager
 from odoo import api, exceptions, models, _
-from odoo.tools.mimetypes import guess_mimetype
-from odoo.osv.expression import AND, normalize_domain
+from odoo.osv.expression import AND, OR, normalize_domain
+from odoo.tools.safe_eval import const_eval
 
 
 _logger = logging.getLogger(__name__)
@@ -68,109 +68,114 @@ class IrAttachment(models.Model):
         if update_module:
             self.env['ir.attachment'].sudo()._force_storage_to_object_storage()
 
-    @api.model
-    def _save_in_db_domain(self):
+    @property
+    def _object_storage_default_force_db_config(self):
+        return {"image/": 51200, "application/javascript": 0, "text/css": 0}
+
+    def _get_storage_force_db_config(self):
+        param = self.env['ir.config_parameter'].sudo().get_param(
+            'ir_attachment.storage.force.database',
+        )
+        storage_config = None
+        if param:
+            try:
+                storage_config = const_eval(param)
+            except (SyntaxError, TypeError, ValueError):
+                _logger.exception(
+                    "Could not parse system parameter"
+                    " 'ir_attachment.storage.force.database', reverting to the"
+                    " default configuration.")
+
+        if not storage_config:
+            storage_config = self._object_storage_default_force_db_config
+        return storage_config
+
+    def _store_in_db_instead_of_object_storage_domain(self):
         """Return a domain for attachments that must be forced to DB
 
-        Read the docstring of ``_save_in_db_anyway`` for more details.
+        Read the docstring of ``_store_in_db_instead_of_object_storage`` for
+        more details.
+
+        Used in ``force_storage_to_db_for_special_fields`` to find records
+        to move from the object storage to the database.
 
         The domain must be inline with the conditions in
-        ``_save_in_db_anyway``.
+        ``_store_in_db_instead_of_object_storage``.
         """
-        excluded_model_settings = self.env['ir.config_parameter'].sudo().\
-            get_param('excluded.models.storedb', default='')
-        excluded_model_for_db_store = excluded_model_settings.split(',')
-        mimetypes_settings = self.env['ir.config_parameter'].sudo().get_param(
-            'mimetypes.list.storedb', default='')
-        mimetypes_for_db_store = mimetypes_settings.split(',')
-        filesize = self.env['ir.config_parameter'].sudo().get_param(
-            'file.maxsize.storedb', default='0')
-        domain = [
-            '|',
-            # assets are stored in 'ir.ui.view'
-            ('res_model', '=', 'ir.ui.view'),
-            '&', '&',
-            ('file_size', '<', int(filesize)),
-            ('res_model', 'not in', excluded_model_for_db_store),
-        ]
-        domain += ['|'] * (len(mimetypes_for_db_store) - 1)
-        domain += [('mimetype', '=like', mimetype) for mimetype in
-                   mimetypes_for_db_store]
+        domain = []
+        storage_config = self._get_storage_force_db_config()
+        for mimetype_key, limit in storage_config.items():
+            part = [("mimetype", "=like", "{}%".format(mimetype_key))]
+            if limit:
+                part = AND([part, [("file_size", "<=", limit)]])
+            domain = OR([domain, part])
         return domain
 
-    def _save_in_db_anyway(self):
+    def _store_in_db_instead_of_object_storage(self, data, mimetype):
         """ Return whether an attachment must be stored in db
 
-        When we are using an Object Store. This is sometimes required
+        When we are using an Object Storage. This is sometimes required
         because the object storage is slower than the database/filesystem.
 
-        We store image_small and image_medium from 'Binary' fields
-        because they should be fast to read as they are often displayed
-        in kanbans / lists. The same for web_icon_data.
+        Small images (128, 256) are used in Odoo in list / kanban views. We
+        want them to be fast to read.
+        They are generally < 50KB (default configuration) so they don't take
+        that much space in database, but they'll be read much faster than from
+        the object storage.
 
-        We store the assets locally as well. Not only for performance,
-        but also because it improves the portability of the database:
-        when assets are invalidated, they are deleted so we don't have
-        an old database with attachments pointing to deleted assets.
+        The assets (application/javascript, text/css) are stored in database
+        as well whatever their size is:
+
+        * a database doesn't have thousands of them
+        * of course better for performance
+        * better portability of a database: when replicating a production
+          instance for dev, the assets are included
+
+        The configuration can be modified in the ir.config_parameter
+        ``ir_attachment.storage.force.database``, as a dictionary, for
+        instance::
+
+            {"image/": 51200, "application/javascript": 0, "text/css": 0}
+
+        Where the key is the beginning of the mimetype to configure and the
+        value is the limit in size below which attachments are kept in DB.
+        0 means no limit.
+
+        Default configuration means:
+
+        * images mimetypes (image/png, image/jpeg, ...) below 51200 bytes are
+          stored in database
+        * application/javascript are stored in database whatever their size
+        * text/css are stored in database whatever their size
 
         The conditions must be inline with the domain in
-        ``_save_in_db_domain``.
+        ``_store_in_db_instead_of_object_storage_domain``.
 
         """
-        self.ensure_one()
-        # Note: we cannot use _save_in_db_domain because we can be working
-        # with new records here. The conditions must stay inline though.
-        # assets
-        if self.res_model == 'ir.ui.view':
-            # assets are stored in 'ir.ui.view'
-            return True
-        # Check if model must never be stored on DB
-        excluded_model_settings = self.env['ir.config_parameter'].sudo().\
-            get_param('excluded.models.storedb', default='')
-        excluded_model_for_db_store = excluded_model_settings.split(',')
-        if self.res_model in excluded_model_for_db_store:
-            return False
-        # Check if file size and mimetype fit requirements
-        data_to_store = self.datas
-        bin_data = base64.b64decode(data_to_store) if data_to_store else ''
-        current_mimetype = guess_mimetype(bin_data)
-        mimetypes_settings = self.env['ir.config_parameter'].sudo().get_param(
-            'mimetypes.list.storedb', default='')
-        mimetypes_for_db_store = mimetypes_settings.split(',')
-        if any(current_mimetype.startswith(val) for val in
-               mimetypes_for_db_store):
-            # get allowed size
-            filesize = self.env['ir.config_parameter'].sudo().get_param(
-                'file.maxsize.storedb', default='0')
-            if len(bin_data) < int(filesize):
-                return True
+        storage_config = self._get_storage_force_db_config()
+        for mimetype_key, limit in storage_config.items():
+            if mimetype.startswith(mimetype_key):
+                if not limit:
+                    return True
+                bin_data = base64.b64decode(data) if data else b''
+                return len(bin_data) <= limit
         return False
 
-    def _inverse_datas(self):
-        # override in order to store files that need fast access,
-        # we keep them in the database instead of the object storage
-        location = self.env.context.get('storage_location') or self._storage()
-        for attach in self:
-            if location in self._get_stores() and attach._save_in_db_anyway():
+    def _get_datas_related_values(self, data, mimetype):
+        storage = self.env.context.get('storage_location') or self._storage()
+        if data and storage in self._get_stores():
+            if self._store_in_db_instead_of_object_storage(data, mimetype):
                 # compute the fields that depend on datas
-                value = attach.datas
-                bin_data = base64.b64decode(value) if value else ''
-                vals = {
+                bin_data = base64.b64decode(data) if data else b''
+                values = {
                     'file_size': len(bin_data),
                     'checksum': self._compute_checksum(bin_data),
-                    'db_datas': value,
-                    # we seriously don't need index content on those fields
-                    'index_content': False,
+                    'index_content': self._index(bin_data, mimetype),
                     'store_fname': False,
+                    'db_datas': data,
                 }
-                fname = attach.store_fname
-                # write as superuser, as user probably does not
-                # have write access
-                super(IrAttachment, attach.sudo()).write(vals)
-                if fname:
-                    self._file_delete(fname)
-                continue
-            super(IrAttachment, attach)._inverse_datas()
+                return values
+        return super()._get_datas_related_values(data, mimetype)
 
     @api.model
     def _file_read(self, fname, bin_size=False):
@@ -245,7 +250,7 @@ class IrAttachment(models.Model):
                 with closing(registry.cursor()) as cr:
                     try:
                         yield self.env(cr=cr)
-                    except:
+                    except Exception:
                         cr.rollback()
                         raise
                     else:
@@ -307,9 +312,15 @@ class IrAttachment(models.Model):
 
         domain = AND((
             normalize_domain(
-                [('store_fname', '=like', '{}://%'.format(storage))]
+                [('store_fname', '=like', '{}://%'.format(storage)),
+                 # for res_field, see comment in
+                 # _force_storage_to_object_storage
+                 '|',
+                 ('res_field', '=', False),
+                 ('res_field', '!=', False),
+                 ]
             ),
-            normalize_domain(self._save_in_db_domain())
+            normalize_domain(self._store_in_db_instead_of_object_storage_domain())
         ))
 
         with self.do_in_new_env(new_cr=new_cr) as new_env:
