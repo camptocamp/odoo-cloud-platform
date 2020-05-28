@@ -34,6 +34,10 @@ This addon must be added in the server wide addons with (``--load`` option):
 
 ``--load=web,attachment_s3``
 
+The System Parameter ``ir_attachment.storage.force.database`` can be customized to
+force storage of files in the database. See the documentation of the module
+``base_attachment_object_storage``.
+
 Limitations
 -----------
 
