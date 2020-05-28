@@ -110,7 +110,7 @@ class IrAttachment(models.Model):
     def _store_file_set_acl(self, acl):
         self.ensure_one()
         fname = self.store_fname
-        if fname.startswith('s3://'):
+        if fname and fname.startswith('s3://'):
             s3uri = S3Uri(fname)
             try:
                 bucket = self._get_s3_bucket(name=s3uri.bucket())
