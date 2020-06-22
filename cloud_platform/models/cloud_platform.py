@@ -34,6 +34,9 @@ class FilestoreKind(object):
     file = 'file'
 
 
+DefaultConfig = PlatformConfig(filestore=FilestoreKind.db)
+
+
 class CloudPlatform(models.AbstractModel):
     _name = 'cloud.platform'
 
@@ -63,7 +66,7 @@ class CloudPlatform(models.AbstractModel):
             None
         )
         configs = configs_getter() if configs_getter else {}
-        return configs.get(environment) or FilestoreKind.db
+        return configs.get(environment) or DefaultConfig
 
     # Due to the addition of the ovh cloud platform
     # This will be moved to cloud_platform_exoscale on v11
