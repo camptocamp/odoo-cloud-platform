@@ -14,6 +14,6 @@
         "views/res_partner.xml",
         "views/res_users.xml",
     ],
-    'installable': False,
+    'installable': True,
     'auto_install': False,
 }
