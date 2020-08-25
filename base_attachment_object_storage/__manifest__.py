@@ -4,13 +4,15 @@
 
 {'name': 'Base Attachment Object Store',
  'summary': 'Base module for the implementation of external object store.',
- 'version': '12.0.1.1.0',
+ 'version': '12.0.1.2.0',
  'author': 'Camptocamp,Odoo Community Association (OCA)',
  'license': 'AGPL-3',
  'category': 'Knowledge Management',
  'depends': ['base'],
  'website': 'http://www.camptocamp.com',
- 'data': [],
+ 'data': [
+     'data/res_config_settings_data.xml',
+ ],
  'installable': True,
  'auto_install': True,
  }

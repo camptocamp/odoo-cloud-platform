@@ -114,7 +114,7 @@ class IrAttachment(models.Model):
             domain = OR([domain, part])
         return domain
 
-    def _store_in_db_instead_of_object_storage(self, data, mimetype):
+    def _store_in_db_instead_of_object_storage(self):
         """ Return whether an attachment must be stored in db
 
         When we are using an Object Storage. This is sometimes required
@@ -157,28 +157,39 @@ class IrAttachment(models.Model):
         """
         storage_config = self._get_storage_force_db_config()
         for mimetype_key, limit in storage_config.items():
-            if mimetype.startswith(mimetype_key):
+            if self.mimetype.startswith(mimetype_key):
                 if not limit:
                     return True
-                bin_data = base64.b64decode(data) if data else b''
+                bin_data = base64.b64decode(self.datas) if self.datas else b''
                 return len(bin_data) <= limit
         return False
 
-    def _get_datas_related_values(self, data, mimetype):
+    def _inverse_datas(self):
+        # override in order to store files that need fast access,
+        # we keep them in the database instead of the object storage
         storage = self.env.context.get('storage_location') or self._storage()
-        if data and storage in self._get_stores():
-            if self._store_in_db_instead_of_object_storage(data, mimetype):
-                # compute the fields that depend on datas
-                bin_data = base64.b64decode(data) if data else b''
-                values = {
-                    'file_size': len(bin_data),
-                    'checksum': self._compute_checksum(bin_data),
-                    'index_content': self._index(bin_data, mimetype),
-                    'store_fname': False,
-                    'db_datas': data,
-                }
-                return values
-        return super()._get_datas_related_values(data, mimetype)
+        for attach in self:
+            if storage in self._get_stores():
+                if self._store_in_db_instead_of_object_storage():
+                    # compute the fields that depend on datas
+                    value = attach.datas
+                    bin_data = base64.b64decode(value) if value else ''
+                    vals = {
+                        'file_size': len(bin_data),
+                        'checksum': self._compute_checksum(bin_data),
+                        # we seriously don't need index content on those fields
+                        'index_content': False,
+                        'store_fname': False,
+                        'db_datas': value,
+                    }
+                    fname = attach.store_fname
+                    # write as superuser, as user probably does not
+                    # have write access
+                    super(IrAttachment, attach.sudo()).write(vals)
+                    if fname:
+                        self._file_delete(fname)
+                    continue
+            super(IrAttachment, attach)._inverse_datas()
 
     @api.model
     def _file_read(self, fname, bin_size=False):
