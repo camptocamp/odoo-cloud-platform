@@ -266,8 +266,8 @@ class IrAttachment(models.Model):
                     try:
                         yield self.env(cr=cr)
                     except Exception:
-                        cr.rollback()
-                        raise
+                        _logger.exception("Error creating new odoo "
+                                          "environment")
                     else:
                         # disable pylint error because this is a valid commit,
                         # we are in a new env
