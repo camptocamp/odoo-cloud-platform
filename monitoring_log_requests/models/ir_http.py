@@ -2,15 +2,28 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
 import json
-import logging
 import time
+from os import environ
 
 from odoo import models
 from odoo.http import request as http_request
 from odoo.tools.config import config
 
+udp_dest = environ.get('ODOO_REQUESTS_LOGGING_UDP')
+if udp_dest:
+    import socket
+    import atexit
 
-_logger = logging.getLogger('monitoring.http.requests')
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
+    atexit.register(sock.close)
+    ip, port = udp_dest.split(':')
+
+    def output_method(data):
+        sock.sendto(data.encode('utf-8'), (ip, port))
+else:
+    import logging
+    _logger = logging.getLogger('monitoring.http.requests')
+    output_method = _logger.info
 
 
 class IrHttp(models.AbstractModel):
@@ -80,4 +93,4 @@ class IrHttp(models.AbstractModel):
 
     @classmethod
     def _monitoring_log(cls, info):
-        _logger.info(json.dumps(info))
+        output_method(json.dumps(info))
