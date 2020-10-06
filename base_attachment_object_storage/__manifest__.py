@@ -11,6 +11,6 @@
  'depends': ['base'],
  'website': 'http://www.camptocamp.com',
  'data': ['data/res_config_settings_data.xml'],
- 'installable': True,
+ 'installable': False,
  'auto_install': True,
  }

@@ -10,5 +10,5 @@
  'depends': ['base', 'web'],
  'website': 'http://www.camptocamp.com',
  'data': [],
- 'installable': True,
+ 'installable': False,
  }

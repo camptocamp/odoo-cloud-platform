@@ -13,5 +13,5 @@
  },
  'website': 'http://www.camptocamp.com',
  'data': [],
- 'installable': True,
+ 'installable': False,
  }
