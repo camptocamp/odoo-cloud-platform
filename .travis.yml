@@ -20,7 +20,7 @@ env:
   - TESTS="1" ODOO_REPO="odoo/odoo"
   - TESTS="1" ODOO_REPO="OCA/OCB"
   global:
-  - VERSION="13.0" LINT_CHECK="0" TESTS="0"
+  - VERSION="14.0" LINT_CHECK="0" TESTS="0"
 
 install:
   - git clone --depth=1 https://github.com/OCA/maintainer-quality-tools.git ${HOME}/maintainer-quality-tools
