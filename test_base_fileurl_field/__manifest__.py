@@ -3,7 +3,7 @@
 {
     'name': 'test base fileurl fields',
     'summary': """A module to verify fileurl field.""",
-    'version': '12.0.1.0.0',
+    'version': '14.0.1.0.0',
     'category': 'Tests',
     'author': 'Camptocamp,Odoo Community Association (OCA)',
     'license': 'AGPL-3',
@@ -14,6 +14,6 @@
         "views/res_partner.xml",
         "views/res_users.xml",
     ],
-    'installable': False,
+    'installable': True,
     'auto_install': False,
 }
