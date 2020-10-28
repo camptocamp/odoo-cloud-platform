@@ -2,7 +2,7 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
 import logging
-
+import os
 from odoo import models, api
 
 _logger = logging.getLogger(__name__)
@@ -37,8 +37,19 @@ class CloudPlatform(models.AbstractModel):
         return configs
 
     # TODO: Assert that AWS_HOST is set to 'storage.googleapis.com'
-    # @api.model
-    # def check(self):
+    @api.model
+    def check(self):
+        assert os.environ.get('AWS_HOST') == 'storage.googleapis.com', (
+            "AWS_ACCESS_KEY_ID environment variable is required when "
+            "ir_attachment.location is 's3'."
+        )
+        assert int(os.environ.get('AWS_MULTIPART_THRESHOLD')) >= 8092, (
+            "AWS_MULTIPART_THRESHOLD has to be set to max to disable multi-part operations "
+            "in google cloud"
+        )
+
+    super(CloudPlatform, self).check()
+
 
     @api.model
     def install_gcp(self):

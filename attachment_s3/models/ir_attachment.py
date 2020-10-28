@@ -3,12 +3,14 @@
 
 
 import base64
+import io
 import logging
 import os
-import io
 from urllib.parse import urlsplit
 
+from boto3.s3.transfer import TransferConfig
 from odoo import _, api, exceptions, models
+
 from ..s3uri import S3Uri
 
 _logger = logging.getLogger(__name__)
@@ -25,6 +27,7 @@ except ImportError:
 
 class IrAttachment(models.Model):
     _inherit = "ir.attachment"
+    _transfer_config = None
 
     def _get_stores(self):
         l = ['s3']
@@ -41,6 +44,7 @@ class IrAttachment(models.Model):
         * ``AWS_ACCESS_KEY_ID``
         * ``AWS_SECRET_ACCESS_KEY``
         * ``AWS_BUCKETNAME``
+        * ``AWS_MULTIPART_THRESHOLD``
 
         If a name is provided, we'll read this bucket, otherwise, the bucket
         from the environment variable ``AWS_BUCKETNAME`` will be read.
@@ -56,6 +60,14 @@ class IrAttachment(models.Model):
         access_key = os.environ.get('AWS_ACCESS_KEY_ID')
         secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
         bucket_name = name or os.environ.get('AWS_BUCKETNAME')
+
+        try:
+            multipart_threshold = int(os.environ.get('AWS_MULTIPART_THRESHOLD', 0))
+
+            if multipart_threshold:
+                _transfer_config = TransferConfig(multipart_threshold=1024 ** 3 * multipart_threshold)
+        except (ValueError, TypeError):
+            pass
 
         params = {
             'aws_access_key_id': access_key,
@@ -120,11 +132,12 @@ class IrAttachment(models.Model):
             try:
                 key = s3uri.item()
                 bucket.meta.client.head_object(
-                    Bucket=bucket.name,  Key=key
+                    Bucket=bucket.name, Key=key
                 )
                 if bin_size:
                     return bucket.Object(key).content_length
                 with io.BytesIO() as res:
+                    # TODO Possibly also needs Config=self._transfer_config
                     bucket.download_fileobj(key, res)
                     res.seek(0)
                     read = base64.b64encode(res.read())
@@ -148,7 +161,7 @@ class IrAttachment(models.Model):
                 file.seek(0)
                 filename = 's3://%s/%s' % (bucket.name, key)
                 try:
-                    obj.upload_fileobj(file)
+                    obj.upload_fileobj(file, Config=self._transfer_config)
                 except ClientError as error:
                     # log verbose error from s3, return short message for user
                     _logger.exception(
