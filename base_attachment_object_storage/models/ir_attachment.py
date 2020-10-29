@@ -426,6 +426,7 @@ class IrAttachment(models.Model):
             # delete the files from the filesystem once we know the changes
             # have been committed in ir.attachment
             if files_to_clean:
+                new_env.cr.commit()
                 new_env.cr.after('commit', clean)
 
     def _get_stores(self):
