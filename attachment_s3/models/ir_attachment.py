@@ -107,7 +107,7 @@ class IrAttachment(models.Model):
         return bucket
 
     @api.model
-    def _store_file_read(self, fname, bin_size=False):
+    def _store_file_read(self, fname):
         if fname.startswith('s3://'):
             s3uri = S3Uri(fname)
             try:
@@ -120,10 +120,8 @@ class IrAttachment(models.Model):
             try:
                 key = s3uri.item()
                 bucket.meta.client.head_object(
-                    Bucket=bucket.name,  Key=key
+                    Bucket=bucket.name, Key=key
                 )
-                if bin_size:
-                    return bucket.Object(key).content_length
                 with io.BytesIO() as res:
                     bucket.download_fileobj(key, res)
                     res.seek(0)
@@ -135,7 +133,7 @@ class IrAttachment(models.Model):
                 )
             return read
         else:
-            return super()._store_file_read(fname, bin_size)
+            return super()._store_file_read(fname)
 
     @api.model
     def _store_file_write(self, key, bin_data):
