@@ -121,7 +121,7 @@ class IrAttachment(models.Model):
         return conn
 
     @api.model
-    def _store_file_read(self, fname, bin_size=False):
+    def _store_file_read(self, fname):
         if fname.startswith('swift://'):
             swifturi = SwiftUri(fname)
             try:
@@ -141,7 +141,7 @@ class IrAttachment(models.Model):
                     'Error reading object from Swift object store')
             return read
         else:
-            return super()._store_file_read(fname, bin_size)
+            return super()._store_file_read(fname)
 
     def _store_file_write(self, key, bin_data):
         if self._storage() == 'swift':
