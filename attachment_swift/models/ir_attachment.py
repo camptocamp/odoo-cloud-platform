@@ -2,7 +2,6 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
 
-import base64
 import logging
 import os
 from ..swift_uri import SwiftUri
@@ -132,9 +131,10 @@ class IrAttachment(models.Model):
                 )
                 return ''
             try:
-                resp, obj_content = conn.get_object(swifturi.container(),
-                                                    swifturi.item())
-                read = base64.b64encode(obj_content)
+                resp, read = conn.get_object(
+                    swifturi.container(),
+                    swifturi.item()
+                )
             except ClientException:
                 read = ''
                 _logger.exception(
