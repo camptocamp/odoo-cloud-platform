@@ -1,7 +1,6 @@
 # Copyright 2017-2019 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
-import base64
 import inspect
 import logging
 import os
@@ -157,7 +156,7 @@ class IrAttachment(models.Model):
             if mimetype.startswith(mimetype_key):
                 if not limit:
                     return True
-                bin_data = base64.b64decode(data) if data else b''
+                bin_data = data
                 return len(bin_data) <= limit
         return False
 
@@ -166,7 +165,7 @@ class IrAttachment(models.Model):
         if data and storage in self._get_stores():
             if self._store_in_db_instead_of_object_storage(data, mimetype):
                 # compute the fields that depend on datas
-                bin_data = base64.b64decode(data) if data else b''
+                bin_data = data
                 values = {
                     'file_size': len(bin_data),
                     'checksum': self._compute_checksum(bin_data),
