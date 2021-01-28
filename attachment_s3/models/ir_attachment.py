@@ -50,10 +50,10 @@ class IrAttachment(models.Model):
         if host and not urlsplit(host).scheme:
             host = "https://%s" % host
 
-        region_name = os.environ.get('AWS_REGION')
-        access_key = os.environ.get('AWS_ACCESS_KEY_ID')
-        secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
-        bucket_name = name or os.environ.get('AWS_BUCKETNAME')
+        region_name = os.environ.get("AWS_REGION")
+        access_key = os.environ.get("AWS_ACCESS_KEY_ID")
+        secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
+        bucket_name = name or os.environ.get("AWS_BUCKETNAME") + "-" + self.env.cr.dbname
 
         params = {
             "aws_access_key_id": access_key,
@@ -78,7 +78,7 @@ class IrAttachment(models.Model):
 
             raise exceptions.UserError(msg)
         # try:
-        s3 = boto3.resource('s3', **params)
+        s3 = boto3.resource("s3", **params)
         bucket = s3.Bucket(bucket_name)
         exists = True
         try:
@@ -100,9 +100,8 @@ class IrAttachment(models.Model):
             else:
                 bucket = s3.create_bucket(
                     Bucket=bucket_name,
-                    CreateBucketConfiguration={
-                        'LocationConstraint': region_name
-                    })
+                    CreateBucketConfiguration={"LocationConstraint": region_name},
+                )
         return bucket
 
     @api.model
@@ -141,7 +140,10 @@ class IrAttachment(models.Model):
             with io.BytesIO() as file:
                 file.write(bin_data)
                 file.seek(0)
-                filename = 's3://%s/%s' % (bucket.name, key)
+                filename = "s3://%s/%s" % (
+                    bucket.name,
+                    key,
+                )
                 try:
                     obj.upload_fileobj(file)
                 except ClientError as error:
