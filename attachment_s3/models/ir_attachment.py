@@ -55,7 +55,7 @@ class IrAttachment(models.Model):
         region_name = os.environ.get('AWS_REGION')
         access_key = os.environ.get('AWS_ACCESS_KEY_ID')
         secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
-        bucket_name = name or os.environ.get('AWS_BUCKETNAME')
+        bucket_name = name or os.environ.get("AWS_BUCKETNAME") + "-" + self.env.cr.dbname
 
         params = {
             'aws_access_key_id': access_key,
