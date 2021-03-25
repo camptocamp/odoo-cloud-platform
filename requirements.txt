@@ -6,4 +6,4 @@ python-swiftclient==3.9.0
 python-keystoneclient==3.22.0
 keystoneauth1==3.14.0
 # error with 5.x (ConstructorError: could not determine a constructor for the tag '!record')
-PyYAML==4.2b4
+PyYAML==5.4
