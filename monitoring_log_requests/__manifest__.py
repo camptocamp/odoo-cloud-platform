@@ -3,12 +3,12 @@
 
 
 {'name': 'Monitoring: Requests Logging',
- 'version': '13.0.1.0.0',
+ 'version': "14.0.1.0.0",
  'author': 'Camptocamp,Numigi,Odoo Community Association (OCA)',
  'license': 'AGPL-3',
  'category': 'category',
  'depends': ['base', 'web'],
  'website': 'http://www.camptocamp.com',
  'data': [],
- 'installable': False,
+ 'installable': True,
  }
