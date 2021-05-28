@@ -52,7 +52,7 @@ class IrAttachment(models.Model):
         secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
         bucket_name = name or os.environ.get('AWS_BUCKETNAME')
         # replaces {db} by the database name to handle multi-tenancy
-        bucket_name.format(db=self.env.cr.dbname)
+        bucket_name = bucket_name.format(db=self.env.cr.dbname)
 
         params = {
             'aws_access_key_id': access_key,
