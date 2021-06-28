@@ -6,6 +6,8 @@ import logging
 
 from werkzeug.contrib.sessions import SessionStore
 
+from . import json_encoding
+
 # this is equal to the duration of the session garbage collector in
 # odoo.http.session_gc()
 DEFAULT_SESSION_TIMEOUT = 60 * 60 * 24 * 7  # 7 days in seconds
@@ -57,7 +59,9 @@ class RedisSessionStore(SessionStore):
                           "expiration of %s seconds for %s",
                           key, expiration, user_msg)
 
-        data = json.dumps(dict(session)).encode('utf-8')
+        data = json.dumps(
+            dict(session), cls=json_encoding.SessionEncoder
+        ).encode('utf-8')
         if self.redis.set(key, data):
             return self.redis.expire(key, expiration)
 
@@ -79,7 +83,9 @@ class RedisSessionStore(SessionStore):
                           "returning a new one", key)
             return self.new()
         try:
-            data = json.loads(saved.decode('utf-8'))
+            data = json.loads(
+                saved.decode('utf-8'), cls=json_encoding.SessionDecoder
+            )
         except ValueError:
             _logger.debug("session for key '%s' has been asked but its json "
                           "content could not be read, it has been reset", key)

@@ -56,6 +56,8 @@ class IrAttachment(models.Model):
         access_key = os.environ.get('AWS_ACCESS_KEY_ID')
         secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
         bucket_name = name or os.environ.get('AWS_BUCKETNAME')
+        # replaces {db} by the database name to handle multi-tenancy
+        bucket_name = bucket_name.format(db=self.env.cr.dbname)
 
         params = {
             'aws_access_key_id': access_key,
@@ -122,10 +124,12 @@ class IrAttachment(models.Model):
                 bucket.meta.client.head_object(
                     Bucket=bucket.name,  Key=key
                 )
-                res = io.BytesIO()
-                bucket.download_fileobj(key, res)
-                res.seek(0)
-                read = base64.b64encode(res.read())
+                if bin_size:
+                    return bucket.Object(key).content_length
+                with io.BytesIO() as res:
+                    bucket.download_fileobj(key, res)
+                    res.seek(0)
+                    read = base64.b64encode(res.read())
             except ClientError:
                 read = ''
                 _logger.info(
@@ -141,20 +145,20 @@ class IrAttachment(models.Model):
         if location == 's3':
             bucket = self._get_s3_bucket()
             obj = bucket.Object(key=key)
-            file = io.BytesIO()
-            file.write(bin_data)
-            file.seek(0)
-            filename = 's3://%s/%s' % (bucket.name, key)
-            try:
-                obj.upload_fileobj(file)
-            except ClientError as error:
-                # log verbose error from s3, return short message for user
-                _logger.exception(
-                    'Error during storage of the file %s' % filename
-                )
-                raise exceptions.UserError(
-                    _('The file could not be stored: %s') % str(error)
-                )
+            with io.BytesIO() as file:
+                file.write(bin_data)
+                file.seek(0)
+                filename = 's3://%s/%s' % (bucket.name, key)
+                try:
+                    obj.upload_fileobj(file)
+                except ClientError as error:
+                    # log verbose error from s3, return short message for user
+                    _logger.exception(
+                        'Error during storage of the file %s' % filename
+                    )
+                    raise exceptions.UserError(
+                        _('The file could not be stored: %s') % str(error)
+                    )
         else:
             _super = super()
             filename = _super._store_file_write(key, bin_data)

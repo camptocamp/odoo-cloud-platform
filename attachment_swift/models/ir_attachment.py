@@ -46,19 +46,21 @@ class SwiftSessionStore(object):
     def __init__(self):
         self._sessions = {}
 
-    def _get_key(self, auth_url, username, password, tenant_name):
-        return (auth_url, username, password, tenant_name)
+    def _get_key(self, auth_url, username, password, project_name):
+        return (auth_url, username, password, project_name)
 
     def get_session(self, auth_url=None, username=None, password=None,
-                    tenant_name=None):
-        key = self._get_key(auth_url, username, password, tenant_name)
+                    project_name=None):
+        key = self._get_key(auth_url, username, password, project_name)
         session = self._sessions.get(key)
         if not session:
-            auth = keystoneauth1.identity.v2.Password(
+            auth = keystoneauth1.identity.v3.Password(
                 username=username,
                 password=password,
-                tenant_name=tenant_name,
+                project_name=project_name,
                 auth_url=auth_url,
+                project_domain_id='default',
+                user_domain_id='default',
             )
             session = keystoneauth1.session.Session(
                 auth=auth,
@@ -85,12 +87,18 @@ class IrAttachment(models.Model):
         host = os.environ.get('SWIFT_AUTH_URL')
         account = os.environ.get('SWIFT_ACCOUNT')
         password = os.environ.get('SWIFT_PASSWORD')
-        tenant_name = os.environ.get('SWIFT_TENANT_NAME')
+        project_name = os.environ.get('SWIFT_PROJECT_NAME')
+        if not project_name and os.environ.get('SWIFT_TENANT_NAME'):
+            project_name = os.environ['SWIFT_TENANT_NAME']
+            _logger.warning(
+                "SWIFT_TENANT_NAME is deprecated and "
+                "must be replaced by SWIFT_PROJECT_NAME"
+            )
         region = os.environ.get('SWIFT_REGION_NAME')
         os_options = {}
         if region:
             os_options['region_name'] = region
-        if not (host and account and password and tenant_name):
+        if not (host and account and password and project_name):
             raise exceptions.UserError(_(
                 "Problem connecting to Swift store, are the env variables "
                 "(SWIFT_AUTH_URL, SWIFT_ACCOUNT, SWIFT_PASSWORD, "
@@ -100,7 +108,7 @@ class IrAttachment(models.Model):
             session = swift_session_store.get_session(
                 username=account,
                 password=password,
-                tenant_name=tenant_name,
+                project_name=project_name,
                 auth_url=host,
             )
             conn = swiftclient.client.Connection(

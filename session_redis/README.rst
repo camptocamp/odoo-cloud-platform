@@ -13,6 +13,8 @@ The storage of sessions in Redis is activated using environment variables.
 * ``ODOO_SESSION_REDIS_PORT`` is the redis port (default is ``6379``)
 * ``ODOO_SESSION_REDIS_PASSWORD`` is the password for the AUTH command
   (optional)
+* ``ODOO_SESSION_REDIS_URL`` is an alternative way to define the Redis server
+  address. It's the preferred way when you're using the ``rediss://`` protocol.
 * ``ODOO_SESSION_REDIS_PREFIX`` is the prefix for the session keys (optional)
 * ``ODOO_SESSION_REDIS_EXPIRATION`` is the time in seconds before expiration of
   the sessions (default is 7 days)

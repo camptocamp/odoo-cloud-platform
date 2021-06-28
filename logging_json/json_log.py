@@ -5,11 +5,14 @@ import logging
 import os
 import threading
 import time
+import uuid
 
 from distutils.util import strtobool
 from odoo.netsvc import PerfFilter
 from odoo.service.server import RequestHandler
 from werkzeug.urls import uri_to_iri
+
+from odoo import http
 
 _logger = logging.getLogger(__name__)
 TIMING_DP = 6
@@ -29,6 +32,8 @@ class OdooJsonFormatter(jsonlogger.JsonFormatter):
     def add_fields(self, log_record, record, message_dict):
         record.pid = os.getpid()
         record.dbname = getattr(threading.currentThread(), 'dbname', '?')
+        record.request_id = getattr(threading.current_thread(), 'request_uuid', None)
+        record.uid = getattr(threading.current_thread(), 'uid', None)
         # Remove perf_info - it is replaced by JsonPerfFilter fields, defined below
         if hasattr(record, "perf_info"):
             delattr(record, "perf_info")
@@ -83,3 +88,12 @@ if is_true(os.environ.get('ODOO_LOGGING_JSON')):
         http_logger.info('request%s', '', extra=record)
 
     RequestHandler.log_request = log_request
+
+# monkey patch WebRequest constructor to store request_uuid
+org_init = http.WebRequest.__init__
+
+def new_init(self, httprequest):
+    org_init(self, httprequest)
+    threading.current_thread().request_uuid = uuid.uuid4()
+
+http.WebRequest.__init__ = new_init
