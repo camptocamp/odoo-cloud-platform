@@ -4,7 +4,7 @@
 
 {'name': 'Attachments on S3 storage',
  'summary': 'Store assets and attachments on a S3 compatible object storage',
- 'version': '12.0.1.0.0',
+ 'version': '12.0.1.0.1',
  'author': 'Camptocamp,Odoo Community Association (OCA)',
  'license': 'AGPL-3',
  'category': 'Knowledge Management',
@@ -14,5 +14,6 @@
  },
  'website': 'https://www.camptocamp.com',
  'data': [],
+ 'post_init_hook': '_post_init_hook',
  'installable': True,
  }
