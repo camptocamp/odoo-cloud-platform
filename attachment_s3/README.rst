@@ -11,14 +11,37 @@ Activate S3 storage:
 
 * Create or set the system parameter with the key ``ir_attachment.location``
   and the value in the form ``s3``.
+* Configure accesses with the following environment variables:
 
-Configure accesses with environment variables:
+.. list-table::
+   :header-rows: 1
 
-* ``AWS_HOST`` (not required if using AWS services)
-* ``AWS_REGION`` (required if using AWS services)
-* ``AWS_ACCESS_KEY_ID``
-* ``AWS_SECRET_ACCESS_KEY``
-* ``AWS_BUCKETNAME`` (optional {db} placeholder)
+   * - Name
+     - Description
+     - Values
+   * - ``AWS_HOST``
+     - Endpoint.
+     - Not required if using AWS (defaults to s3.amazonaws.com).
+   * - ``AWS_REGION``
+     - Region
+     - Required if using AWS.
+   * - ``AWS_ACCESS_KEY_ID``
+     - Access Key ID
+     -
+   * - ``AWS_SECRET_ACCESS_KEY``
+     - Secret Access Key
+     -
+   * - ``AWS_BUCKETNAME``
+     - Name of the bucket (AWS) or space (Digital Ocean)
+     - Optional {db} placeholder
+   * - ``AWS_DUPLICATE``
+     - If set, the bucket and all its objects will be copied when the database is
+       duplicated. The paths in the database will be updated to use the copy.
+     - True
+   * - ``AWS_EMPTY_ON_DBDROP``
+     - If set, all the objects in the bucket will be deleted when the database is
+       dropped.
+     - True
 
 Read-only mode:
 
@@ -38,6 +61,23 @@ The System Parameter ``ir_attachment.storage.force.database`` can be customized 
 force storage of files in the database. See the documentation of the module
 ``base_attachment_object_storage``.
 
+Examples
+--------
+
+With AWS::
+
+  AWS_REGION=us-east-1
+  AWS_BUCKETNAME=mybucket-{db}
+  AWS_ACCESS_KEY_ID=XXX
+  AWS_SECRET_ACCESS_KEY=XXX
+
+With Digital Ocean::
+
+  AWS_HOST=nyc1.digitaloceanspaces.com
+  AWS_BUCKETNAME=myspace-{db}
+  AWS_ACCESS_KEY_ID=XXX
+  AWS_SECRET_ACCESS_KEY=XXX
+
 Multi-tenancy
 -------------
 
@@ -49,10 +89,13 @@ To handle this, you can insert the `{db}` placeholder in your bucket name variab
 It will be replaced by the database name.
 This will give you a unique bucketname per database.
 
-
 Limitations
 -----------
 
 * You need to call ``env['ir.attachment'].force_storage()`` after
   having changed the ``ir_attachment.location`` configuration in order to
   migrate the existing attachments to S3.
+
+* If ``AWS_EMPTY_ON_DBDROP`` is set, the bucket is not deleted because Digital Ocean
+  takes days to delete it and you get an error message when trying to recreate it:
+  This bucket is temporarily reserved for administrative purposes.
