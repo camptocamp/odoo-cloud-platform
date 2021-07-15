@@ -1,5 +1,5 @@
 import logging
-import boto3
+import os
 
 from odoo.addons.web.controllers.main import Database
 from odoo import http
@@ -12,17 +12,11 @@ _logger = logging.getLogger(__name__)
 class Database(Database):
     @http.route()
     def drop(self, master_pwd, name):
+        delete_on_drop = os.environ.get("AWS_DELETE_ON_DBDROP")
+        if not delete_on_drop:
+            return super(Database, self).drop(master_pwd, name)
         try:
             bucket = request.env["ir.attachment"]._get_s3_bucket()
-            sql = ("""
-                UPDATE ir_attachment AS t SET store_fname = s.store_fname FROM (
-                    SELECT
-                        id,
-                        REPLACE(store_fname, '/*production-master*/', '%s')
-                    AS store_fname FROM ir_attachment WHERE db_datas is NULL)
-                AS s(id,store_fname) where t.id = s.id;
-            """ (bucket.name,))
-            request.env.cr.execute(sql)
             bucket.objects.all().delete()
             s3_resource = request.env["ir.attachment"]._get_s3_client()
             s3_resource.delete_bucket(
@@ -58,5 +52,5 @@ class Database(Database):
 
             return response
         except exceptions.UserError:
-            _logger.exception("error reading attachment from object storage")
+            _logger.exception("Error reading attachments from object storage.")
             return response

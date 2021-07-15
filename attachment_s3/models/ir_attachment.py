@@ -43,6 +43,7 @@ class IrAttachment(models.Model):
         region_name = os.environ.get("AWS_REGION")
         access_key = os.environ.get("AWS_ACCESS_KEY_ID")
         secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
+        delete_on_drop = os.environ.get("AWS_DELETE_ON_DBDROP")
 
         params = {
             "aws_access_key_id": access_key,
@@ -52,12 +53,13 @@ class IrAttachment(models.Model):
             params["endpoint_url"] = host
         if region_name:
             params["region_name"] = region_name
-        if not (access_key and secret_key):
+        if not (access_key and secret_key and delete_on_drop):
             msg = _(
                 "If you want to read from the S3 bucket, the following "
                 "environment variables must be set:\n"
                 "* AWS_ACCESS_KEY_ID\n"
                 "* AWS_SECRET_ACCESS_KEY\n"
+                "* AWS_DELETE_ON_DBDROP\n"
                 "If you want to write in the S3 bucket, this variable "
                 "must be set as well:\n"
                 "* AWS_BUCKETNAME\n"
@@ -79,9 +81,13 @@ class IrAttachment(models.Model):
         * ``AWS_ACCESS_KEY_ID``
         * ``AWS_SECRET_ACCESS_KEY``
         * ``AWS_BUCKETNAME``
+        * ``AWS_DELETE_ON_DBDROP``
 
         If a name is provided, we'll read this bucket, otherwise, the bucket
         from the environment variable ``AWS_BUCKETNAME`` will be read.
+
+        If AWS_DELETE_ON_DBDROP is set to True, the bucket will be
+        deleted when the db is dropped.
 
         """
         s3, region_name = self._get_s3_client()
