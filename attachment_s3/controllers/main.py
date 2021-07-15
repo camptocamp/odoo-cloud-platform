@@ -12,7 +12,6 @@ _logger = logging.getLogger(__name__)
 class Database(Database):
     @http.route()
     def drop(self, master_pwd, name):
-        response = super(Database, self).drop(master_pwd, name)
         try:
             bucket = request.env["ir.attachment"]._get_s3_bucket()
             sql = ("""
@@ -26,13 +25,13 @@ class Database(Database):
             request.env.cr.execute(sql)
             bucket.objects.all().delete()
             s3_resource = request.env["ir.attachment"]._get_s3_client()
-            response = s3_resource.delete_bucket(
+            s3_resource.delete_bucket(
                 Bucket=bucket.name,
             )
-            return response
+            return super(Database, self).drop(master_pwd, name)
         except exceptions.UserError:
             _logger.exception("error reading attachment from object storage")
-            return response
+            return super(Database, self).drop(master_pwd, name)
 
     @http.route()
     def duplicate(self, master_pwd, name, new_name):
@@ -47,10 +46,10 @@ class Database(Database):
                 UPDATE ir_attachment AS t SET store_fname = s.store_fname FROM (
                     SELECT
                         id,
-                        REPLACE(store_fname, '/*production-master*/', '%s')
+                        REPLACE(store_fname, '/*%s*/', '%s')
                     AS store_fname FROM ir_attachment WHERE db_datas is NULL)
                 AS s(id,store_fname) where t.id = s.id;
-            """ (new_bucket_name,))
+            """ (bucket_to_copy, new_bucket_name,))
             request.env.cr.execute(sql)
             for key in s3_resource.list_objects(Bucket=bucket_to_copy)["Contents"]:
                 files = key["Key"]
