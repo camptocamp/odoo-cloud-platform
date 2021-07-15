@@ -14,5 +14,6 @@
  },
  'website': 'https://www.camptocamp.com',
  'data': [],
+ 'post_init_hook': '_auto_create_bucket',
  'installable': True,
  }

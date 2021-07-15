@@ -30,6 +30,45 @@ class IrAttachment(models.Model):
         l += super()._get_stores()
         return l
 
+    def _get_s3_client(self):
+        """
+        Connect to S3 and return the S3 client.
+        """
+        host = os.environ.get("AWS_HOST")
+
+        # Ensure host is prefixed with a scheme (use https as default)
+        if host and not urlsplit(host).scheme:
+            host = "https://%s" % host
+
+        region_name = os.environ.get("AWS_REGION")
+        access_key = os.environ.get("AWS_ACCESS_KEY_ID")
+        secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
+
+        params = {
+            "aws_access_key_id": access_key,
+            "aws_secret_access_key": secret_key,
+        }
+        if host:
+            params["endpoint_url"] = host
+        if region_name:
+            params["region_name"] = region_name
+        if not (access_key and secret_key):
+            msg = _(
+                "If you want to read from the S3 bucket, the following "
+                "environment variables must be set:\n"
+                "* AWS_ACCESS_KEY_ID\n"
+                "* AWS_SECRET_ACCESS_KEY\n"
+                "If you want to write in the S3 bucket, this variable "
+                "must be set as well:\n"
+                "* AWS_BUCKETNAME\n"
+                "Optionally, the S3 host can be changed with:\n"
+                "* AWS_HOST\n"
+            )
+
+            raise exceptions.UserError(msg)
+        # try:
+        return boto3.resource("s3", **params), region_name
+
     @api.model
     def _get_s3_bucket(self, name=None):
         """Connect to S3 and return the bucket
@@ -45,42 +84,12 @@ class IrAttachment(models.Model):
         from the environment variable ``AWS_BUCKETNAME`` will be read.
 
         """
-        host = os.environ.get('AWS_HOST')
+        s3, region_name = self._get_s3_client()
 
-        # Ensure host is prefixed with a scheme (use https as default)
-        if host and not urlsplit(host).scheme:
-            host = 'https://%s' % host
-
-        region_name = os.environ.get('AWS_REGION')
-        access_key = os.environ.get('AWS_ACCESS_KEY_ID')
-        secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
-        bucket_name = name or os.environ.get('AWS_BUCKETNAME')
+        bucket_name = name or os.environ.get("AWS_BUCKETNAME")
         # replaces {db} by the database name to handle multi-tenancy
         bucket_name = bucket_name.format(db=self.env.cr.dbname)
 
-        params = {
-            'aws_access_key_id': access_key,
-            'aws_secret_access_key': secret_key,
-        }
-        if host:
-            params['endpoint_url'] = host
-        if region_name:
-            params['region_name'] = region_name
-        if not (access_key and secret_key and bucket_name):
-            msg = _('If you want to read from the %s S3 bucket, the following '
-                    'environment variables must be set:\n'
-                    '* AWS_ACCESS_KEY_ID\n'
-                    '* AWS_SECRET_ACCESS_KEY\n'
-                    'If you want to write in the %s S3 bucket, this variable '
-                    'must be set as well:\n'
-                    '* AWS_BUCKETNAME\n'
-                    'Optionally, the S3 host can be changed with:\n'
-                    '* AWS_HOST\n'
-                    ) % (bucket_name, bucket_name)
-
-            raise exceptions.UserError(msg)
-        # try:
-        s3 = boto3.resource('s3', **params)
         bucket = s3.Bucket(bucket_name)
         exists = True
         try:
