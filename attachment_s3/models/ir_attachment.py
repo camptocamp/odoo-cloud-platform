@@ -53,13 +53,12 @@ class IrAttachment(models.Model):
             params["endpoint_url"] = host
         if region_name:
             params["region_name"] = region_name
-        if not (access_key and secret_key and delete_on_drop):
+        if not (access_key and secret_key):
             msg = _(
                 "If you want to read from the S3 bucket, the following "
                 "environment variables must be set:\n"
                 "* AWS_ACCESS_KEY_ID\n"
                 "* AWS_SECRET_ACCESS_KEY\n"
-                "* AWS_DELETE_ON_DBDROP\n"
                 "If you want to write in the S3 bucket, this variable "
                 "must be set as well:\n"
                 "* AWS_BUCKETNAME\n"

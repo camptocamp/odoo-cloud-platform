@@ -12,7 +12,7 @@ _logger = logging.getLogger(__name__)
 class Database(Database):
     @http.route()
     def drop(self, master_pwd, name):
-        delete_on_drop = os.environ.get("AWS_DELETE_ON_DBDROP")
+        delete_on_drop = os.environ.get("AWS_DELETE_ON_DBDROP", False)
         if not delete_on_drop:
             return super(Database, self).drop(master_pwd, name)
         try:
