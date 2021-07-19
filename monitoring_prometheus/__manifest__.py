@@ -16,7 +16,7 @@
     "website": "http://www.camptocamp.com",
     "data": [],
     "external_dependencies": {
-        "python": ["prometheus-client"],
+        "python": ["prometheus_client"],
     },
     "installable": True,
 }
