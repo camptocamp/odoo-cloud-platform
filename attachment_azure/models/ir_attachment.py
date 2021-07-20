@@ -54,7 +54,11 @@ class IrAttachment(models.Model):
         account_url = os.environ.get("AZURE_STORAGE_ACCOUNT_URL")
         account_key = os.environ.get("AZURE_STORAGE_ACCOUNT_KEY")
         account_use_aad = os.environ.get("AZURE_STORAGE_USE_AAD")
-        if not (connect_str or (account_name and account_url and account_key) or account_use_aad):
+        if not (
+            connect_str
+            or (account_name and account_url and account_key)
+            or account_use_aad
+        ):
             msg = _(
                 "If you want to read from the Azure container, you must provide the "
                 "following environment variables:\n"
@@ -69,11 +73,10 @@ class IrAttachment(models.Model):
             raise exceptions.UserError(msg)
         blob_service_client = None
         if account_use_aad:
-                token_credential = DefaultAzureCredential()
-                blob_service_client = BlobServiceClient(
-                    account_url=account_url,
-                    credential=token_credential
-                )
+            token_credential = DefaultAzureCredential()
+            blob_service_client = BlobServiceClient(
+                account_url=account_url, credential=token_credential
+            )
         elif connect_str:
             try:
                 blob_service_client = BlobServiceClient.from_connection_string(
