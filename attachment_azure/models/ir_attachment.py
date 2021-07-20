@@ -74,8 +74,8 @@ class IrAttachment(models.Model):
                 sas_token = generate_account_sas(
                     account_name=account_name,
                     account_key=account_key,
-                    resource_types=ResourceTypes(service=True),
-                    permission=AccountSasPermissions(read=True),
+                    resource_types=ResourceTypes(container=True, object=True),
+                    permission=AccountSasPermissions(read=True, write=True),
                     expiry=datetime.utcnow() + timedelta(hours=1),
                 )
                 blob_service_client = BlobServiceClient(
