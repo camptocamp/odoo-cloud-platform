@@ -22,6 +22,11 @@ try:
 except ImportError:
     _logger.debug("Cannot 'import azure-storage-blob'.")
 
+try:
+    from azure.identity import DefaultAzureCredential
+except ImportError:
+    _logger.debug("Cannot 'import azure-identity'.")
+
 
 class IrAttachment(models.Model):
     _inherit = "ir.attachment"
@@ -41,13 +46,20 @@ class IrAttachment(models.Model):
         * ``AZURE_STORAGE_ACCOUNT_NAME``
         * ``AZURE_STORAGE_ACCOUNT_URL``
         * ``AZURE_STORAGE_ACCOUNT_KEY``
+        or if you want to use AAD (pod identity), set it to 1 or 0
+        * ``AZURE_STORAGE_USE_AAD``
 
         """
         connect_str = os.environ.get("AZURE_STORAGE_CONNECTION_STRING")
         account_name = os.environ.get("AZURE_STORAGE_ACCOUNT_NAME")
         account_url = os.environ.get("AZURE_STORAGE_ACCOUNT_URL")
         account_key = os.environ.get("AZURE_STORAGE_ACCOUNT_KEY")
-        if not (connect_str or (account_name and account_url and account_key)):
+        account_use_aad = os.environ.get("AZURE_STORAGE_USE_AAD")
+        if not (
+            connect_str
+            or (account_name and account_url and account_key)
+            or account_use_aad
+        ):
             msg = _(
                 "If you want to read from the Azure container, you must provide the "
                 "following environment variables:\n"
@@ -56,10 +68,17 @@ class IrAttachment(models.Model):
                 "* AZURE_STORAGE_ACCOUNT_NAME\n"
                 "* AZURE_STORAGE_ACCOUNT_URL\n"
                 "* AZURE_STORAGE_ACCOUNT_KEY\n"
+                "or\n"
+                "* AZURE_STORAGE_USE_AAD\n"
             )
             raise exceptions.UserError(msg)
         blob_service_client = None
-        if connect_str:
+        if account_use_aad:
+            token_credential = DefaultAzureCredential()
+            blob_service_client = BlobServiceClient(
+                account_url=account_url, credential=token_credential
+            )
+        elif connect_str:
             try:
                 blob_service_client = BlobServiceClient.from_connection_string(
                     connect_str
