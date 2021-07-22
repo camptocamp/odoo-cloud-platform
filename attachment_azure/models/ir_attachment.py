@@ -4,6 +4,7 @@
 import io
 import logging
 import os
+import re
 from datetime import datetime, timedelta
 
 from odoo import _, api, exceptions, models
@@ -74,8 +75,8 @@ class IrAttachment(models.Model):
                 sas_token = generate_account_sas(
                     account_name=account_name,
                     account_key=account_key,
-                    resource_types=ResourceTypes(service=True),
-                    permission=AccountSasPermissions(read=True),
+                    resource_types=ResourceTypes(container=True, object=True),
+                    permission=AccountSasPermissions(read=True, write=True),
                     expiry=datetime.utcnow() + timedelta(hours=1),
                 )
                 blob_service_client = BlobServiceClient(
@@ -91,9 +92,20 @@ class IrAttachment(models.Model):
         return blob_service_client
 
     @api.model
-    def _get_azure_container(self):
+    def _get_container_name(self):
+        """
+        Container naming rules:
+        https://docs.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-containers--blobs--and-metadata#container-names
+        """
         running_env = os.environ.get("RUNNING_ENV", "dev")
-        container_name = str.lower(running_env + "-" + self.env.cr.dbname)
+        # replace invalid characters by _
+        dbname_cleaned = re.sub(r"[\W_]+", "-", self.env.cr.dbname)
+        # lowercase, max 63 chars
+        return str.lower(running_env + "-" + dbname_cleaned)[:63]
+
+    @api.model
+    def _get_azure_container(self):
+        container_name = self._get_container_name()
         blob_service_client = self._get_blob_service_client()
         container_client = blob_service_client.get_container_client(container_name)
         try:
