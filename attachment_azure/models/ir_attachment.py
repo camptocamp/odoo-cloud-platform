@@ -4,6 +4,7 @@
 import io
 import logging
 import os
+import re
 from datetime import datetime, timedelta
 
 from odoo import _, api, exceptions, models
@@ -20,6 +21,11 @@ try:
     from azure.core.exceptions import ResourceExistsError, HttpResponseError
 except ImportError:
     _logger.debug("Cannot 'import azure-storage-blob'.")
+
+try:
+    from azure.identity import DefaultAzureCredential
+except ImportError:
+    _logger.debug("Cannot 'import azure-identity'.")
 
 
 class IrAttachment(models.Model):
@@ -40,13 +46,20 @@ class IrAttachment(models.Model):
         * ``AZURE_STORAGE_ACCOUNT_NAME``
         * ``AZURE_STORAGE_ACCOUNT_URL``
         * ``AZURE_STORAGE_ACCOUNT_KEY``
+        or if you want to use AAD (pod identity), set it to 1 or 0
+        * ``AZURE_STORAGE_USE_AAD``
 
         """
         connect_str = os.environ.get("AZURE_STORAGE_CONNECTION_STRING")
         account_name = os.environ.get("AZURE_STORAGE_ACCOUNT_NAME")
         account_url = os.environ.get("AZURE_STORAGE_ACCOUNT_URL")
         account_key = os.environ.get("AZURE_STORAGE_ACCOUNT_KEY")
-        if not (connect_str or (account_name and account_url and account_key)):
+        account_use_aad = os.environ.get("AZURE_STORAGE_USE_AAD")
+        if not (
+            connect_str
+            or (account_name and account_url and account_key)
+            or account_use_aad
+        ):
             msg = _(
                 "If you want to read from the Azure container, you must provide the "
                 "following environment variables:\n"
@@ -55,10 +68,17 @@ class IrAttachment(models.Model):
                 "* AZURE_STORAGE_ACCOUNT_NAME\n"
                 "* AZURE_STORAGE_ACCOUNT_URL\n"
                 "* AZURE_STORAGE_ACCOUNT_KEY\n"
+                "or\n"
+                "* AZURE_STORAGE_USE_AAD\n"
             )
             raise exceptions.UserError(msg)
         blob_service_client = None
-        if connect_str:
+        if account_use_aad:
+            token_credential = DefaultAzureCredential()
+            blob_service_client = BlobServiceClient(
+                account_url=account_url, credential=token_credential
+            )
+        elif connect_str:
             try:
                 blob_service_client = BlobServiceClient.from_connection_string(
                     connect_str
@@ -74,8 +94,8 @@ class IrAttachment(models.Model):
                 sas_token = generate_account_sas(
                     account_name=account_name,
                     account_key=account_key,
-                    resource_types=ResourceTypes(service=True),
-                    permission=AccountSasPermissions(read=True),
+                    resource_types=ResourceTypes(container=True, object=True),
+                    permission=AccountSasPermissions(read=True, write=True),
                     expiry=datetime.utcnow() + timedelta(hours=1),
                 )
                 blob_service_client = BlobServiceClient(
@@ -91,9 +111,20 @@ class IrAttachment(models.Model):
         return blob_service_client
 
     @api.model
-    def _get_azure_container(self):
+    def _get_container_name(self):
+        """
+        Container naming rules:
+        https://docs.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-containers--blobs--and-metadata#container-names
+        """
         running_env = os.environ.get("RUNNING_ENV", "dev")
-        container_name = str.lower(running_env + "-" + self.env.cr.dbname)
+        # replace invalid characters by _
+        dbname_cleaned = re.sub(r"[\W_]+", "-", self.env.cr.dbname)
+        # lowercase, max 63 chars
+        return str.lower(running_env + "-" + dbname_cleaned)[:63]
+
+    @api.model
+    def _get_azure_container(self):
+        container_name = self._get_container_name()
         blob_service_client = self._get_blob_service_client()
         container_client = blob_service_client.get_container_client(container_name)
         try:
