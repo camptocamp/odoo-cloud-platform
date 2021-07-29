@@ -11,6 +11,7 @@
  'depends': [
      'cloud_platform',
      'attachment_s3',
+     'monitoring_statsd',
  ],
  'website': 'https://www.camptocamp.com',
  'data': [],
