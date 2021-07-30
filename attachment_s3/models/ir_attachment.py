@@ -181,19 +181,13 @@ class IrAttachment(models.Model):
             if bucket_name == os.environ.get('AWS_BUCKETNAME'):
                 bucket = self._get_s3_bucket()
                 obj = bucket.Object(key=item_name)
-                metadata_param = self.env['ir.config_parameter'].sudo().get_param(
-                    'ir_attachment.s3.object.metadata') or False
                 try:
-                    if metadata_param:
-                        obj_metadata = bucket.meta.client.head_object(
-                            Bucket=bucket.name, Key=item_name)['Metadata']
-                        if 'database_name' in obj_metadata:
-                            if obj_metadata['database_name'] != self.env.cr.dbname:
-                                raise exceptions.ValidationError(
-                                    _('file %s deletion skipped') % fname)
-                    obj.delete()
-                    _logger.info(
-                        'file %s deleted on the object storage' % fname)
+                    db_metadata = bucket.meta.client.head_object(
+                        Bucket=bucket.name, Key=item_name)['Metadata'].get('database_name', False)
+                    if not db_metadata or db_metadata == self.env.cr.dbname:
+                        obj.delete()
+                        _logger.info(
+                            'file %s deleted on the object storage' % fname)
                 except ClientError:
                     # log verbose error from s3, return short message for
                     # user
