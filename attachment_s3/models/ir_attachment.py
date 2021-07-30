@@ -143,7 +143,7 @@ class IrAttachment(models.Model):
     def _store_file_write(self, key, bin_data):
         location = self.env.context.get('storage_location') or self._storage()
         metadata_dbname = self.env['ir.config_parameter'].sudo().get_param(
-            'ir_attachment.s3.object.metadata') or False
+            'attachment_s3.store_db_name_as_metadata') or False
         if location == 's3':
             bucket = self._get_s3_bucket()
             obj = bucket.Object(key=key)
@@ -154,11 +154,8 @@ class IrAttachment(models.Model):
                 try:
                     extra_args = {}
                     if metadata_dbname:
-                        extra_args = {
-                            'Metadata': {
-                                'database_name': self.env.cr.dbname
-                            }
-                        }
+                        extra_args['Metadata'] = {
+                            'database_name': self.env.cr.dbname}
                     obj.upload_fileobj(file, ExtraArgs=extra_args)
                 except ClientError as error:
                     # log verbose error from s3, return short message for user
