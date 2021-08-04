@@ -23,6 +23,10 @@ Configure accesses with environment variables:
 One container will be created per database using the `RUNNING_ENV` environment variable
 and the name of the database. By default, `RUNNING_ENV` is set to `dev`.
 
+The container name can be overridden with environment variable ``AZURE_STORAGE_NAME``.
+The strings ``{db}`` and ``{env}`` can be used inside that variable and the values
+will be replaced respectively by the database name and environment name.
+
 This addon must be added in the server wide addons with (``--load`` option):
 
 ``--load=web,attachment_azure``
