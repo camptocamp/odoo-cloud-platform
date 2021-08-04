@@ -124,7 +124,7 @@ class CloudPlatform(models.AbstractModel):
         if not kind:
             _logger.warning(
                 "cloud platform not configured, you should "
-                "probably run 'env['cloud.platform'].install_exoscale()'"
+                "probably run 'env['cloud.platform'].install()'"
             )
             return
         environment_name = self._get_running_env()
