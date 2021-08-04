@@ -45,13 +45,13 @@ class CloudPlatform(models.AbstractModel):
         use_s3 = (params.get_param('ir_attachment.location') ==
                   S3_STORE_KIND.name)
         if environment_name in ('prod', 'integration'):
-            # Labs instances use swift or s3 by default, but we don't want
+            # Labs instances use s3 by default, but we don't want
             # to enforce it in case we want to test something with a different
             # storage. At your own risks!
             assert use_s3, (
                 "S3 must be used on production and integration instances. "
                 "It is activated by setting 'ir_attachment.location.' to 's3'."
-                " The 'install_exoscale()' function sets this option "
+                " The 'install()' function sets this option "
                 "automatically."
             )
         if use_s3:
@@ -101,7 +101,7 @@ class CloudPlatform(models.AbstractModel):
             assert params.get_param('ir_attachment.location') == 'db', (
                 "In test instances, files must be stored in the database with "
                 "'ir_attachment.location' set to 'db'. This is "
-                "automatically set by the function 'install_exoscale()'."
+                "automatically set by the function 'install()'."
             )
 
     @api.model

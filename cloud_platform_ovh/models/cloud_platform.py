@@ -46,13 +46,13 @@ class CloudPlatform(models.AbstractModel):
         use_swift = (params.get_param('ir_attachment.location') ==
                      SWIFT_STORE_KIND.name)
         if environment_name in ('prod', 'integration'):
-            # Labs instances use swift or s3 by default, but we don't want
+            # Labs instances use swift by default, but we don't want
             # to enforce it in case we want to test something with a different
             # storage. At your own risks!
             assert use_swift, (
                 "Swift must be used on production and integration instances. "
                 "It is activated, setting 'ir_attachment.location.' to 'swift'"
-                " The 'install_exoscale()' function sets this option "
+                " The 'install()' function sets this option "
                 "automatically."
             )
         if use_swift:
@@ -106,7 +106,7 @@ class CloudPlatform(models.AbstractModel):
             assert params.get_param('ir_attachment.location') == 'db', (
                 "In test instances, files must be stored in the database with "
                 "'ir_attachment.location' set to 'db'. This is "
-                "automatically set by the function 'install_ovh()'."
+                "automatically set by the function 'install()'."
             )
 
     @api.model
