@@ -7,6 +7,7 @@ import logging
 import os
 import io
 from urllib.parse import urlsplit
+from ast import literal_eval
 
 from odoo import _, api, exceptions, models
 from ..s3uri import S3Uri
@@ -142,8 +143,8 @@ class IrAttachment(models.Model):
     @api.model
     def _store_file_write(self, key, bin_data):
         location = self.env.context.get('storage_location') or self._storage()
-        metadata_dbname = self.env['ir.config_parameter'].sudo().get_param(
-            'attachment_s3.store_db_name_as_metadata') or False
+        metadata_dbname = literal_eval(self.env['ir.config_parameter'].sudo().get_param(
+            'attachment_s3.store_db_name_as_metadata', 'False'))
         if location == 's3':
             bucket = self._get_s3_bucket()
             obj = bucket.Object(key=key)
