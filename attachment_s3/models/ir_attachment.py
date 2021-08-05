@@ -168,7 +168,7 @@ class IrAttachment(models.Model):
 
     @api.model
     def _store_file_delete(self, fname):
-        if fname.startswith('s3://'):
+        if fname.startswith('s3://') or self.env.context.get('skip_s3_object_deletion'):
             s3uri = S3Uri(fname)
             bucket_name = s3uri.bucket()
             item_name = s3uri.item()
@@ -193,3 +193,11 @@ class IrAttachment(models.Model):
                     )
         else:
             super()._store_file_delete(fname)
+
+    def unlink(self):
+        for attachment in self:
+            if not self.env.context.get('force_s3_unlink') and attachment.store_fname.startswith('s3://') and int(self.env['ir.config_parameter'].sudo().get_param('attachment_s3.retention_days', '0')):
+                new_attachment = self.copy(default={'to_delete': True})
+                return super(IrAttachment, self.with_context('skip_s3_object_deletion').unlink()
+            else:
+                return super(IrAttachment, self).unlink()
