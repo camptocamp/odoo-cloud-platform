@@ -9,7 +9,7 @@ import io
 from urllib.parse import urlsplit
 from ast import literal_eval
 
-from odoo import _, api, exceptions, models
+from odoo import _, api, exceptions, models, fields
 from ..s3uri import S3Uri
 
 _logger = logging.getLogger(__name__)
@@ -26,6 +26,8 @@ except ImportError:
 
 class IrAttachment(models.Model):
     _inherit = "ir.attachment"
+
+    to_delete = fields.Boolean(readonly=True)
 
     def _get_stores(self):
         l = ['s3']
