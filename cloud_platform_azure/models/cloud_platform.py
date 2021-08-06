@@ -28,7 +28,7 @@ class CloudPlatform(models.AbstractModel):
         return kinds
 
     @api.model
-    def _config_by_server_env_for_exoscale(self):
+    def _config_by_server_env_for_azure(self):
         fs_kinds = self._filestore_kinds()
         configs = {
             "prod": PlatformConfig(filestore=fs_kinds["azure"]),
