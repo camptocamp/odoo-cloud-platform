@@ -17,25 +17,25 @@ except ImportError:
 
 
 class CloudPlatform(models.AbstractModel):
-    _inherit = 'cloud.platform'
+    _inherit = "cloud.platform"
 
     @api.model
     def _platform_kinds(self):
         kinds = super(CloudPlatform, self)._platform_kinds()
-        kinds.append('ovh')
+        kinds.append("ovh")
         return kinds
 
     @api.model
     def _config_by_server_env_for_ovh(self):
         configs = {
-            'prod': PlatformConfig(filestore=FilestoreKind.swift),
-            'integration': PlatformConfig(filestore=FilestoreKind.swift),
-            'labs': PlatformConfig(filestore=FilestoreKind.swift),
-            'test': PlatformConfig(filestore=FilestoreKind.db),
-            'dev': PlatformConfig(filestore=FilestoreKind.db),
+            "prod": PlatformConfig(filestore=FilestoreKind.swift),
+            "integration": PlatformConfig(filestore=FilestoreKind.swift),
+            "labs": PlatformConfig(filestore=FilestoreKind.swift),
+            "test": PlatformConfig(filestore=FilestoreKind.db),
+            "dev": PlatformConfig(filestore=FilestoreKind.db),
         }
         return configs
 
     @api.model
     def install_ovh(self):
-        self.install('ovh')
+        self.install("ovh")

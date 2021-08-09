@@ -11,7 +11,7 @@ class S3Uri(object):
     def __init__(self, uri):
         match = self._url_re.match(uri)
         if not match:
-            raise ValueError("%s: is not a valid S3 URI" % (uri,))
+            raise ValueError("{}: is not a valid S3 URI".format(uri))
         self._bucket, self._item = match.groups()
 
     def bucket(self):
