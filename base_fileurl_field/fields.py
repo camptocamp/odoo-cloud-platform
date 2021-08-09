@@ -81,26 +81,30 @@ class FileURL(fields.Binary):
                     storage_location=self._storage_location(),
                     force_storage_key=storage_key,
                 ),
-                value
+                value,
             )
         return True
 
     def _setup_regular_base(self, model):
         super()._setup_regular_base(model)
         if self.storage_path:
-            assert self.filename is not None, \
+            assert self.filename is not None, (
                 "Field %s defines storage_path without filename" % self
+            )
 
     def _build_storage_key(self, filename):
-        return '/'.join([
-            self.storage_path.rstrip('/'),
-            unicodedata.normalize('NFKC', filename)
-        ])
+        return '/'.join(
+            [
+                self.storage_path.rstrip('/'),
+                unicodedata.normalize('NFKC', filename),
+            ]
+        )
 
     def _storage_location(self):
         # Avoid pushing to s3 in test mode or installation of demo data
-        force_file_storage = config['test_enable'] or config['init'] and \
-                             config['demo']
+        force_file_storage = (
+            config['test_enable'] or config['init'] and config['demo']
+        )
         return 'file' if force_file_storage else self.storage_location
 
 
