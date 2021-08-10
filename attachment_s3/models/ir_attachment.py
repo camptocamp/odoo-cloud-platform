@@ -168,7 +168,9 @@ class IrAttachment(models.Model):
 
     @api.model
     def _store_file_delete(self, fname):
-        if fname.startswith('s3://') or self.env.context.get('skip_s3_object_deletion'):
+        if fname.startswith('s3://'):
+            if self.env.context.get('skip_s3_object_deletion'):
+                return
             s3uri = S3Uri(fname)
             bucket_name = s3uri.bucket()
             item_name = s3uri.item()
