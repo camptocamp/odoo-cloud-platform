@@ -198,7 +198,7 @@ class IrAttachment(models.Model):
 
     def unlink(self):
         for attachment in self:
-            if not self.env.context.get('force_s3_unlink') and attachment.store_fname.startswith('s3://') and int(self.env['ir.config_parameter'].sudo().get_param('attachment_s3.retention_days', '0')):
+            if not attachment.to_delete and attachment.store_fname.startswith('s3://') and int(self.env['ir.config_parameter'].sudo().get_param('attachment_s3.retention_days', '0')):
                 new_attachment = self.copy(default={'to_delete': True})
                 return super(IrAttachment, self.with_context('skip_s3_object_deletion').unlink()
             else:
