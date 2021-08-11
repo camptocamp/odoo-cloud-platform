@@ -155,8 +155,11 @@ class IrAttachment(models.Model):
                 try:
                     extra_args = {}
                     if metadata_dbname:
-                        extra_args['Metadata'] = {
-                            'database_name': self.env.cr.dbname}
+                        db_metadata = bucket.meta.client.head_object(
+                            Bucket=bucket.name, Key=key)['Metadata'].get('database_name', False)
+                        if not db_metadata:
+                            extra_args['Metadata'] = {
+                                'database_name': self.env.cr.dbname}
                     obj.upload_fileobj(file, ExtraArgs=extra_args)
                 except ClientError as error:
                     # log verbose error from s3, return short message for user
