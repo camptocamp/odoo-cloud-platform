@@ -32,11 +32,14 @@ class Database(Database):
             copy_from_container = attachment_obj._get_container_name()
             copy_to_container = attachment_obj._get_container_name(new_name)
             blob_service = attachment_obj._get_blob_service_client()
+            container_client = blob_service_client.get_container_client(copy_from_container)
 
-            blobs_list = blob_service.list_blobs()
+            blobs_list = container_client.list_blobs()
             for blob in blobs_list:
-                blob_url = blob_service.make_blob_url(copy_from_container, blob.name)
-                blob_service.copy_blob(copy_to_container, blob.name, blob_url)
+                blob_url = container_client.make_blob_url(
+                    copy_from_container, blob.name
+                )
+                container_client.copy_blob(copy_to_container, blob.name, blob_url)
 
             return response
         except exceptions.UserError:
