@@ -32,7 +32,7 @@ class Database(Database):
             copy_from_container = attachment_obj._get_container_name()
             copy_to_container = attachment_obj._get_container_name(new_name)
             blob_service = attachment_obj._get_blob_service_client()
-            container_client = blob_service_client.get_container_client(copy_from_container)
+            container_client = blob_service.get_container_client(copy_from_container)
 
             blobs_list = container_client.list_blobs()
             for blob in blobs_list:
