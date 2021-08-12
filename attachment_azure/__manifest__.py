@@ -18,5 +18,6 @@
     "website": "https://github.com/camptocamp/odoo-cloud-platform",
     "installable": True,
     "development_status": "Beta",
+    "post_init_hook": "_post_init_hook",
     "maintainers": ["max3903"],
 }

@@ -111,16 +111,15 @@ class IrAttachment(models.Model):
         return blob_service_client
 
     @api.model
-    def _get_container_name(self):
+    def _get_container_name(self, db_name=None):
         """
         Container naming rules:
         https://docs.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-containers--blobs--and-metadata#container-names
         """
         running_env = os.environ.get("RUNNING_ENV", "dev")
-        storage_name = os.environ.get('AZURE_STORAGE_NAME', r'{env}-{db}')
+        storage_name = os.environ.get("AZURE_STORAGE_NAME", r"{env}-{db}")
         storage_name = storage_name.format(
-            env=running_env,
-            db=self.env.cr.dbname
+            env=running_env, db=db_name or self.env.cr.dbname
         )
         # replace invalid characters by _
         storage_name = re.sub(r"[\W_]+", "-", storage_name)
