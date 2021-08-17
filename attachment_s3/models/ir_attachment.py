@@ -152,14 +152,17 @@ class IrAttachment(models.Model):
                 file.write(bin_data)
                 file.seek(0)
                 filename = 's3://%s/%s' % (bucket.name, key)
+                extra_args = {}
+                if metadata_dbname:
+                    database_name = self.env.cr.dbname
+                    try:
+                        database_name = obj.metadata.get(
+                            'database_name', self.env.cr.dbname)
+                    except ClientError as error:
+                        pass
+                    extra_args['Metadata'] = {
+                        'database_name': database_name}
                 try:
-                    extra_args = {}
-                    if metadata_dbname:
-                        db_metadata = bucket.meta.client.head_object(
-                            Bucket=bucket.name, Key=key)['Metadata'].get('database_name', False)
-                        if not db_metadata:
-                            extra_args['Metadata'] = {
-                                'database_name': self.env.cr.dbname}
                     obj.upload_fileobj(file, ExtraArgs=extra_args)
                 except ClientError as error:
                     # log verbose error from s3, return short message for user
