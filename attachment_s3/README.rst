@@ -56,3 +56,16 @@ Limitations
 * You need to call ``env['ir.attachment'].force_storage()`` after
   having changed the ``ir_attachment.location`` configuration in order to
   migrate the existing attachments to S3.
+
+
+Database name as metadata
+-------------------------
+
+In order to share one bucket among many databases, a `database_name` key can be used through S3 object custom metadata for the following purpose: when deleting an attachment from a database, the associated S3 object will only be deleted if it is owned by that database.
+
+Use cases:
+
+1. Duplicate a production database for training or testing purposes.
+2. Rename a database. For example, if you upgrade a database to a new Odoo version and you want this to become the new production database.
+
+You can activate this functionality by creating or setting the system parameter with the key `attachment_s3.store_db_name_as_metadata`` and the value in the form ``True``.
