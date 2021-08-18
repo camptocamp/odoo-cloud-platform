@@ -68,4 +68,4 @@ Use cases:
 1. Duplicate a production database for training or testing purposes.
 2. Rename a database. For example, if you upgrade a database to a new Odoo version and you want this to become the new production database.
 
-You can activate this functionality by creating or setting the system parameter with the key `attachment_s3.store_db_name_as_metadata`` and the value in the form ``True``.
+You can activate this functionality by creating or setting the system parameter with the key ``attachment_s3.store_db_name_as_metadata`` and the value in the form ``True``.
