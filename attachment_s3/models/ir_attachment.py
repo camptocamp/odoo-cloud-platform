@@ -7,6 +7,7 @@ import logging
 import os
 import io
 from urllib.parse import urlsplit
+from datetime import timedelta
 
 from odoo import _, api, exceptions, models, fields
 from ..s3uri import S3Uri
@@ -202,3 +203,13 @@ class IrAttachment(models.Model):
                 self.copy(default={'to_delete': True})
                 return super(IrAttachment, self.with_context(skip_s3_object_deletion=True)).unlink()
             return super(IrAttachment, self).unlink()
+
+    @api.model
+    def _delete_old_attachment_s3(self):
+        retention_days = int(self.env['ir.config_parameter'].sudo(
+        ).get_param('attachment_s3.retention_days', '0'))
+        limit = fields.Datetime.now() - timedelta(days=retention_days)
+        attachments = self.search([('to_delete', '=', 'True'),
+                                   ('create_date', '<', limit)])
+        for attachment in attachments:
+            attachment.unlink()
