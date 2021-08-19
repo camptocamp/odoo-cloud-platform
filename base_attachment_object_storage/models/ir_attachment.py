@@ -375,7 +375,9 @@ class IrAttachment(models.Model):
         # the installation
         with self.do_in_new_env(new_cr=new_cr) as new_env:
             model_env = new_env['ir.attachment']
-            ids = model_env.search(domain).ids
+            force_storage_batch_limit = self._context.get(
+                'force_storage_batch_limit', None)
+            ids = model_env.search(domain, limit=force_storage_batch_limit).ids
             files_to_clean = []
             for attachment_id in ids:
                 try:

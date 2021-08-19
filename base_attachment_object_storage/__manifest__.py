@@ -10,7 +10,8 @@
  'category': 'Knowledge Management',
  'depends': ['base'],
  'website': 'http://www.camptocamp.com',
- 'data': ['data/res_config_settings_data.xml'],
+ 'data': ['data/res_config_settings_data.xml',
+          'data/ir_attachment_cron.xml'],
  'installable': True,
  'auto_install': True,
  }
