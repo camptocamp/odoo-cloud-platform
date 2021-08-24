@@ -208,8 +208,9 @@ class IrAttachment(models.Model):
     def _delete_old_attachment_s3(self):
         retention_days = int(self.env['ir.config_parameter'].sudo(
         ).get_param('attachment_s3.retention_days', '0'))
+        if not retention_days:
+            return
         limit = fields.Datetime.now() - timedelta(days=retention_days)
         attachments = self.search([('to_delete', '=', 'True'),
                                    ('create_date', '<', limit)])
-        for attachment in attachments:
-            attachment.unlink()
+        attachments.unlink()
