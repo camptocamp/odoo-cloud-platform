@@ -143,8 +143,9 @@ class IrAttachment(models.Model):
     @api.model
     def _store_file_write(self, key, bin_data):
         location = self.env.context.get('storage_location') or self._storage()
-        metadata_dbname = literal_eval(self.env['ir.config_parameter'].sudo().get_param(
-            'attachment_s3.store_db_name_as_metadata', 'False'))
+        metadata_dbname = literal_eval(
+            self.env['ir.config_parameter'].sudo().get_param(
+                'attachment_s3.store_db_name_as_metadata', 'False'))
         if location == 's3':
             bucket = self._get_s3_bucket()
             obj = bucket.Object(key=key)
@@ -190,7 +191,8 @@ class IrAttachment(models.Model):
                 obj = bucket.Object(key=item_name)
                 try:
                     db_metadata = bucket.meta.client.head_object(
-                        Bucket=bucket.name, Key=item_name)['Metadata'].get('database_name', False)
+                        Bucket=bucket.name, Key=item_name)['Metadata'].get(
+                            'database_name', False)
                     if not db_metadata or db_metadata == self.env.cr.dbname:
                         obj.delete()
                         _logger.info(
