@@ -146,6 +146,9 @@ class IrAttachment(models.Model):
         metadata_dbname = literal_eval(
             self.env['ir.config_parameter'].sudo().get_param(
                 'attachment_s3.store_db_name_as_metadata', 'False'))
+        metadata_force_ownership = literal_eval(
+            self.env['ir.config_parameter'].sudo().get_param(
+                'attachment_s3.force_ownership_as_metadata', 'False'))
         if location == 's3':
             bucket = self._get_s3_bucket()
             obj = bucket.Object(key=key)
@@ -156,11 +159,12 @@ class IrAttachment(models.Model):
                 extra_args = {}
                 if metadata_dbname:
                     database_name = self.env.cr.dbname
-                    try:
-                        database_name = obj.metadata.get(
-                            'database_name', self.env.cr.dbname)
-                    except ClientError as error:
-                        pass
+                    if not metadata_force_ownership:
+                        try:
+                            database_name = obj.metadata.get(
+                                'database_name', self.env.cr.dbname)
+                        except ClientError as error:
+                            pass
                     extra_args['Metadata'] = {
                         'database_name': database_name}
                 try:

@@ -69,3 +69,5 @@ Use cases:
 2. Rename a database. For example, if you upgrade a database to a new Odoo version and you want this to become the new production database.
 
 You can activate this functionality by creating or setting the system parameter with the key ``attachment_s3.store_db_name_as_metadata`` and the value in the form ``True``.
+
+Alongside with this functionality, you can force the ownership of a preexisting s3 object to the current database (to be set during the attachment upload) by creating or setting the system parameter with the key ``attachment_s3.force_ownership_as_metadata`` and the value in the form ``True``.
