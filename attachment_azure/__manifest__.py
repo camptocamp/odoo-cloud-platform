@@ -4,7 +4,7 @@
 {
     "name": "Attachments on Azure storage",
     "summary": "Store assets and attachments on a Azure compatible object storage",
-    "version": "13.0.1.0.0",
+    "version": "12.0.1.0.0",
     "author": "Camptocamp, "
     "Open Source Integrators, "
     "Serpent Consulting Services, "
@@ -13,7 +13,10 @@
     "category": "Knowledge Management",
     "depends": ["base_attachment_object_storage"],
     "external_dependencies": {
-        "python": ["azure-storage-blob", "azure-identity"],
+        "python": [
+            "azure.storage.blob",  # pip: azure-storage-blob
+            "azure.identity"       # pip: azure-identity
+        ],
     },
     "website": "https://github.com/camptocamp/odoo-cloud-platform",
     "installable": True,
