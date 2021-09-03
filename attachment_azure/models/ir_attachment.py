@@ -150,7 +150,10 @@ class IrAttachment(models.Model):
             key = fname.replace("azure://", "", 1).lower()
             try:
                 blob_client = container_client.get_blob_client(key)
-                read = base64.b64encode(blob_client.download_blob().readall())
+                if bin_size:
+                    return blob_client.get_blob_properties()['size']
+                else:
+                    read = base64.b64encode(blob_client.download_blob().readall())
             except HttpResponseError:
                 read = ""
                 _logger.info("Attachment '%s' missing on object storage", fname)
