@@ -56,3 +56,11 @@ Limitations
 * You need to call ``env['ir.attachment'].force_storage()`` after
   having changed the ``ir_attachment.location`` configuration in order to
   migrate the existing attachments to S3.
+
+
+Delete old S3 attachments by retention policy
+---------------------------------------------
+
+The default behaviour of this addon is to remove a S3 attachment object only from the database but not the filestore, while it is kept in the bucket until its permanent deletion based on a retention policy.
+
+You can set the ``attachment_s3.retention_days`` system parameter with a value in the form of a number of days. A scheduled action is set to run everyday to remove old S3 attachments from the bucket based on a retention policy in days (0 by default, to be deleted on next scheduled action execution).
