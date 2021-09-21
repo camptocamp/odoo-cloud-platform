@@ -6,8 +6,8 @@ import base64
 import logging
 import os
 import io
-from urllib.parse import urlsplit
 from datetime import timedelta
+from urllib.parse import urlsplit
 
 from odoo import _, api, exceptions, models, fields
 from ..s3uri import S3Uri
