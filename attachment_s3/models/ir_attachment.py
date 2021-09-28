@@ -23,6 +23,18 @@ except ImportError:
     _logger.debug("Cannot 'import boto3'.")
 
 
+class S3BucketClientRegistry(object):
+    bucket_dict = {}
+
+    @classmethod
+    def get_bucket_client(cls, bucket_name):
+        return cls.bucket_dict.get(bucket_name)
+
+    @classmethod
+    def set_bucket_client(cls, bucket_name, bucket_obj):
+        cls.bucket_dict[bucket_name] = bucket_obj
+
+
 class IrAttachment(models.Model):
     _inherit = "ir.attachment"
 
@@ -81,6 +93,10 @@ class IrAttachment(models.Model):
 
             raise exceptions.UserError(msg)
         # try:
+        # get instanciated bucket from bucket_dict
+        bucket = S3BucketClientRegistry.get_bucket_client(bucket_name)
+        if bucket:
+            return bucket
         s3 = boto3.resource('s3', **params)
         bucket = s3.Bucket(bucket_name)
         exists = True
@@ -106,6 +122,8 @@ class IrAttachment(models.Model):
                     CreateBucketConfiguration={
                         'LocationConstraint': region_name
                     })
+        # store instanciated bucket to bucket_dict
+        S3BucketClientRegistry.set_bucket_client(bucket_name, bucket)
         return bucket
 
     @api.model
