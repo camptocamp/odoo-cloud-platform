@@ -32,6 +32,33 @@ class IrAttachment(models.Model):
         return l
 
     @api.model
+    def _get_s3_connection_params(self, bucket_name=None):
+        host = os.environ.get('AWS_HOST')
+
+        # Ensure host is prefixed with a scheme (use https as default)
+        if host and not urlsplit(host).scheme:
+            host = 'https://%s' % host
+
+        region_name = os.environ.get('AWS_REGION')
+        access_key = os.environ.get('AWS_ACCESS_KEY_ID')
+        secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
+        bucket_name = bucket_name or os.environ.get('AWS_BUCKETNAME')
+        # replaces {db} by the database name to handle multi-tenancy
+        bucket_name = bucket_name.format(db=self.env.cr.dbname)
+
+        params = {
+            'aws_access_key_id': access_key,
+            'aws_secret_access_key': secret_key,
+            'bucket_name': bucket_name,
+        }
+        if host:
+            params['endpoint_url'] = host
+        if region_name:
+            params['region_name'] = region_name
+
+        return params
+
+    @api.model
     def _get_s3_bucket(self, name=None):
         """Connect to S3 and return the bucket
 
@@ -46,28 +73,13 @@ class IrAttachment(models.Model):
         from the environment variable ``AWS_BUCKETNAME`` will be read.
 
         """
-        host = os.environ.get('AWS_HOST')
-
-        # Ensure host is prefixed with a scheme (use https as default)
-        if host and not urlsplit(host).scheme:
-            host = 'https://%s' % host
-
-        region_name = os.environ.get('AWS_REGION')
-        access_key = os.environ.get('AWS_ACCESS_KEY_ID')
-        secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
-        bucket_name = name or os.environ.get('AWS_BUCKETNAME')
-        # replaces {db} by the database name to handle multi-tenancy
-        bucket_name = bucket_name.format(db=self.env.cr.dbname)
-
-        params = {
-            'aws_access_key_id': access_key,
-            'aws_secret_access_key': secret_key,
-        }
-        if host:
-            params['endpoint_url'] = host
-        if region_name:
-            params['region_name'] = region_name
-        if not (access_key and secret_key and bucket_name):
+        params = self._get_s3_connection_params(bucket_name=name)
+        bucket_name = params.get('bucket_name')
+        if not (
+            params["aws_access_key_id"] and
+            params["aws_secret_access_key"] and
+            bucket_name
+        ):
             msg = _('If you want to read from the %s S3 bucket, the following '
                     'environment variables must be set:\n'
                     '* AWS_ACCESS_KEY_ID\n'
@@ -98,6 +110,7 @@ class IrAttachment(models.Model):
             raise exceptions.UserError(str(error))
 
         if not exists:
+            region_name = params.get('region_name')
             if not region_name:
                 bucket = s3.create_bucket(Bucket=bucket_name)
             else:
