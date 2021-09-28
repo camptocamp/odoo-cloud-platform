@@ -6,7 +6,7 @@ import time
 from os import environ
 from collections import MutableMapping
 from contextlib import suppress
-
+from werkzeug.exceptions import HTTPException
 from odoo import models
 from odoo.http import request as http_request
 from odoo.tools.config import config
@@ -73,6 +73,10 @@ class IrHttp(models.AbstractModel):
 
     @classmethod
     def _monitoring_info(cls, request, response, begin, end):
+        if isinstance(response, HTTPException):
+            status_code = response.code
+        else:
+            status_code = response.status_code
         info = {
             # timing
             "start_time": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(begin)),
@@ -80,7 +84,7 @@ class IrHttp(models.AbstractModel):
             # HTTP things
             "method": request.httprequest.method,
             "url": request.httprequest.url,
-            "status_code": response.status_code,
+            "status_code": status_code,
             "headers": request.httprequest.environ.copy(),
             # Odoo things
             "uid": request.uid,
