@@ -36,3 +36,7 @@ script:
 
 after_success:
   - travis_after_test_success
+
+branches:
+  except:
+    - /^merge-branch-.*$/
