@@ -45,7 +45,6 @@ class IrAttachment(models.Model):
         bucket_name = bucket_name or os.environ.get('AWS_BUCKETNAME')
         # replaces {db} by the database name to handle multi-tenancy
         bucket_name = bucket_name.format(db=self.env.cr.dbname)
-
         params = {
             'aws_access_key_id': access_key,
             'aws_secret_access_key': secret_key,
@@ -74,7 +73,9 @@ class IrAttachment(models.Model):
 
         """
         params = self._get_s3_connection_params(bucket_name=name)
-        bucket_name = params.get('bucket_name')
+        # Pop the bucket_name to avoid TypeError: resource() got an unexpected
+        #  keyword argument 'bucket_name'
+        bucket_name = params.pop("bucket_name")
         if not (
             params["aws_access_key_id"] and
             params["aws_secret_access_key"] and
