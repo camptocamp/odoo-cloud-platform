@@ -18,7 +18,7 @@ Configure accesses with environment variables:
 * ``AWS_REGION`` (required if using AWS services)
 * ``AWS_ACCESS_KEY_ID``
 * ``AWS_SECRET_ACCESS_KEY``
-* ``AWS_BUCKETNAME``
+* ``AWS_BUCKETNAME`` (optional {db} placeholder)
 
 Read-only mode:
 
@@ -37,6 +37,18 @@ This addon must be added in the server wide addons with (``--load`` option):
 The System Parameter ``ir_attachment.storage.force.database`` can be customized to
 force storage of files in the database. See the documentation of the module
 ``base_attachment_object_storage``.
+
+Multi-tenancy
+-------------
+
+Use the `{db}` placeholder to handle multi-tenancy.
+
+On instances that hold multiple databases, it's preferable to have one bucket per database.
+
+To handle this, you can insert the `{db}` placeholder in your bucket name variable ``AWS_BUCKETNAME``.
+It will be replaced by the database name.
+This will give you a unique bucketname per database.
+
 
 Limitations
 -----------
