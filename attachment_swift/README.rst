@@ -18,7 +18,7 @@ Configure accesses with environment variables:
 * ``SWIFT_ACCOUNT``
 * ``SWIFT_PASSWORD``
 * ``SWIFT_REGION_NAME``         : optional region
-* ``SWIFT_WRITE_CONTAINER``     : Name of the container to use in the store (created if not existing)
+* ``SWIFT_WRITE_CONTAINER``     : Name of the container to use in the store (created if not existing, optional {db} placeholder)
 
 Read-only mode:
 
@@ -37,6 +37,20 @@ This addon must be added in the server wide addons with (``--load`` option):
 The System Parameter ``ir_attachment.storage.force.database`` can be customized to
 force storage of files in the database. See the documentation of the module
 ``base_attachment_object_storage``.
+
+Multi-tenancy
+-------------
+
+Use the `{db}` placeholder to handle multi-tenancy.
+
+On instances that hold multiple databases, it's preferable to have one container per database.
+
+To handle this, you can insert the `{db}` placeholder in your container name variable ``SWIFT_WRITE_CONTAINER``.
+It will be replaced by the database name.
+This will give you a unique container per database.
+
+As every attachment is saved with its container name, this doesn't affect the above-mentioned "Read-only mode" feature.
+You could have multiple replicas read from the same production storage, but each write to their own container.
 
 Python Dependencies
 -------------------

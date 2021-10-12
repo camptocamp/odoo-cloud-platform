@@ -146,6 +146,8 @@ class IrAttachment(models.Model):
     def _store_file_write(self, key, bin_data):
         if self._storage() == 'swift':
             container = os.environ.get('SWIFT_WRITE_CONTAINER')
+            # replace {db} with the database name to handle multi-tenancy
+            container = container.format(db=self.env.cr.dbname)
             conn = self._get_swift_connection()
             conn.put_container(container)
             filename = 'swift://{}/{}'.format(container, key)
