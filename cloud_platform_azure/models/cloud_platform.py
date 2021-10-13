@@ -91,23 +91,24 @@ class CloudPlatform(models.AbstractModel):
                     " 'ir_attachment.location' parameter."
                 )
             # A bucket name is defined under the following format
-            # <client>-odoo-<env>
+            # ^[a-z]+_[a-z]+_\d+$
+            # Anything other than prod bucket must be suffixed with env name
             #
             # Use AZURE_STORAGE_NAME_UNSTRUCTURED to by-pass check
             # on bucket name structure
             if os.environ.get("AZURE_STORAGE_NAME_UNSTRUCTURED"):
                 return
-            prod_bucket = bool(re.match(r"[a-z-0-9]+-odoo-prod", storage_name))
+            prod_bucket = bool(re.match(r"^[a-z]+_[a-z]+_\d+$", storage_name))
             if environment_name == "prod":
                 assert prod_bucket, (
-                    "AZURE_STORAGE_NAME should match '<client>-odoo-prod', "
+                    "AZURE_STORAGE_NAME should match '^[a-z]+_[a-z]+_\\d+$', "
                     "we got: '%s'" % (storage_name,)
                 )
             else:
                 # if we are using the prod bucket on another instance
                 # such as an integration, we must be sure to be in read only!
                 assert not prod_bucket, (
-                    "AZURE_STORAGE_NAME should not match '<client>-odoo-prod', "
+                    "AZURE_STORAGE_NAME should not match '^[a-z]+_[a-z]+_\\d+$', "
                     "we got: '%s'" % (storage_name,)
                 )
 
