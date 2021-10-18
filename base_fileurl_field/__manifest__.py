@@ -5,8 +5,8 @@
     "summary": "Implementation of FileURL type fields",
     "version": "15.0.1.0.0",
     "category": "Technical Settings",
-    'author': 'Camptocamp, Odoo Community Association (OCA)',
-    'license': 'AGPL-3',
+    "author": "Camptocamp, Odoo Community Association (OCA)",
+    "license": "AGPL-3",
     "depends": [
         "base_attachment_object_storage",
     ],
