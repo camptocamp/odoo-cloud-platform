@@ -1,1 +1,1 @@
-server-env
+server-env https://github.com/camptocamp/server-env 15.0-mig-server_environment
