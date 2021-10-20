@@ -136,6 +136,8 @@ class IrAttachment(models.Model):
             try:
                 key = s3uri.item()
                 bucket.meta.client.head_object(Bucket=bucket.name, Key=key)
+                if bin_size:
+                    return bucket.Object(key).content_length
                 with io.BytesIO() as res:
                     bucket.download_fileobj(key, res)
                     res.seek(0)
