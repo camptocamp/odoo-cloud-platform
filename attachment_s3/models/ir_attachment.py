@@ -171,23 +171,28 @@ class IrAttachment(models.Model):
                 'SKIP_OBJECTS_DELETION') or False
             # delete the file only if it is on the current configured bucket
             # otherwise, we might delete files used on a different environment
-            if (bucket_name == os.environ.get('AWS_BUCKETNAME') and
-                    not skip_objects_deletion):
-                bucket = self._get_s3_bucket()
-                obj = bucket.Object(key=item_name)
-                try:
-                    bucket.meta.client.head_object(
-                        Bucket=bucket.name, Key=item_name
-                    )
-                    obj.delete()
-                    _logger.info(
-                        'file %s deleted on the object storage' % (fname,)
-                    )
-                except ClientError:
-                    # log verbose error from s3, return short message for
-                    # user
+            if bucket_name == os.environ.get('AWS_BUCKETNAME'):
+                if not skip_objects_deletion:
+                    bucket = self._get_s3_bucket()
+                    obj = bucket.Object(key=item_name)
+                    try:
+                        bucket.meta.client.head_object(
+                            Bucket=bucket.name, Key=item_name
+                        )
+                        obj.delete()
+                        _logger.info(
+                            'file %s deleted on the object storage' % (fname,)
+                        )
+                    except ClientError:
+                        # log verbose error from s3, return short message for
+                        # user
+                        _logger.exception(
+                            'Error during deletion of the file %s' % fname
+                        )
+                else:
                     _logger.exception(
-                        'Error during deletion of the file %s' % fname
+                        'file %s deletion on the object storage skipped by \
+                            policy' % fname
                     )
         else:
             super()._store_file_delete(fname)
