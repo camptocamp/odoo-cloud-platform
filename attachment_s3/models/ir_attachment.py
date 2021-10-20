@@ -121,7 +121,7 @@ class IrAttachment(models.Model):
         return bucket
 
     @api.model
-    def _store_file_read(self, fname):
+    def _store_file_read(self, fname, bin_size=False):
         if fname.startswith("s3://"):
             s3uri = S3Uri(fname)
             try:
@@ -143,7 +143,7 @@ class IrAttachment(models.Model):
                 _logger.info("Attachment '%s' missing on object storage", fname)
             return read
         else:
-            return super()._store_file_read(fname)
+            return super()._store_file_read(fname, bin_size)
 
     @api.model
     def _store_file_write(self, key, bin_data):
