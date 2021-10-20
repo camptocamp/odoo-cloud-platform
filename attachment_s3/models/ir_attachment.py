@@ -1,5 +1,7 @@
 # Copyright 2016-2019 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
+
+import base64
 import logging
 import os
 import io
@@ -137,7 +139,7 @@ class IrAttachment(models.Model):
                 with io.BytesIO() as res:
                     bucket.download_fileobj(key, res)
                     res.seek(0)
-                    read = res.read()
+                    read = base64.b64encode(res.read())
             except ClientError:
                 read = ""
                 _logger.info("Attachment '%s' missing on object storage", fname)
