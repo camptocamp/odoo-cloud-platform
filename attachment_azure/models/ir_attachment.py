@@ -1,6 +1,7 @@
 # Copyright 2016-2021 Camptocamp SA
 # Copyright 2021 Open Source Integrators
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
+import base64
 import io
 import logging
 import os
@@ -149,7 +150,7 @@ class IrAttachment(models.Model):
             key = fname.replace("azure://", "", 1).lower()
             try:
                 blob_client = container_client.get_blob_client(key)
-                read = blob_client.download_blob().readall()
+                read = base64.b64encode(blob_client.download_blob().readall())
             except HttpResponseError:
                 read = ""
                 _logger.info("Attachment '%s' missing on object storage", fname)
