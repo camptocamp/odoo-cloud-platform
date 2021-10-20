@@ -167,9 +167,12 @@ class IrAttachment(models.Model):
             s3uri = S3Uri(fname)
             bucket_name = s3uri.bucket()
             item_name = s3uri.item()
+            skip_objects_deletion = os.environ.get(
+                'SKIP_OBJECTS_DELETION') or False
             # delete the file only if it is on the current configured bucket
             # otherwise, we might delete files used on a different environment
-            if bucket_name == os.environ.get('AWS_BUCKETNAME'):
+            if (bucket_name == os.environ.get('AWS_BUCKETNAME') and
+                    not skip_objects_deletion):
                 bucket = self._get_s3_bucket()
                 obj = bucket.Object(key=item_name)
                 try:
