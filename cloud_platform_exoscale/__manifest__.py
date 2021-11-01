@@ -16,6 +16,7 @@
     ],
     "excludes": [
         "cloud_platform_ovh",
+        "cloud_platform_azure",
     ],
     "website": "https://www.camptocamp.com",
     "data": [],
