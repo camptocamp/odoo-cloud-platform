@@ -13,19 +13,43 @@ Activate Azure Blob storage:
 * Create or set the system parameter with the key ``ir_attachment.location``
   and the value in the form ``azure``.
 
-Configure accesses with environment variables:
+* Configure accesses with the following environment variables:
 
-* ``AZURE_STORAGE_CONNECTION_STRING`` or
-* ``AZURE_STORAGE_ACCOUNT_NAME``
-* ``AZURE_STORAGE_ACCOUNT_URL``
-* ``AZURE_STORAGE_ACCOUNT_KEY``
+.. list-table::
+   :header-rows: 1
+
+   * - Name
+     - Description
+     - Values
+   * - ``AZURE_STORAGE_CONNECTION_STRING``
+     - Connection string.
+     - Required if using the connection string authentication method.
+   * - ``AZURE_STORAGE_ACCOUNT_NAME``
+     - Name of the storage account.
+     - Required if using the storage account authentication method.
+   * - ``AZURE_STORAGE_ACCOUNT_URL``
+     - URL of the storage account
+     -
+   * - ``AZURE_STORAGE_ACCOUNT_KEY``
+     - Key of the storage account
+     -
+   * - ``AZURE_STORAGE_NAME``
+     - Name of the container within the blob storage. 1 container per database will be
+       created.
+     - Optional. The strings ``{db}`` and ``{env}`` can be used inside that variable
+       and the values will be replaced respectively by the database name and environment
+       name.
+   * - ``AZURE_DUPLICATE``
+     - If set, the blob storage and all its objects will be copied when the database is
+       duplicated.
+     - True
+   * - ``AZURE_DELETE_ON_DBDROP``
+     - If set, the container and all its objects will be deleted when the database is
+       dropped.
+     - True
 
 One container will be created per database using the `RUNNING_ENV` environment variable
 and the name of the database. By default, `RUNNING_ENV` is set to `dev`.
-
-The container name can be overridden with environment variable ``AZURE_STORAGE_NAME``.
-The strings ``{db}`` and ``{env}`` can be used inside that variable and the values
-will be replaced respectively by the database name and environment name.
 
 This addon must be added in the server wide addons with (``--load`` option):
 
