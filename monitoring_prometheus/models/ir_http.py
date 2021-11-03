@@ -1,9 +1,17 @@
+# -*- coding: utf-8 -*-
 # Copyright 2016-2021 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
+import logging
 
 from odoo import models
 from odoo.http import request
-from prometheus_client import Summary, Counter
+
+_logger = logging.getLogger(__name__)
+
+try:
+    from prometheus_client import Summary, Counter
+except (ImportError, IOError) as err:
+    _logger.warning(err)
 
 
 REQUEST_TIME = Summary(
@@ -21,10 +29,10 @@ class IrHttp(models.AbstractModel):
 
         if path_info.startswith("/longpolling/"):
             LONGPOLLING_COUNT.inc()
-            return super()._dispatch()
+            return super(IrHttp, cls)._dispatch()
 
         if path_info.startswith("/metrics"):
-            return super()._dispatch()
+            return super(IrHttp, cls)._dispatch()
 
         if path_info.startswith("/web/static"):
             label = "assets"
@@ -35,6 +43,6 @@ class IrHttp(models.AbstractModel):
 
         res = None
         with REQUEST_TIME.labels(label).time():
-            res = super()._dispatch()
+            res = super(IrHttp, cls)._dispatch()
 
         return res
