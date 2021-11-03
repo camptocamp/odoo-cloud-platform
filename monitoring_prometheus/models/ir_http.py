@@ -1,9 +1,16 @@
 # Copyright 2016-2021 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
+import logging
 
 from odoo import models
 from odoo.http import request
-from prometheus_client import Summary, Counter
+
+_logger = logging.getLogger(__name__)
+
+try:
+    from prometheus_client import Summary, Counter
+except (ImportError, IOError) as err:
+    _logger.warning(err)
 
 
 REQUEST_TIME = Summary(
