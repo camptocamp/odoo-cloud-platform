@@ -10,7 +10,7 @@ from odoo.addons.cloud_platform.models.cloud_platform import FilestoreKind
 from odoo.addons.cloud_platform.models.cloud_platform import PlatformConfig
 
 
-SWIFT_STORE_KIND = FilestoreKind('s3', 'remote')
+SWIFT_STORE_KIND = FilestoreKind('swift', 'remote')
 
 
 class CloudPlatform(models.AbstractModel):
