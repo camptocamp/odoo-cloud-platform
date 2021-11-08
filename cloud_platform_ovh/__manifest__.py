@@ -5,7 +5,7 @@
 {
     "name": "Cloud Platform OVH",
     "summary": "Addons required for the Camptocamp Cloud Platform on OVH",
-    "version": "13.0.1.0.0",
+    "version": "13.0.2.0.0",
     "author": "Camptocamp,Odoo Community Association (OCA)",
     "license": "AGPL-3",
     "category": "Extra Tools",
