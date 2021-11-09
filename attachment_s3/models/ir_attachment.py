@@ -141,6 +141,15 @@ class IrAttachment(models.Model):
                 file.write(bin_data)
                 file.seek(0)
                 filename = "s3://%s/%s" % (bucket.name, key)
+                # if the object already exists skip re-uploading so that:
+                # we dont break retencion policy and we dont need update rights
+                # TODO handle this on a better way
+                try:
+                    if obj.content_length:
+                        _logger.info('Skip uploading object %s, already exists', filename)
+                        return filename
+                except Exception:
+                    pass
                 try:
                     obj.upload_fileobj(file)
                 except ClientError as error:
