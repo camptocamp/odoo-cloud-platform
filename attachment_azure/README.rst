@@ -27,6 +27,9 @@ The container name can be overridden with environment variable ``AZURE_STORAGE_N
 The strings ``{db}`` and ``{env}`` can be used inside that variable and the values
 will be replaced respectively by the database name and environment name.
 
+The container name will also be stored in the database for each attachment,
+and will be used to access the right container in the storage.
+
 This addon must be added in the server wide addons with (``--load`` option):
 
 ``--load=web,attachment_azure``
