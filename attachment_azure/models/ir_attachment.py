@@ -127,8 +127,9 @@ class IrAttachment(models.Model):
         return str.lower(storage_name)[:63]
 
     @api.model
-    def _get_azure_container(self):
-        container_name = self._get_container_name()
+    def _get_azure_container(self, container_name=None):
+        if not container_name:
+            container_name = self._get_container_name()
         blob_service_client = self._get_blob_service_client()
         container_client = blob_service_client.get_container_client(container_name)
         try:
@@ -144,8 +145,12 @@ class IrAttachment(models.Model):
     @api.model
     def _store_file_read(self, fname, bin_size=False):
         if fname.startswith("azure://"):
-            container_client = self._get_azure_container()
             key = fname.replace("azure://", "", 1).lower()
+            if '/' in key:
+                container_name, key = key.split('/')
+            else:
+                container_name = None
+            container_client = self._get_azure_container(container_name)
             try:
                 blob_client = container_client.get_blob_client(key)
                 read = blob_client.download_blob().readall()
@@ -161,11 +166,11 @@ class IrAttachment(models.Model):
         location = self.env.context.get("storage_location") or self._storage()
         if location == "azure":
             container_client = self._get_azure_container()
+            filename = "azure://%s/%s" % (container_client.container_name, key)
             with io.BytesIO() as file:
                 blob_client = container_client.get_blob_client(key.lower())
                 file.write(bin_data)
                 file.seek(0)
-                filename = "azure://%s" % (key)
                 try:
                     blob_client.upload_blob(file, blob_type="BlockBlob")
                 except ResourceExistsError:
@@ -184,8 +189,12 @@ class IrAttachment(models.Model):
     @api.model
     def _store_file_delete(self, fname):
         if fname.startswith("azure://"):
-            container_client = self._get_azure_container()
             key = fname.replace("azure://", "", 1).lower()
+            if '/' in key:
+                container_name, key = key.split('/')
+            else:
+                container_name = None
+            container_client = self._get_azure_container(container_name)
             # delete the file only if it is on the current configured container
             # otherwise, we might delete files used on a different environment
             try:
