@@ -1,6 +1,10 @@
 sudo: false
 language: python
 
+branches:
+  only:
+    - "/^[[:digit:]]{1,2}.[[:digit:]]$/"
+
 cache:
   apt: true
   directories:
