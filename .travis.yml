@@ -7,7 +7,9 @@ branches:
     - "/^[[:digit:]]{1,2}.[[:digit:]]$/"
 
 python:
-  - "3.7"
+  # Force a newer version than 3.7.1 which break build
+  # due to https://bugs.python.org/issue34921
+  - "3.7.2"
 
 addons:
   postgresql: "9.5"
