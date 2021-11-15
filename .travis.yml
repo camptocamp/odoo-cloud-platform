@@ -2,6 +2,10 @@ language: python
 sudo: false
 cache: pip
 
+branches:
+  only:
+    - "/^[[:digit:]]{1,2}.[[:digit:]]$/"
+
 python:
   - "3.6"
 
