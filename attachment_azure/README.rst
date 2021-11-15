@@ -51,6 +51,9 @@ Activate Azure Blob storage:
 One container will be created per database using the `RUNNING_ENV` environment variable
 and the name of the database. By default, `RUNNING_ENV` is set to `dev`.
 
+The container name will also be stored in the database for each attachment,
+and will be used to access the right container in the storage.
+
 This addon must be added in the server wide addons with (``--load`` option):
 
 ``--load=web,attachment_azure``
