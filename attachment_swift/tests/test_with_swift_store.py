@@ -2,12 +2,12 @@
 # Copyright 2017 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
-from openerp.addons.base.tests.test_ir_attachment import TestIrAttachment
+from openerp.addons.base.tests.test_ir_attachment import test_ir_attachment
 from ..swift_uri import SwiftUri
 from swiftclient.exceptions import ClientException
 
 
-class TestAttachmentSwift(TestIrAttachment):
+class TestAttachmentSwift(test_ir_attachment):
     """
     Those tests are made to be run against a real Swift store (local or remote)
     """

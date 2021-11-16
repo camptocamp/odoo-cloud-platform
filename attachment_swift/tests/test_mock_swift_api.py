@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright 2017-2019 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
@@ -9,15 +10,15 @@ from mock import patch
 
 import keystoneauth1
 
-from odoo.addons.base.tests.test_ir_attachment import TestIrAttachment
-from odoo.addons.attachment_swift.models.ir_attachment import SwiftSessionStore
-from odoo.addons.attachment_swift.swift_uri import SwiftUri
+from openerp.addons.base.tests.test_ir_attachment import test_ir_attachment
+from openerp.addons.attachment_swift.models.ir_attachment import SwiftSessionStore
+from openerp.addons.attachment_swift.swift_uri import SwiftUri
 
 
-class TestAttachmentSwift(TestIrAttachment):
+class TestAttachmentSwift(test_ir_attachment):
 
     def setup(self):
-        super().setUp()
+        super(TestAttachmentSwift, self).setUp()
         self.env['ir.config_parameter'].set_param('ir_attachment.location',
                                                   'swift')
 
