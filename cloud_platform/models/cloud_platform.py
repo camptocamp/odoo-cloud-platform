@@ -59,6 +59,7 @@ class CloudPlatform(models.AbstractModel):
         configs = {
             'prod': PlatformConfig(filestore=FilestoreKind.s3),
             'integration': PlatformConfig(filestore=FilestoreKind.s3),
+            'labs': PlatformConfig(filestore=FilestoreKind.s3),
             'test': PlatformConfig(filestore=FilestoreKind.db),
             'dev': PlatformConfig(filestore=FilestoreKind.db),
         }
@@ -79,6 +80,14 @@ class CloudPlatform(models.AbstractModel):
     @api.model
     def install_exoscale(self):
         self.install('exoscale')
+
+    def _get_running_env(self):
+        environment_name = config['running_env']
+        if environment_name.startswith('labs'):
+            # We allow to have environments such as 'labs-logistics'
+            # or 'labs-finance', in order to have the matching ribbon.
+            environment_name = 'labs'
+        return environment_name
 
     @api.model
     def _install(self, platform_kind):
@@ -103,10 +112,10 @@ class CloudPlatform(models.AbstractModel):
 
     @api.model
     def _check_redis(self, environment_name):
-        if environment_name in ('prod', 'integration', 'test'):
+        if environment_name in ('prod', 'integration', 'labs', 'test'):
             assert is_true(os.environ.get('ODOO_SESSION_REDIS')), (
-                "Redis must be activated on prod, integration, test instances."
-                "This is done by setting ODOO_SESSION_REDIS=1."
+                "Redis must be activated on prod, integration, labs,"
+                " test instances. This is done by setting ODOO_SESSION_REDIS=1."
             )
             assert (os.environ.get('ODOO_SESSION_REDIS_HOST') or
                     os.environ.get('ODOO_SESSION_REDIS_SENTINEL_HOST') or
@@ -122,7 +131,7 @@ class CloudPlatform(models.AbstractModel):
             )
 
             prefix = os.environ['ODOO_SESSION_REDIS_PREFIX']
-            assert re.match(r'[a-z]+[a-z0-9]*-odoo-[a-z]+[0-9]*', prefix), (
+            assert re.match(r'^[a-z-0-9]+-odoo-[a-z-0-9]+$', prefix), (
                 "ODOO_SESSION_REDIS_PREFIX must match '<client>-odoo-<env>'"
                 ", we got: '%s'" % (prefix,)
             )
