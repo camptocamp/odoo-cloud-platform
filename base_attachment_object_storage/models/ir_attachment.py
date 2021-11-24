@@ -409,10 +409,11 @@ class IrAttachment(models.Model):
             def clean():
                 clean_fs(files_to_clean)
 
+            # as we are working in batches we should not clean filestore
             # delete the files from the filesystem once we know the changes
             # have been committed in ir.attachment
-            if files_to_clean:
-                new_env.cr.after('commit', clean)
+            # if files_to_clean:
+            #     new_env.cr.after('commit', clean)
 
     def _get_stores(self):
         """ To get the list of stores activated in the system  """
