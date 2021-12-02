@@ -10,6 +10,7 @@ from collections import namedtuple
 from distutils.util import strtobool
 
 from odoo import api, models
+from odoo.tools.config import config
 
 
 _logger = logging.getLogger(__name__)
