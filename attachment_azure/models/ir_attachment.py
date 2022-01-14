@@ -134,14 +134,13 @@ class IrAttachment(models.Model):
             container_name = self._get_container_name()
         blob_service_client = self._get_blob_service_client()
         container_client = blob_service_client.get_container_client(container_name)
-        try:
-            # Create the container
-            container_client.create_container()
-        except ResourceExistsError:
-            pass
-        except HttpResponseError as error:
-            _logger.exception("Error during the creation of the Azure container")
-            raise exceptions.UserError(str(error))
+        if not container_client.exists():
+            try:
+                # Create the container
+                container_client.create_container()
+            except HttpResponseError as error:
+                _logger.exception("Error during the creation of the Azure container")
+                raise exceptions.UserError(str(error))
         return container_client
 
     @api.model
