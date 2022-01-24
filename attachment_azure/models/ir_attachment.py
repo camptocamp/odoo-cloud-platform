@@ -206,6 +206,8 @@ class IrAttachment(models.Model):
             else:
                 container_name = None
             container_client = self._get_azure_container(container_name)
+            if not container_client:
+                return ''
             # delete the file only if it is on the current configured container
             # otherwise, we might delete files used on a different environment
             try:
