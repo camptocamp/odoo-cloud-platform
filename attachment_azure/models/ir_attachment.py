@@ -132,6 +132,14 @@ class IrAttachment(models.Model):
         if not container_name:
             container_name = self._get_container_name()
         blob_service_client = self._get_blob_service_client()
+        try:
+            blob_service_client = self._get_blob_service_client()
+        except exceptions.UserError:
+            _logger.exception(
+                "error accessing to storage '%s' please check credentials ",
+                container_name
+            )
+            return False
         container_client = blob_service_client.get_container_client(container_name)
         if not container_client.exists():
             try:
@@ -151,6 +159,9 @@ class IrAttachment(models.Model):
             else:
                 container_name = None
             container_client = self._get_azure_container(container_name)
+            # if container cannot be retrived, abort reading from azure storage
+            if not container_client:
+                return ''
             try:
                 blob_client = container_client.get_blob_client(key)
                 read = blob_client.download_blob().readall()
@@ -195,6 +206,8 @@ class IrAttachment(models.Model):
             else:
                 container_name = None
             container_client = self._get_azure_container(container_name)
+            if not container_client:
+                return ''
             # delete the file only if it is on the current configured container
             # otherwise, we might delete files used on a different environment
             try:
