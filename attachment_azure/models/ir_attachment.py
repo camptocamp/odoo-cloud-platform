@@ -131,7 +131,6 @@ class IrAttachment(models.Model):
     def _get_azure_container(self, container_name=None):
         if not container_name:
             container_name = self._get_container_name()
-        blob_service_client = self._get_blob_service_client()
         try:
             blob_service_client = self._get_blob_service_client()
         except exceptions.UserError:
