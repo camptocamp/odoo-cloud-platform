@@ -91,24 +91,24 @@ class CloudPlatform(models.AbstractModel):
                     " 'ir_attachment.location' parameter."
                 )
             # A bucket name is defined under the following format
-            # ^[a-z]+_[a-z]+_\d+$
+            # ^[a-z]+\-[a-z]+\-\d+$
             # Anything other than prod bucket must be suffixed with env name
             #
             # Use AZURE_STORAGE_NAME_UNSTRUCTURED to by-pass check
             # on bucket name structure
             if os.environ.get("AZURE_STORAGE_NAME_UNSTRUCTURED"):
                 return
-            prod_bucket = bool(re.match(r"^[a-z]+_[a-z]+_\d+$", storage_name))
+            prod_bucket = bool(re.match(r"^[a-z]+\-[a-z]+\-\d+$", storage_name))
             if environment_name == "prod":
                 assert prod_bucket, (
-                    "AZURE_STORAGE_NAME should match '^[a-z]+_[a-z]+_\\d+$', "
+                    "AZURE_STORAGE_NAME should match '^[a-z]+\-[a-z]+\-\\d+$', "
                     "we got: '%s'" % (storage_name,)
                 )
             else:
                 # if we are using the prod bucket on another instance
                 # such as an integration, we must be sure to be in read only!
                 assert not prod_bucket, (
-                    "AZURE_STORAGE_NAME should not match '^[a-z]+_[a-z]+_\\d+$', "
+                    "AZURE_STORAGE_NAME should not match '^[a-z]+\-[a-z]+\-\\d+$', "
                     "we got: '%s'" % (storage_name,)
                 )
 
