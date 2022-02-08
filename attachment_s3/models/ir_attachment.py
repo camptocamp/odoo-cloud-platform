@@ -58,10 +58,12 @@ class IrAttachment(models.Model):
         # replaces {db} by the database name to handle multi-tenancy
         bucket_name = bucket_name.format(db=self.env.cr.dbname)
         params = {
-            'aws_access_key_id': access_key,
-            'aws_secret_access_key': secret_key,
             'bucket_name': bucket_name,
         }
+        if access_key:
+            params['aws_access_key_id'] = access_key
+        if secret_key:
+            params['aws_secret_access_key'] = secret_key
         if host:
             params['endpoint_url'] = host
         if region_name:
@@ -89,8 +91,6 @@ class IrAttachment(models.Model):
         #  keyword argument 'bucket_name'
         bucket_name = params.pop("bucket_name")
         if not (
-            params["aws_access_key_id"] and
-            params["aws_secret_access_key"] and
             bucket_name
         ):
             msg = _('If you want to read from the %s S3 bucket, the following '
