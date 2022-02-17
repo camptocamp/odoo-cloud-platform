@@ -4,7 +4,7 @@
 import json
 import logging
 
-from werkzeug.contrib.sessions import SessionStore
+from odoo.tools._vendor.sessions import SessionStore
 
 from . import json_encoding
 
