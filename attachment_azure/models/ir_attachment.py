@@ -154,7 +154,7 @@ class IrAttachment(models.Model):
         if fname.startswith("azure://"):
             key = fname.replace("azure://", "", 1).lower()
             if '/' in key:
-                container_name, key = key.split('/')
+                container_name, key = key.split('/', 1)
             else:
                 container_name = None
             container_client = self._get_azure_container(container_name)
@@ -201,7 +201,7 @@ class IrAttachment(models.Model):
         if fname.startswith("azure://"):
             key = fname.replace("azure://", "", 1).lower()
             if '/' in key:
-                container_name, key = key.split('/')
+                container_name, key = key.split('/', 1)
             else:
                 container_name = None
             container_client = self._get_azure_container(container_name)
