@@ -11,7 +11,7 @@ from openerp.http import request as http_request
 from openerp.tools.config import config
 
 
-_logger = logging.getLogger('monitoring.http.requests')
+_logger = logging.getLogger(u'monitoring.http.requests')
 
 
 class IrHttp(models.AbstractModel):
@@ -28,8 +28,8 @@ class IrHttp(models.AbstractModel):
         return response
 
     def _monitoring_blacklist(self, request):
-        path_info = request.httprequest.environ.get('PATH_INFO')
-        if path_info.startswith('/longpolling/'):
+        path_info = request.httprequest.environ.get(u'PATH_INFO')
+        if path_info.startswith(u'/longpolling/'):
             return True
         return False
 
@@ -37,7 +37,7 @@ class IrHttp(models.AbstractModel):
         return True
 
     def _monitoring_info(self, request, response, begin, end):
-        path = request.httprequest.environ.get('PATH_INFO')
+        path = request.httprequest.environ.get(u'PATH_INFO')
         info = {
             # timing
             'start_time': time.strftime("%Y-%m-%d %H:%M:%S",
