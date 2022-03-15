@@ -6,7 +6,7 @@ import inspect
 import logging
 import os
 import psycopg2
-import odoo
+import openerp
 
 from contextlib import closing, contextmanager
 from openerp import api, exceptions, fields, models, _
@@ -208,7 +208,7 @@ class IrAttachment(models.Model):
         """
         with api.Environment.manage():
             if new_cr:
-                registry = odoo.modules.registry.RegistryManager.get(
+                registry = openerp.modules.registry.RegistryManager.get(
                     self.env.cr.dbname
                 )
                 with closing(registry.cursor()) as cr:
