@@ -10,6 +10,7 @@ from collections import namedtuple
 from distutils.util import strtobool
 
 from openerp import api, models, SUPERUSER_ID
+from openerp.tools.config import config
 
 
 _logger = logging.getLogger(__name__)
@@ -78,6 +79,14 @@ class CloudPlatform(models.AbstractModel):
     @api.model
     def install_exoscale(self):
         self.install('exoscale')
+
+    def _get_running_env(self):
+        environment_name = config['running_env']
+        if environment_name.startswith('labs'):
+            # We allow to have environments such as 'labs-logistics'
+            # or 'labs-finance', in order to have the matching ribbon.
+            environment_name = 'labs'
+        return environment_name
 
     @api.model
     def _install(self, platform_kind):
