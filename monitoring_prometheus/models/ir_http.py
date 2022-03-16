@@ -25,16 +25,15 @@ LONGPOLLING_COUNT = Counter("longpolling", "Longpolling request count")
 class IrHttp(models.AbstractModel):
     _inherit = "ir.http"
 
-    @classmethod
-    def _dispatch(cls):
+    def _dispatch(self):
         path_info = request.httprequest.environ.get("PATH_INFO")
 
         if path_info.startswith("/longpolling/"):
             LONGPOLLING_COUNT.inc()
-            return super(IrHttp, cls)._dispatch()
+            return super(IrHttp, self)._dispatch()
 
         if path_info.startswith("/metrics"):
-            return super(IrHttp, cls)._dispatch()
+            return super(IrHttp, self)._dispatch()
 
         if path_info.startswith("/web/static"):
             label = "assets"
@@ -45,6 +44,6 @@ class IrHttp(models.AbstractModel):
 
         res = None
         with REQUEST_TIME.labels(label).time():
-            res = super(IrHttp, cls)._dispatch()
+            res = super(IrHttp, self)._dispatch()
 
         return res
