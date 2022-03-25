@@ -54,7 +54,7 @@ class IrAttachment(models.Model):
         region_name = os.environ.get('AWS_REGION')
         access_key = os.environ.get('AWS_ACCESS_KEY_ID')
         secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
-        aws_use_instance_profile = os.environ.get('AWS_USE_INSTANCE_PROFILE')
+        aws_use_irsa = os.environ.get('AWS_USE_IRSA')
         bucket_name = bucket_name or os.environ.get('AWS_BUCKETNAME')
         # replaces {db} by the database name to handle multi-tenancy
         bucket_name = bucket_name.format(db=self.env.cr.dbname)
@@ -65,8 +65,8 @@ class IrAttachment(models.Model):
             params['aws_access_key_id'] = access_key
         if secret_key:
             params['aws_secret_access_key'] = secret_key
-        if aws_use_instance_profile:
-            params['aws_use_instance_profile'] = aws_use_instance_profile
+        if aws_use_irsa:
+            params['aws_use_irsa'] = aws_use_irsa
         if host:
             params['endpoint_url'] = host
         if region_name:
@@ -98,14 +98,14 @@ class IrAttachment(models.Model):
             bucket_name and
             (params["aws_access_key_id"] and
              params["aws_secret_access_key"] or
-             params["aws_use_instance_profile"])
+             params["aws_use_irsa"])
         ):
             msg = _('If you want to read from the %s S3 bucket, the following '
                     'environment variables must be set:\n'
                     '* AWS_ACCESS_KEY_ID\n'
                     '* AWS_SECRET_ACCESS_KEY\n'
-                    'or set instance profile\n'
-                    '* AWS_USE_INSTANCE_PROFILE\n'
+                    'or use irsa for authentification\n'
+                    '* AWS_USE_IRSA\n'
                     'If you want to write in the %s S3 bucket, this variable '
                     'must be set as well:\n'
                     '* AWS_BUCKETNAME\n'
