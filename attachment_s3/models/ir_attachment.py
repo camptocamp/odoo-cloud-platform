@@ -52,6 +52,7 @@ class IrAttachment(models.Model):
             host = 'https://%s' % host
 
         region_name = os.environ.get('AWS_REGION')
+        aws_use_irsa = os.environ.get('AWS_USE_IRSA')
         access_key = os.environ.get('AWS_ACCESS_KEY_ID')
         secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
         bucket_name = name or os.environ.get('AWS_BUCKETNAME')
@@ -62,6 +63,12 @@ class IrAttachment(models.Model):
             'aws_access_key_id': access_key,
             'aws_secret_access_key': secret_key,
         }
+        if aws_use_irsa:
+            params['aws_use_irsa'] = aws_use_irsa
+        elif access_key:
+            params['aws_access_key_id'] = access_key
+            if secret_key:
+                params['aws_secret_access_key'] = secret_key
         if host:
             params['endpoint_url'] = host
         if region_name:
@@ -74,6 +81,8 @@ class IrAttachment(models.Model):
                     'If you want to write in the %s S3 bucket, this variable '
                     'must be set as well:\n'
                     '* AWS_BUCKETNAME\n'
+                    'if you want to user IRSA authentification method set'
+                    '* AWS_USE_IRSA\n'
                     'Optionally, the S3 host can be changed with:\n'
                     '* AWS_HOST\n'
                     ) % (bucket_name, bucket_name)
