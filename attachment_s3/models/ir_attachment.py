@@ -96,9 +96,9 @@ class IrAttachment(models.Model):
         bucket_name = params.pop("bucket_name")
         if not (
             bucket_name and
-            (params["aws_access_key_id"] and
-             params["aws_secret_access_key"] or
-             params["aws_use_irsa"])
+            (params.get("aws_access_key_id") and
+             params.get("aws_secret_access_key") or
+             params.get("aws_use_irsa"))
         ):
             msg = _('If you want to read from the %s S3 bucket, the following '
                     'environment variables must be set:\n'
