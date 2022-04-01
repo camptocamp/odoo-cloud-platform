@@ -61,18 +61,16 @@ class IrAttachment(models.Model):
         params = {
             'bucket_name': bucket_name,
         }
-        if access_key:
+        if not aws_use_irsa and access_key:
             params['aws_access_key_id'] = access_key
-        if secret_key:
-            params['aws_secret_access_key'] = secret_key
-        if aws_use_irsa:
-            params['aws_use_irsa'] = aws_use_irsa
+            if secret_key:
+                params['aws_secret_access_key'] = secret_key
         if host:
             params['endpoint_url'] = host
         if region_name:
             params['region_name'] = region_name
 
-        return params
+        return params, aws_use_irsa
 
     @api.model
     def _get_s3_bucket(self, name=None):
@@ -90,7 +88,7 @@ class IrAttachment(models.Model):
         from the environment variable ``AWS_BUCKETNAME`` will be read.
 
         """
-        params = self._get_s3_connection_params(bucket_name=name)
+        params, aws_use_irsa = self._get_s3_connection_params(bucket_name=name)
         # Pop the bucket_name to avoid TypeError: resource() got an unexpected
         #  keyword argument 'bucket_name'
         bucket_name = params.pop("bucket_name")
@@ -98,7 +96,7 @@ class IrAttachment(models.Model):
             bucket_name and
             (params.get("aws_access_key_id") and
              params.get("aws_secret_access_key") or
-             params.get("aws_use_irsa"))
+             aws_use_irsa)
         ):
             msg = _('If you want to read from the %s S3 bucket, the following '
                     'environment variables must be set:\n'
