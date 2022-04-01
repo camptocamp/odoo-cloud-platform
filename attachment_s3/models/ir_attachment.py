@@ -59,13 +59,8 @@ class IrAttachment(models.Model):
         # replaces {db} by the database name to handle multi-tenancy
         bucket_name = bucket_name.format(db=self.env.cr.dbname)
 
-        params = {
-            'aws_access_key_id': access_key,
-            'aws_secret_access_key': secret_key,
-        }
-        if aws_use_irsa:
-            params['aws_use_irsa'] = aws_use_irsa
-        elif access_key:
+        params = {}
+        if not aws_use_irsa and access_key:
             params['aws_access_key_id'] = access_key
             if secret_key:
                 params['aws_secret_access_key'] = secret_key
