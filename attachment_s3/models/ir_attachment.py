@@ -68,7 +68,7 @@ class IrAttachment(models.Model):
             params['endpoint_url'] = host
         if region_name:
             params['region_name'] = region_name
-        if not (access_key and secret_key and bucket_name):
+        if not (bucket_name and (access_key and secret_key or aws_use_irsa)):
             msg = _('If you want to read from the %s S3 bucket, the following '
                     'environment variables must be set:\n'
                     '* AWS_ACCESS_KEY_ID\n'
