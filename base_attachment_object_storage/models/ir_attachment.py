@@ -5,6 +5,7 @@ import inspect
 import logging
 import os
 import time
+from distutils.util import strtobool
 
 import psycopg2
 import odoo
@@ -16,6 +17,10 @@ from odoo.tools.safe_eval import const_eval
 
 
 _logger = logging.getLogger(__name__)
+
+
+def is_true(strval):
+    return bool(strtobool(strval or '0'))
 
 
 def clean_fs(files):
@@ -185,17 +190,36 @@ class IrAttachment(models.Model):
 
     def _store_file_read(self, fname):
         storage = fname.partition('://')[0]
+        unsafe_mode = is_true(os.environ.get("ATTACHMENT_STORAGE_UNSAFE"))
+        if unsafe_mode:
+            _logger.warning(_(
+                "Storage '%s' is deactivated (see environment configuration)." % (storage,)
+            ))
+            return
         raise NotImplementedError(
             'No implementation for %s' % (storage,)
         )
 
     def _store_file_write(self, key, bin_data):
+        storage = self.storage()
+        unsafe_mode = is_true(os.environ.get("ATTACHMENT_STORAGE_UNSAFE"))
+        if unsafe_mode:
+            _logger.warning(_(
+                "Storage '%s' is deactivated (see environment configuration)." % (storage,)
+            ))
+            return
         raise NotImplementedError(
-            'No implementation for %s' % (self.storage(),)
+            'No implementation for %s' % (storage,)
         )
 
     def _store_file_delete(self, fname):
         storage = fname.partition('://')[0]
+        unsafe_mode = is_true(os.environ.get("ATTACHMENT_STORAGE_UNSAFE"))
+        if unsafe_mode:
+            _logger.warning(_(
+                "Storage '%s' is deactivated (see environment configuration)." % (storage,)
+            ))
+            return
         raise NotImplementedError(
             'No implementation for %s' % (storage,)
         )
@@ -305,6 +329,12 @@ class IrAttachment(models.Model):
         It is not called anywhere, but can be called by RPC or scripts.
         """
         storage = self._storage()
+        unsafe_mode = is_true(os.environ.get("ATTACHMENT_STORAGE_UNSAFE"))
+        if unsafe_mode:
+            _logger.warning(_(
+                "Storage '%s' is deactivated (see environment configuration)." % (storage,)
+            ))
+            return
         if storage not in self._get_stores():
             return
 
@@ -358,6 +388,12 @@ class IrAttachment(models.Model):
     def _force_storage_to_object_storage(self, new_cr=False):
         _logger.info('migrating files to the object storage')
         storage = self.env.context.get('storage_location') or self._storage()
+        unsafe_mode = is_true(os.environ.get("ATTACHMENT_STORAGE_UNSAFE"))
+        if unsafe_mode:
+            _logger.warning(_(
+                "Storage is %s deactivated (see environment configuration)." % (storage,)
+            ))
+            return
         # The weird "res_field = False OR res_field != False" domain
         # is required! It's because of an override of _search in ir.attachment
         # which adds ('res_field', '=', False) when the domain does not
