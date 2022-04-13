@@ -38,3 +38,10 @@ Default configuration means:
   stored in database
 * application/javascript are stored in database whatever their size
 * text/css are stored in database whatever their size
+
+Unsafe mode
+-----------
+
+Define a environment variable `ATTACHMENT_STORAGE_UNSAFE` set to `1`
+This will prevent and avoid any king of exceptions and filestore read/write
+issues.

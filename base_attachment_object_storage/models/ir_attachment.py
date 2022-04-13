@@ -5,6 +5,7 @@ import inspect
 import logging
 import os
 import time
+from distutils.util import strtobool
 
 import psycopg2
 import odoo
@@ -16,6 +17,10 @@ from odoo.tools.safe_eval import const_eval
 
 
 _logger = logging.getLogger(__name__)
+
+
+def is_true(strval):
+    return bool(strtobool(strval or '0'))
 
 
 def clean_fs(files):
@@ -151,6 +156,12 @@ class IrAttachment(models.Model):
         ``_store_in_db_instead_of_object_storage_domain``.
 
         """
+        unsafe_mode = is_true(os.environ.get("ATTACHMENT_STORAGE_UNSAFE"))
+        if unsafe_mode:
+            _logger.warning(_(
+                "Storages are deactivated (see environment configuration)."
+            ))
+            return True
         storage_config = self._get_storage_force_db_config()
         for mimetype_key, limit in storage_config.items():
             if mimetype.startswith(mimetype_key):
@@ -190,8 +201,9 @@ class IrAttachment(models.Model):
         )
 
     def _store_file_write(self, key, bin_data):
+        storage = self.storage()
         raise NotImplementedError(
-            'No implementation for %s' % (self.storage(),)
+            'No implementation for %s' % (storage,)
         )
 
     def _store_file_delete(self, fname):
@@ -229,6 +241,12 @@ class IrAttachment(models.Model):
     @api.model
     def _is_file_from_a_store(self, fname):
         for store_name in self._get_stores():
+            unsafe_mode = is_true(os.environ.get("ATTACHMENT_STORAGE_UNSAFE"))
+            if unsafe_mode:
+                _logger.warning(_(
+                    "Storage '%s' is deactivated (see environment configuration)." % (store_name,)
+                ))
+                return False
             uri = '{}://'.format(store_name)
             if fname.startswith(uri):
                 return True
@@ -263,6 +281,13 @@ class IrAttachment(models.Model):
         self.ensure_one()
         _logger.info('inspecting attachment %s (%d)', self.name, self.id)
         fname = self.store_fname
+        storage = fname.partition('://')[0]
+        unsafe_mode = is_true(os.environ.get("ATTACHMENT_STORAGE_UNSAFE"))
+        if unsafe_mode:
+            _logger.warning(_(
+                "Storage '%s' is deactivated (see environment configuration)." % (storage,)
+            ))
+            fname = False
         if fname:
             # migrating from filesystem filestore
             # or from the old 'store_fname' without the bucket name
@@ -305,6 +330,12 @@ class IrAttachment(models.Model):
         It is not called anywhere, but can be called by RPC or scripts.
         """
         storage = self._storage()
+        unsafe_mode = is_true(os.environ.get("ATTACHMENT_STORAGE_UNSAFE"))
+        if unsafe_mode:
+            _logger.warning(_(
+                "Storage '%s' is deactivated (see environment configuration)." % (storage,)
+            ))
+            return
         if storage not in self._get_stores():
             return
 
@@ -358,6 +389,12 @@ class IrAttachment(models.Model):
     def _force_storage_to_object_storage(self, new_cr=False):
         _logger.info('migrating files to the object storage')
         storage = self.env.context.get('storage_location') or self._storage()
+        unsafe_mode = is_true(os.environ.get("ATTACHMENT_STORAGE_UNSAFE"))
+        if unsafe_mode:
+            _logger.warning(_(
+                "Storage '%s' is deactivated (see environment configuration)." % (storage,)
+            ))
+            return
         # The weird "res_field = False OR res_field != False" domain
         # is required! It's because of an override of _search in ir.attachment
         # which adds ('res_field', '=', False) when the domain does not
