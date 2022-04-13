@@ -1,7 +1,7 @@
 Base class for attachments on external object store
 ===================================================
 
-This is a base addon that regroup common code used by addons targeting specific object store 
+This is a base addon that regroup common code used by addons targeting specific object store
 
 Configuration
 -------------
@@ -38,3 +38,9 @@ Default configuration means:
   stored in database
 * application/javascript are stored in database whatever their size
 * text/css are stored in database whatever their size
+
+Inactivate attachment storage I/O
+---------------------------------
+
+Define a environment variable `ATTACHMENT_STORAGE_INACTIVE` set to `1`
+This will prevent any kind of exceptions and read/write on storage attachments.
