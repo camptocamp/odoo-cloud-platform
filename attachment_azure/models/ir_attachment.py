@@ -164,10 +164,7 @@ class IrAttachment(models.Model):
                 return ''
             try:
                 blob_client = container_client.get_blob_client(key)
-                if bin_size:
-                    return blob_client.get_blob_properties()['size']
-                else:
-                    read = base64.b64encode(blob_client.download_blob().readall())
+                read = base64.b64encode(blob_client.download_blob().readall())
             except HttpResponseError:
                 read = ""
                 _logger.info("Attachment '%s' missing on object storage", fname)
