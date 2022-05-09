@@ -46,16 +46,16 @@ class IrAttachment(models.Model):
     _inherit = 'ir.attachment'
 
     @staticmethod
-    def is_storage_inactive(storage=None, log=True):
-        msg = _("Storages are inactive (see environment configuration).")
+    def is_storage_disabled(storage=None, log=True):
+        msg = _("Storages are disabled (see environment configuration).")
         if storage:
             msg = _(
-                "Storage '%s' is inactive (see environment configuration)."
+                "Storage '%s' is disabled (see environment configuration)."
             ) % (storage,)
-        is_inactive = is_true(os.environ.get("ATTACHMENT_STORAGE_INACTIVE"))
-        if is_inactive and log:
+        is_disabled = is_true(os.environ.get("DISABLE_ATTACHMENT_STORAGE"))
+        if is_disabled and log:
             _logger.warning(msg)
-        return is_inactive
+        return is_disabled
 
     def _register_hook(self):
         super()._register_hook()
@@ -168,7 +168,7 @@ class IrAttachment(models.Model):
         ``_store_in_db_instead_of_object_storage_domain``.
 
         """
-        if self.is_storage_inactive():
+        if self.is_storage_disabled():
             return True
         storage_config = self._get_storage_force_db_config()
         for mimetype_key, limit in storage_config.items():
@@ -249,7 +249,7 @@ class IrAttachment(models.Model):
     @api.model
     def _is_file_from_a_store(self, fname):
         for store_name in self._get_stores():
-            if self.is_storage_inactive(store_name):
+            if self.is_storage_disabled(store_name):
                 continue
             uri = '{}://'.format(store_name)
             if fname.startswith(uri):
@@ -286,7 +286,7 @@ class IrAttachment(models.Model):
         _logger.info('inspecting attachment %s (%d)', self.name, self.id)
         fname = self.store_fname
         storage = fname.partition('://')[0]
-        if self.is_storage_inactive(storage):
+        if self.is_storage_disabled(storage):
             fname = False
         if fname:
             # migrating from filesystem filestore
@@ -330,7 +330,7 @@ class IrAttachment(models.Model):
         It is not called anywhere, but can be called by RPC or scripts.
         """
         storage = self._storage()
-        if self.is_storage_inactive(storage):
+        if self.is_storage_disabled(storage):
             return
         if storage not in self._get_stores():
             return
@@ -385,7 +385,7 @@ class IrAttachment(models.Model):
     def _force_storage_to_object_storage(self, new_cr=False):
         _logger.info('migrating files to the object storage')
         storage = self.env.context.get('storage_location') or self._storage()
-        if self.is_storage_inactive(storage):
+        if self.is_storage_disabled(storage):
             return
         # The weird "res_field = False OR res_field != False" domain
         # is required! It's because of an override of _search in ir.attachment

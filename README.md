@@ -163,7 +163,7 @@ environment. It will refuse to start if anything is badly configured.
 The checks can be bypassed with the environment variable
 `ODOO_CLOUD_PLATFORM_UNSAFE` set to `1`.
 
-### Attachment storage inactivation 
+### Attachment storage disability 
 
 To prevent object storage to be accessed while failing for any kind of reason
-set this environment variable `ATTACHMENT_STORAGE_INACTIVE` set to `1`.
+set this environment variable `DISABLE_ATTACHMENT_STORAGE` set to `1`.
