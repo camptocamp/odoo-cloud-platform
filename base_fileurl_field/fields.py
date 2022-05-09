@@ -35,6 +35,7 @@ class FileURL(fields.Binary):
         'filename': '',  # Field to use to store the filename on ir.attachment
     }
 
+    # pylint: disable=method-required-super
     def create(self, record_values):
         assert self.attachment
         if not record_values:
