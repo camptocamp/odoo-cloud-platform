@@ -35,9 +35,10 @@ class OdooJsonFormatter(jsonlogger.JsonFormatter):
 
 
 if is_true(os.environ.get('ODOO_LOGGING_JSON')):
-    format = ('%(asctime)s %(pid)s %(levelname)s'
-              '%(dbname)s %(name)s: %(message)s')
-    formatter = OdooJsonFormatter(format)
+    formatted_message = (
+        '%(asctime)s %(pid)s %(levelname)s %(dbname)s %(name)s: %(message)s'
+    )
+    formatter = OdooJsonFormatter(formatted_message)
     logging.getLogger().handlers[0].formatter = formatter
 
 
