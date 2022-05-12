@@ -8,15 +8,13 @@ from openerp.osv import osv
 from openerp.addons.cloud_platform.models.cloud_platform import FilestoreKind
 from openerp.addons.cloud_platform.models.cloud_platform import PlatformConfig
 
-AZURE_STORE_KIND = FilestoreKind("azure", "remote")
-
 
 class CloudPlatform(osv.osv):
     _inherit = "cloud.platform"
 
     def _filestore_kinds(self):
         kinds = super(CloudPlatform, self)._filestore_kinds()
-        kinds["azure"] = AZURE_STORE_KIND
+        kinds.append("azure")
         return kinds
 
     def _platform_kinds(self):

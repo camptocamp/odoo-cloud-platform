@@ -166,9 +166,8 @@ class IrAttachment(osv.osv):
         else:
             return super(IrAttachment, self)._store_file_read(fname, bin_size)
 
-    def _store_file_write(self, key, bin_data):
-        location = self.env.context.get("storage_location") or self._storage()
-        if location == "azure":
+    def _store_file_write(self, storage, key, bin_data):
+        if storage == "azure":
             container_client = self._get_azure_container()
             filename = "azure://%s/%s" % (container_client.container_name, key)
             with io.BytesIO() as file:
