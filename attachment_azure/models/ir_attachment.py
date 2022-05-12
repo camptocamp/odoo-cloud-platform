@@ -7,7 +7,6 @@ import os
 import re
 from datetime import datetime, timedelta
 
-from odoo import _, api, exceptions, models
 from openerp.tools.translate import _
 from openerp.osv import osv
 from openerp.osv.orm import except_orm

@@ -12,9 +12,6 @@
     "license": "AGPL-3",
     "category": "Knowledge Management",
     "depends": ["base_attachment_object_storage"],
-    "external_dependencies": {
-        "python": ["azure-storage-blob", "azure-identity"],
-    },
     "website": "https://github.com/camptocamp/odoo-cloud-platform",
     "installable": True,
     "development_status": "Beta",
