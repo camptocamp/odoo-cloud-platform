@@ -12,7 +12,6 @@
     "depends": [
         "cloud_platform",
         "attachment_azure",
-        "monitoring_prometheus",
     ],
     "excludes": [
         "cloud_platform_ovh",
