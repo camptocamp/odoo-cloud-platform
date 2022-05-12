@@ -43,6 +43,12 @@ class CloudPlatform(osv.osv_abstract):
         # it in cloud_platform_exoscale in V11
         return ['exoscale']
 
+    def _filestore_kinds(self):
+        # XXX for backward compatibility, we need this one here, move
+        # it in cloud_platform_exoscale in V11
+        return ['exoscale']
+
+
     # XXX for backward compatibility, we need this one here, move
     # it in cloud_platform_exoscale in V11
     def _config_by_server_env_for_exoscale(self):
@@ -220,6 +226,86 @@ class CloudPlatform(osv.osv_abstract):
                 "automatically set by the function 'install_exoscale()'."
             )
 
+    def _check_azure(self, cr, uid, environment_name, context=None):
+        params = self.env["ir.config_parameter"].sudo()
+        use_azure = params.get_param("ir_attachment.location") == AZURE_STORE_KIND.name
+        if environment_name in ("prod", "integration"):
+            # Labs instances use azure by default, but we don't want
+            # to enforce it in case we want to test something with a different
+            # storage. At your own risks!
+            assert use_azure, (
+                "azure must be used on production and integration instances. "
+                "It is activated by setting 'ir_attachment.location.' to 'azure'."
+                " The 'install()' function sets this option "
+                "automatically."
+            )
+        if use_azure:
+            key_sets = [
+                ["AZURE_STORAGE_USE_AAD", "AZURE_STORAGE_ACCOUNT_URL"],
+                ["AZURE_STORAGE_CONNECTION_STRING"],
+                [
+                    "AZURE_STORAGE_ACCOUNT_NAME",
+                    "AZURE_STORAGE_ACCOUNT_URL",
+                    "AZURE_STORAGE_ACCOUNT_KEY",
+                ],
+            ]
+            is_valid = False
+            for key_set in key_sets:
+                if all([os.environ.get(key) for key in key_set]):
+                    is_valid = True
+                    break
+            assert is_valid, (
+                "When ir_attachment.location is set to 'azure', "
+                "at least one of the following enviromnent variable set "
+                "is required : {}".format(
+                    " or ".join(
+                        [" + ".join([key for key in key_set]) for key_set in key_sets]
+                    )
+                )
+            )
+            storage_name = os.environ.get("AZURE_STORAGE_NAME", "")
+            if environment_name in ("prod", "integration", "labs"):
+                assert storage_name, (
+                    "AZURE_STORAGE_NAME environment variable is required when "
+                    "ir_attachment.location is 'azure'.\n"
+                    "Normally, 'azure' is activated on labs, integration "
+                    "and production, but should not be used in dev environment"
+                    " (or using a dedicated dev bucket, never using the "
+                    "integration/prod bucket).\n"
+                    "If you don't actually need a bucket, change the"
+                    " 'ir_attachment.location' parameter."
+                )
+            # A bucket name is defined under the following format
+            # ^[a-z]+\-[a-z]+\-\d+$
+            # Anything other than prod bucket must be suffixed with env name
+            #
+            # Use AZURE_STORAGE_NAME_UNSTRUCTURED to by-pass check
+            # on bucket name structure
+            if os.environ.get("AZURE_STORAGE_NAME_UNSTRUCTURED"):
+                return
+            prod_bucket = bool(re.match(r"^[a-z]+\-[a-z]+\-\d+$", storage_name))
+            if environment_name == "prod":
+                assert prod_bucket, (
+                    "AZURE_STORAGE_NAME should match '^[a-z]+\\-[a-z]+\\-\\d+$', "
+                    "we got: '%s'" % (storage_name,)
+                )
+            else:
+                # if we are using the prod bucket on another instance
+                # such as an integration, we must be sure to be in read only!
+                assert not prod_bucket, (
+                    "AZURE_STORAGE_NAME should not match '^[a-z]+\\-[a-z]+\\-\\d+$', "
+                    "we got: '%s'" % (storage_name,)
+                )
+
+        elif environment_name == "test":
+            # store in DB so we don't have files local to the host
+            assert params.get_param("ir_attachment.location") == "db", (
+                "In test instances, files must be stored in the database with "
+                "'ir_attachment.location' set to 'db'. This is "
+                "automatically set by the function 'install()'."
+            )
+
+
     def _check_redis(self, cr, uid, environment_name, context=None):
         if environment_name in ('prod', 'integration', 'labs', 'test'):
             assert is_true(os.environ.get('ODOO_SESSION_REDIS')), (
@@ -262,6 +348,8 @@ class CloudPlatform(osv.osv_abstract):
             self._check_s3(cr, uid, environment_name, context)
         elif kind == 'ovh':
             self._check_swift(cr, uid, environment_name, context)
+        elif kind == 'azure':
+            self._check_azure(cr, uid, environment_name, context)
         self._check_redis(cr, uid, environment_name, context)
 
     def _register_hook(self, cr):
