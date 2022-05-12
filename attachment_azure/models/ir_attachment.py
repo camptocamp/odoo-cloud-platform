@@ -38,7 +38,6 @@ class IrAttachment(osv.osv):
         l += super(IrAttachment, self)._get_stores()
         return l
 
-    @api.model
     def _get_blob_service_client(self):
         """Connect to Azure and return the blob service client
 
@@ -73,7 +72,7 @@ class IrAttachment(osv.osv):
                 "or\n"
                 "* AZURE_STORAGE_USE_AAD\n"
             )
-            raise exceptions.UserError(msg)
+            raise osv.except_osv(_("UserError"), msg)
         blob_service_client = None
         if account_use_aad:
             token_credential = DefaultAzureCredential()
@@ -90,7 +89,7 @@ class IrAttachment(osv.osv):
                     "Error during the connection to Azure container using the "
                     "connection string."
                 )
-                raise exceptions.UserError(str(error))
+                raise osv.except_osv(_("UserError"), str(error))
         else:
             try:
                 sas_token = generate_account_sas(
@@ -109,10 +108,9 @@ class IrAttachment(osv.osv):
                     "Error during the connection to Azure container using the Shared "
                     "Access Signature (SAS)"
                 )
-                raise exceptions.UserError(str(error))
+                raise osv.except_osv(_("UserError"), str(error))
         return blob_service_client
 
-    @api.model
     def _get_container_name(self):
         """
         Container naming rules:
@@ -126,13 +124,12 @@ class IrAttachment(osv.osv):
         # lowercase, max 63 chars
         return str.lower(storage_name)[:63]
 
-    @api.model
     def _get_azure_container(self, container_name=None):
         if not container_name:
             container_name = self._get_container_name()
         try:
             blob_service_client = self._get_blob_service_client()
-        except exceptions.UserError:
+        except Exception:
             _logger.exception(
                 "error accessing to storage '%s' please check credentials ",
                 container_name,
@@ -145,10 +142,9 @@ class IrAttachment(osv.osv):
                 container_client.create_container()
             except HttpResponseError as error:
                 _logger.exception("Error during the creation of the Azure container")
-                raise exceptions.UserError(str(error))
+                raise osv.except_osv(_("UserError"), str(error))
         return container_client
 
-    @api.model
     def _store_file_read(self, fname, bin_size=False):
         if fname.startswith("azure://"):
             key = fname.replace("azure://", "", 1).lower()
@@ -170,7 +166,6 @@ class IrAttachment(osv.osv):
         else:
             return super(IrAttachment, self)._store_file_read(fname, bin_size)
 
-    @api.model
     def _store_file_write(self, key, bin_data):
         location = self.env.context.get("storage_location") or self._storage()
         if location == "azure":
@@ -187,15 +182,15 @@ class IrAttachment(osv.osv):
                 except HttpResponseError as error:
                     # log verbose error from azure, return short message for user
                     _logger.exception("Error during storage of the file %s" % filename)
-                    raise exceptions.UserError(
-                        _("The file could not be stored: %s") % str(error)
+                    raise osv.except_osv(
+                        _("UserError"),
+                        _("The file could not be stored: %s") % str(error),
                     )
         else:
             _super = super(IrAttachment, self)
             filename = _super._store_file_write(key, bin_data)
         return filename
 
-    @api.model
     def _store_file_delete(self, fname):
         if fname.startswith("azure://"):
             key = fname.replace("azure://", "", 1).lower()
