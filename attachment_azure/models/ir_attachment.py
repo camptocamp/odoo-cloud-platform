@@ -117,8 +117,9 @@ class IrAttachment(osv.osv):
         https://docs.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-containers--blobs--and-metadata#container-names
         """
         running_env = os.environ.get("RUNNING_ENV", "dev")
+        dbname = os.environ.get("DB_NAME", "odoodb")
         storage_name = os.environ.get("AZURE_STORAGE_NAME", r"{env}-{db}")
-        storage_name = storage_name.format(env=running_env, db=self.env.cr.dbname)
+        storage_name = storage_name.format(env=running_env, db=dbname)
         # replace invalid characters by _
         storage_name = re.sub(r"[\W_]+", "-", storage_name)
         # lowercase, max 63 chars
