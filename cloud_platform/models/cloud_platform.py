@@ -234,7 +234,12 @@ class CloudPlatform(osv.osv_abstract):
 
     def _check_azure(self, cr, uid, environment_name, context=None):
         params = self.pool.get("ir.config_parameter")
-        use_azure = params.get_param("ir_attachment.location") == AZURE_STORE_KIND.name
+        use_azure = (
+            params.get_param(
+                cr, SUPERUSER_ID, "ir_attachment.location", context=context
+            )
+            == AZURE_STORE_KIND.name
+        )
         if environment_name in ("prod", "integration"):
             # Labs instances use azure by default, but we don't want
             # to enforce it in case we want to test something with a different
@@ -305,7 +310,12 @@ class CloudPlatform(osv.osv_abstract):
 
         elif environment_name == "test":
             # store in DB so we don't have files local to the host
-            assert params.get_param("ir_attachment.location") == "db", (
+            assert (
+                params.get_param(
+                    cr, SUPERUSER_ID, "ir_attachment.location", context=context
+                )
+                == "db"
+            ), (
                 "In test instances, files must be stored in the database with "
                 "'ir_attachment.location' set to 'db'. This is "
                 "automatically set by the function 'install()'."
