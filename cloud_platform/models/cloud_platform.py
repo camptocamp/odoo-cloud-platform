@@ -327,10 +327,10 @@ class CloudPlatform(osv.osv_abstract):
                 "Redis must be activated on prod, integration, labs,"
                 " test instances. This is done by setting ODOO_SESSION_REDIS=1."
             )
-            assert os.environ.get("ODOO_SESSION_REDIS_HOST") or os.environ.get(
-                "ODOO_SESSION_REDIS_SENTINEL_HOST"
+            assert os.environ.get("ODOO_SESSION_REDIS_URL") or os.environ.get(
+                "ODOO_SESSION_REDIS_SENTINEL_URL"
             ), (
-                "ODOO_SESSION_REDIS_HOST or ODOO_SESSION_REDIS_SENTINEL_HOST "
+                "ODOO_SESSION_REDIS_URL or ODOO_SESSION_REDIS_SENTINEL_URL "
                 "environment variable is required to connect on Redis"
             )
             assert os.environ.get("ODOO_SESSION_REDIS_PREFIX"), (
