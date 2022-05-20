@@ -238,7 +238,7 @@ class CloudPlatform(osv.osv_abstract):
             params.get_param(
                 cr, SUPERUSER_ID, "ir_attachment.location", context=context
             )
-            == AZURE_STORE_KIND.name
+            == FilestoreKind.azure
         )
         if environment_name in ("prod", "integration"):
             # Labs instances use azure by default, but we don't want
