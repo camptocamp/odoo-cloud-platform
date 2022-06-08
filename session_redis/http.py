@@ -24,45 +24,45 @@ except ImportError:
 
 
 def is_true(strval):
-    return bool(strtobool(strval or '0'.lower()))
+    return bool(strtobool(strval or "0".lower()))
 
 
-sentinel_host = os.environ.get('ODOO_SESSION_REDIS_SENTINEL_HOST')
-sentinel_master_name = os.environ.get(
-    'ODOO_SESSION_REDIS_SENTINEL_MASTER_NAME'
-)
+sentinel_host = os.environ.get("ODOO_SESSION_REDIS_SENTINEL_HOST")
+sentinel_master_name = os.environ.get("ODOO_SESSION_REDIS_SENTINEL_MASTER_NAME")
 if sentinel_host and not sentinel_master_name:
     raise Exception(
         "ODOO_SESSION_REDIS_SENTINEL_MASTER_NAME must be defined "
         "when using session_redis"
     )
-sentinel_port = int(os.environ.get('ODOO_SESSION_REDIS_SENTINEL_PORT', 26379))
-host = os.environ.get('ODOO_SESSION_REDIS_HOST', 'localhost')
-port = int(os.environ.get('ODOO_SESSION_REDIS_PORT', 6379))
-prefix = os.environ.get('ODOO_SESSION_REDIS_PREFIX')
-url = os.environ.get('ODOO_SESSION_REDIS_URL')
-password = os.environ.get('ODOO_SESSION_REDIS_PASSWORD')
-expiration = os.environ.get('ODOO_SESSION_REDIS_EXPIRATION')
-anon_expiration = os.environ.get('ODOO_SESSION_REDIS_EXPIRATION_ANONYMOUS')
+sentinel_port = int(os.environ.get("ODOO_SESSION_REDIS_SENTINEL_PORT", 26379))
+host = os.environ.get("ODOO_SESSION_REDIS_URL", "localhost")
+port = int(os.environ.get("ODOO_SESSION_REDIS_PORT", 6379))
+prefix = os.environ.get("ODOO_SESSION_REDIS_PREFIX")
+url = os.environ.get("ODOO_SESSION_REDIS_URL")
+password = os.environ.get("ODOO_SESSION_REDIS_PASSWORD")
+expiration = os.environ.get("ODOO_SESSION_REDIS_EXPIRATION")
+anon_expiration = os.environ.get("ODOO_SESSION_REDIS_EXPIRATION_ANONYMOUS")
 
 
 def session_store():
     if sentinel_host:
-        sentinel = Sentinel([(sentinel_host, sentinel_port)],
-                            password=password)
+        sentinel = Sentinel([(sentinel_host, sentinel_port)], password=password)
         redis_client = sentinel.master_for(sentinel_master_name)
     elif url:
         redis_client = redis.from_url(url)
     else:
         redis_client = redis.Redis(host=host, port=port, password=password)
-    return RedisSessionStore(redis=redis_client, prefix=prefix,
-                             expiration=expiration,
-                             anon_expiration=anon_expiration,
-                             session_class=Session)
+    return RedisSessionStore(
+        redis=redis_client,
+        prefix=prefix,
+        expiration=expiration,
+        anon_expiration=anon_expiration,
+        session_class=Session,
+    )
 
 
 def session_gc(session_store):
-    """ Do not garbage collect the sessions
+    """Do not garbage collect the sessions
 
     Redis keys are automatically cleaned at the end of their
     expiration.
@@ -79,18 +79,26 @@ def purge_fs_sessions(path):
             pass
 
 
-if is_true(os.environ.get('ODOO_SESSION_REDIS')):
+if is_true(os.environ.get("ODOO_SESSION_REDIS")):
     if sentinel_host:
-        _logger.debug("HTTP sessions stored in Redis with prefix '%s'. "
-                      "Using Sentinel on %s:%s",
-                      sentinel_host, sentinel_port, prefix or '')
+        _logger.debug(
+            "HTTP sessions stored in Redis with prefix '%s'. "
+            "Using Sentinel on %s:%s",
+            sentinel_host,
+            sentinel_port,
+            prefix or "",
+        )
     else:
-        _logger.debug("HTTP sessions stored in Redis with prefix '%s' on "
-                      "%s:%s", host, port, prefix or '')
+        _logger.debug(
+            "HTTP sessions stored in Redis with prefix '%s' on " "%s:%s",
+            host,
+            port,
+            prefix or "",
+        )
 
     store = session_store()
     for handler in openerp.service.wsgi_server.module_handlers:
-        if hasattr(handler, 'session_store'):
+        if hasattr(handler, "session_store"):
             handler.session_store = store
     http.session_gc = session_gc
     # clean the existing sessions on the file system
