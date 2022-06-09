@@ -14,8 +14,8 @@
     "depends": ["base_attachment_object_storage"],
     "external_dependencies": {
         "python": [
-            "azure.storage.blob",  # pip: azure-storage-blob
-            "azure.identity"       # pip: azure-identity
+            "azure-storage-blob",  # pip: azure-storage-blob
+            "azure-identity"       # pip: azure-identity
         ],
     },
     "website": "https://github.com/camptocamp/odoo-cloud-platform",
