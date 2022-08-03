@@ -6,6 +6,7 @@ import logging
 import os
 import io
 from urllib.parse import urlsplit
+from datetime import datetime
 
 from odoo import _, api, exceptions, models
 from ..s3uri import S3Uri
@@ -143,8 +144,16 @@ class IrAttachment(models.Model):
     @api.model
     def _store_file_write(self, key, bin_data):
         location = self.env.context.get('storage_location') or self._storage()
+        partition = self.env['ir.config_parameter'].sudo().get_param(
+            'ir_attachment.storage.partition',
+        )
         if location == 's3':
             bucket = self._get_s3_bucket()
+            if partition:
+                key = '%s/%s' % (
+                    datetime.now().strftime(partition),
+                    key
+                )
             obj = bucket.Object(key=key)
             with io.BytesIO() as file:
                 file.write(bin_data)

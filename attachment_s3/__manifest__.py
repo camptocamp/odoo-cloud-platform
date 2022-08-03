@@ -13,6 +13,6 @@
      'python': ['boto3'],
  },
  'website': 'https://www.camptocamp.com',
- 'data': [],
+ 'data': ['data/res_config_settings_data.xml'],
  'installable': True,
  }
