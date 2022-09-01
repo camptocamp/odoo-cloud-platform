@@ -2,12 +2,13 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
 
+from email.policy import default
 import logging
 import os
 import io
 from urllib.parse import urlsplit
 
-from odoo import _, api, exceptions, models
+from odoo import _, api, exceptions, models, fields
 from ..s3uri import S3Uri
 
 _logger = logging.getLogger(__name__)
@@ -24,6 +25,11 @@ except ImportError:
 
 class IrAttachment(models.Model):
     _inherit = "ir.attachment"
+
+    is_attachment_local = fields.Boolean(
+        string="Anexo é local?",
+        default=True
+    )
 
     def _get_stores(self):
         l = ['s3']
@@ -113,7 +119,9 @@ class IrAttachment(models.Model):
 
     @api.model
     def _store_file_read(self, fname):
-        if fname.startswith('s3://'):
+        if not self.is_attachment_local:
+            bucket_name = os.environ.get("AWS_BUCKETNAME")
+            fname = f"s3://{bucket_name}/{fname[3:]}"
             s3uri = S3Uri(fname)
             try:
                 bucket = self._get_s3_bucket(name=s3uri.bucket())
@@ -149,9 +157,12 @@ class IrAttachment(models.Model):
             with io.BytesIO() as file:
                 file.write(bin_data)
                 file.seek(0)
-                filename = 's3://%s/%s' % (bucket.name, key)
+                filename = f"{key[:2]}/{key}"
+                # filename = 's3://%s/%s' % (bucket.name, key)
                 try:
                     obj.upload_fileobj(file)
+                    # attch = self.env["ir.attachment"].search([("store_fname", '=', filename)])
+                    # attch.is_attachment_local = False
                 except ClientError as error:
                     # log verbose error from s3, return short message for user
                     _logger.exception(
@@ -160,14 +171,16 @@ class IrAttachment(models.Model):
                     raise exceptions.UserError(
                         _('The file could not be stored: %s') % str(error)
                     )
+                    
         else:
-            _super = super()
-            filename = _super._store_file_write(key, bin_data)
+            filename = super()._store_file_write(key, bin_data)
         return filename
 
     @api.model
     def _store_file_delete(self, fname):
-        if fname.startswith('s3://'):
+        if not self.is_attachment_local:
+            bucket_name = os.environ.get("AWS_BUCKETNAME")
+            fname = f"s3://{bucket_name}/{fname[3:]}"
             s3uri = S3Uri(fname)
             bucket_name = s3uri.bucket()
             item_name = s3uri.item()

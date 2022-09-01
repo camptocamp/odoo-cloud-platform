@@ -248,13 +248,9 @@ class IrAttachment(models.Model):
 
     @api.model
     def _is_file_from_a_store(self, fname):
-        for store_name in self._get_stores():
-            if self.is_storage_disabled(store_name):
-                continue
-            uri = '{}://'.format(store_name)
-            if fname.startswith(uri):
-                return True
-        return False
+        if self.is_storage_disabled("s3"):
+            return False
+        return not self.is_attachment_local
 
     @contextmanager
     def do_in_new_env(self, new_cr=False):
