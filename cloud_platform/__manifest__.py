@@ -5,7 +5,7 @@
 {
     "name": "Cloud Platform",
     "summary": "Addons required for the Camptocamp Cloud Platform",
-    "version": "15.0.2.0.0",
+    "version": "16.0.2.0.0",
     "author": "Camptocamp,Odoo Community Association (OCA)",
     "license": "AGPL-3",
     "category": "Extra Tools",
@@ -17,5 +17,5 @@
     ],
     "website": "https://www.camptocamp.com",
     "data": [],
-    "installable": False,
+    "installable": True,
 }
