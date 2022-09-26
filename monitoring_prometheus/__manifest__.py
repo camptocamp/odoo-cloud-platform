@@ -18,5 +18,5 @@
     "external_dependencies": {
         "python": ["prometheus_client"],
     },
-    "installable": True,
+    "installable": False,
 }

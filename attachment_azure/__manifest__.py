@@ -16,7 +16,7 @@
         "python": ["azure-storage-blob", "azure-identity"],
     },
     "website": "https://github.com/camptocamp/odoo-cloud-platform",
-    "installable": True,
+    "installable": False,
     "development_status": "Beta",
     "maintainers": ["max3903"],
 }
