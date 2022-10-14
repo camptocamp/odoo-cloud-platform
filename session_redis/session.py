@@ -4,6 +4,7 @@
 import json
 import logging
 
+from odoo.service import security
 from odoo.tools._vendor.sessions import SessionStore
 
 from . import json_encoding
@@ -96,3 +97,18 @@ class RedisSessionStore(SessionStore):
         keys = self.redis.keys('%s*' % self.prefix)
         _logger.debug("a listing redis keys has been called")
         return [key[len(self.prefix):] for key in keys]
+
+    def rotate(self, session, env):
+        self.delete(session)
+        session.sid = self.generate_key()
+        if session.uid and env:
+            session.session_token = security.compute_session_token(session, env)
+        self.save(session)
+
+    def vacuum(self):
+        """ Do not garbage collect the sessions
+
+        Redis keys are automatically cleaned at the end of their
+        expiration.
+        """
+        return None
