@@ -16,15 +16,15 @@ class IrHttp(models.AbstractModel):
     _inherit = "ir.http"
 
     @classmethod
-    def _dispatch(cls):
+    def _dispatch(cls, endpoint):
         path_info = request.httprequest.environ.get("PATH_INFO")
 
         if path_info.startswith("/longpolling/"):
             LONGPOLLING_COUNT.inc()
-            return super()._dispatch()
+            return super()._dispatch(endpoint)
 
         if path_info.startswith("/metrics"):
-            return super()._dispatch()
+            return super()._dispatch(endpoint)
 
         if path_info.startswith("/web/static"):
             label = "assets"
@@ -35,6 +35,6 @@ class IrHttp(models.AbstractModel):
 
         res = None
         with REQUEST_TIME.labels(label).time():
-            res = super()._dispatch()
+            res = super()._dispatch(endpoint)
 
         return res

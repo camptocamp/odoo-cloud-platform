@@ -11,13 +11,13 @@ class IrHttp(models.AbstractModel):
     _inherit = 'ir.http'
 
     @classmethod
-    def _dispatch(cls):
+    def _dispatch(cls, endpoint):
         if not statsd:
-            return super()._dispatch()
+            return super()._dispatch(endpoint)
 
         path_info = request.httprequest.environ.get('PATH_INFO')
         if path_info.startswith('/longpolling/'):
-            return super()._dispatch()
+            return super()._dispatch(endpoint)
 
         parts = ['http', ]
         if path_info.startswith('/web/dataset/call_button'):
@@ -38,4 +38,4 @@ class IrHttp(models.AbstractModel):
                       ]
 
         with statsd.timer('.'.join(parts)):
-            return super()._dispatch()
+            return super()._dispatch(endpoint)
