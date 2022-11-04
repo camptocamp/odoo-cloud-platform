@@ -30,7 +30,7 @@ env:
   - TESTS="1" ODOO_REPO="odoo/odoo" EXCLUDE="cloud_platform,cloud_platform_ovh,cloud_platform_exoscale"
   - TESTS="1" ODOO_REPO="OCA/OCB" EXCLUDE="cloud_platform,cloud_platform_ovh,cloud_platform_exoscale"
   global:
-  - VERSION="15.0" LINT_CHECK="0" TESTS="0"
+  - VERSION="16.0" LINT_CHECK="0" TESTS="0"
 
 install:
   - git clone --depth=1 https://github.com/OCA/maintainer-quality-tools.git ${HOME}/maintainer-quality-tools

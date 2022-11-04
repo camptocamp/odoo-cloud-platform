@@ -5,7 +5,7 @@ import inspect
 import logging
 import os
 import time
-from distutils.util import strtobool
+from .strtobool import strtobool
 
 import psycopg2
 import odoo
