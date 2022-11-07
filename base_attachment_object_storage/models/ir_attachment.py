@@ -20,38 +20,36 @@ _logger = logging.getLogger(__name__)
 
 
 def is_true(strval):
-    return bool(strtobool(strval or '0'))
+    return bool(strtobool(strval or "0"))
 
 
 def clean_fs(files):
-    _logger.info('cleaning old files from filestore')
+    _logger.info("cleaning old files from filestore")
     for full_path in files:
         if os.path.exists(full_path):
             try:
                 os.unlink(full_path)
             except OSError:
                 _logger.info(
-                    "_file_delete could not unlink %s",
-                    full_path, exc_info=True
+                    "_file_delete could not unlink %s", full_path, exc_info=True
                 )
             except IOError:
                 # Harmless and needed for race conditions
                 _logger.info(
-                    "_file_delete could not unlink %s",
-                    full_path, exc_info=True
+                    "_file_delete could not unlink %s", full_path, exc_info=True
                 )
 
 
 class IrAttachment(models.Model):
-    _inherit = 'ir.attachment'
+    _inherit = "ir.attachment"
 
     @staticmethod
     def is_storage_disabled(storage=None, log=True):
         msg = _("Storages are disabled (see environment configuration).")
         if storage:
-            msg = _(
-                "Storage '%s' is disabled (see environment configuration)."
-            ) % (storage,)
+            msg = _("Storage '%s' is disabled (see environment configuration).") % (
+                storage,
+            )
         is_disabled = is_true(os.environ.get("DISABLE_ATTACHMENT_STORAGE"))
         if is_disabled and log:
             _logger.warning(msg)
@@ -59,7 +57,7 @@ class IrAttachment(models.Model):
 
     def _register_hook(self):
         super()._register_hook()
-        location = self.env.context.get('storage_location') or self._storage()
+        location = self.env.context.get("storage_location") or self._storage()
         # ignore if we are not using an object storage
         if location not in self._get_stores():
             return
@@ -73,7 +71,7 @@ class IrAttachment(models.Model):
         # done during the initialization. We need to move the attachments that
         # could have been created or updated in other addons before this addon
         # was loaded
-        update_module = load_modules_frame.f_locals.get('update_module')
+        update_module = load_modules_frame.f_locals.get("update_module")
 
         # We need to call the migration on the loading of the model because
         # when we are upgrading addons, some of them might add attachments.
@@ -82,15 +80,19 @@ class IrAttachment(models.Model):
         # Typical example is images of ir.ui.menu which are updated in
         # ir.attachment at every upgrade of the addons
         if update_module:
-            self.env['ir.attachment'].sudo()._force_storage_to_object_storage()
+            self.env["ir.attachment"].sudo()._force_storage_to_object_storage()
 
     @property
     def _object_storage_default_force_db_config(self):
         return {"image/": 51200, "application/javascript": 0, "text/css": 0}
 
     def _get_storage_force_db_config(self):
-        param = self.env['ir.config_parameter'].sudo().get_param(
-            'ir_attachment.storage.force.database',
+        param = (
+            self.env["ir.config_parameter"]
+            .sudo()
+            .get_param(
+                "ir_attachment.storage.force.database",
+            )
         )
         storage_config = None
         if param:
@@ -100,7 +102,8 @@ class IrAttachment(models.Model):
                 _logger.exception(
                     "Could not parse system parameter"
                     " 'ir_attachment.storage.force.database', reverting to the"
-                    " default configuration.")
+                    " default configuration."
+                )
 
         if not storage_config:
             storage_config = self._object_storage_default_force_db_config
@@ -128,7 +131,7 @@ class IrAttachment(models.Model):
         return domain
 
     def _store_in_db_instead_of_object_storage(self, data, mimetype):
-        """ Return whether an attachment must be stored in db
+        """Return whether an attachment must be stored in db
 
         When we are using an Object Storage. This is sometimes required
         because the object storage is slower than the database/filesystem.
@@ -180,17 +183,17 @@ class IrAttachment(models.Model):
         return False
 
     def _get_datas_related_values(self, data, mimetype):
-        storage = self.env.context.get('storage_location') or self._storage()
+        storage = self.env.context.get("storage_location") or self._storage()
         if data and storage in self._get_stores():
             if self._store_in_db_instead_of_object_storage(data, mimetype):
                 # compute the fields that depend on datas
                 bin_data = data
                 values = {
-                    'file_size': len(bin_data),
-                    'checksum': self._compute_checksum(bin_data),
-                    'index_content': self._index(bin_data, mimetype),
-                    'store_fname': False,
-                    'db_datas': data,
+                    "file_size": len(bin_data),
+                    "checksum": self._compute_checksum(bin_data),
+                    "index_content": self._index(bin_data, mimetype),
+                    "store_fname": False,
+                    "db_datas": data,
                 }
                 return values
         return super()._get_datas_related_values(data, mimetype)
@@ -203,28 +206,22 @@ class IrAttachment(models.Model):
             return super()._file_read(fname)
 
     def _store_file_read(self, fname):
-        storage = fname.partition('://')[0]
-        raise NotImplementedError(
-            'No implementation for %s' % (storage,)
-        )
+        storage = fname.partition("://")[0]
+        raise NotImplementedError("No implementation for %s" % (storage,))
 
     def _store_file_write(self, key, bin_data):
         storage = self.storage()
-        raise NotImplementedError(
-            'No implementation for %s' % (storage,)
-        )
+        raise NotImplementedError("No implementation for %s" % (storage,))
 
     def _store_file_delete(self, fname):
-        storage = fname.partition('://')[0]
-        raise NotImplementedError(
-            'No implementation for %s' % (storage,)
-        )
+        storage = fname.partition("://")[0]
+        raise NotImplementedError("No implementation for %s" % (storage,))
 
     @api.model
     def _file_write(self, bin_data, checksum):
-        location = self.env.context.get('storage_location') or self._storage()
+        location = self.env.context.get("storage_location") or self._storage()
         if location in self._get_stores():
-            key = self.env.context.get('force_storage_key')
+            key = self.env.context.get("force_storage_key")
             if not key:
                 key = self._compute_checksum(bin_data)
             filename = self._store_file_write(key, bin_data)
@@ -238,8 +235,9 @@ class IrAttachment(models.Model):
             cr = self.env.cr
             # using SQL to include files hidden through unlink or due to record
             # rules
-            cr.execute("SELECT COUNT(*) FROM ir_attachment "
-                       "WHERE store_fname = %s", (fname,))
+            cr.execute(
+                "SELECT COUNT(*) FROM ir_attachment " "WHERE store_fname = %s", (fname,)
+            )
             count = cr.fetchone()[0]
             if not count:
                 self._store_file_delete(fname)
@@ -251,22 +249,20 @@ class IrAttachment(models.Model):
         for store_name in self._get_stores():
             if self.is_storage_disabled(store_name):
                 continue
-            uri = '{}://'.format(store_name)
+            uri = "{}://".format(store_name)
             if fname.startswith(uri):
                 return True
         return False
 
     @contextmanager
     def do_in_new_env(self, new_cr=False):
-        """ Context manager that yields a new environment
+        """Context manager that yields a new environment
 
         Using a new Odoo Environment thus a new PG transaction.
         """
         with api.Environment.manage():
             if new_cr:
-                registry = odoo.modules.registry.Registry.new(
-                    self.env.cr.dbname
-                )
+                registry = odoo.modules.registry.Registry.new(self.env.cr.dbname)
                 with closing(registry.cursor()) as cr:
                     try:
                         yield self.env(cr=cr)
@@ -283,33 +279,38 @@ class IrAttachment(models.Model):
 
     def _move_attachment_to_store(self):
         self.ensure_one()
-        _logger.info('inspecting attachment %s (%d)', self.name, self.id)
+        _logger.info("inspecting attachment %s (%d)", self.name, self.id)
         fname = self.store_fname
-        storage = fname.partition('://')[0]
+        storage = fname.partition("://")[0]
         if self.is_storage_disabled(storage):
             fname = False
         if fname:
             # migrating from filesystem filestore
             # or from the old 'store_fname' without the bucket name
-            _logger.info('moving %s on the object storage', fname)
-            self.write({'datas': self.datas,
-                        # this is required otherwise the
-                        # mimetype gets overriden with
-                        # 'application/octet-stream'
-                        # on assets
-                        'mimetype': self.mimetype})
-            _logger.info('moved %s on the object storage', fname)
+            _logger.info("moving %s on the object storage", fname)
+            self.write(
+                {
+                    "datas": self.datas,
+                    # this is required otherwise the
+                    # mimetype gets overriden with
+                    # 'application/octet-stream'
+                    # on assets
+                    "mimetype": self.mimetype,
+                }
+            )
+            _logger.info("moved %s on the object storage", fname)
             return self._full_path(fname)
         elif self.db_datas:
-            _logger.info('moving on the object storage from database')
-            self.write({'datas': self.datas})
+            _logger.info("moving on the object storage from database")
+            self.write({"datas": self.datas})
 
     @api.model
     def force_storage(self):
-        if not self.env['res.users'].browse(self.env.uid)._is_admin():
+        if not self.env["res.users"].browse(self.env.uid)._is_admin():
             raise exceptions.AccessError(
-                _('Only administrators can execute this action.'))
-        location = self.env.context.get('storage_location') or self._storage()
+                _("Only administrators can execute this action.")
+            )
+        location = self.env.context.get("storage_location") or self._storage()
         if location not in self._get_stores():
             return super().force_storage()
         self._force_storage_to_object_storage()
@@ -335,30 +336,32 @@ class IrAttachment(models.Model):
         if storage not in self._get_stores():
             return
 
-        domain = AND((
-            normalize_domain(
-                [('store_fname', '=like', '{}://%'.format(storage)),
-                 # for res_field, see comment in
-                 # _force_storage_to_object_storage
-                 '|',
-                 ('res_field', '=', False),
-                 ('res_field', '!=', False),
-                 ]
-            ),
-            normalize_domain(self._store_in_db_instead_of_object_storage_domain())
-        ))
+        domain = AND(
+            (
+                normalize_domain(
+                    [
+                        ("store_fname", "=like", "{}://%".format(storage)),
+                        # for res_field, see comment in
+                        # _force_storage_to_object_storage
+                        "|",
+                        ("res_field", "=", False),
+                        ("res_field", "!=", False),
+                    ]
+                ),
+                normalize_domain(self._store_in_db_instead_of_object_storage_domain()),
+            )
+        )
 
         with self.do_in_new_env(new_cr=new_cr) as new_env:
-            model_env = new_env['ir.attachment'].with_context(
-                prefetch_fields=False
-            )
+            model_env = new_env["ir.attachment"].with_context(prefetch_fields=False)
             attachment_ids = model_env.search(domain).ids
             if not attachment_ids:
                 return
             total = len(attachment_ids)
             start_time = time.time()
-            _logger.info('Moving %d attachments from %s to'
-                         ' DB for fast access', total, storage)
+            _logger.info(
+                "Moving %d attachments from %s to" " DB for fast access", total, storage
+            )
             current = 0
             for attachment_id in attachment_ids:
                 current += 1
@@ -370,21 +373,22 @@ class IrAttachment(models.Model):
                 # this write will read the datas from the Object Storage and
                 # write them back in the DB (the logic for location to write is
                 # in the 'datas' inverse computed field)
-                attachment.write({'datas': attachment.datas})
+                attachment.write({"datas": attachment.datas})
                 # as the file will potentially be dropped on the bucket,
                 # we should commit the changes here
                 new_env.cr.commit()
                 if current % 100 == 0 or total - current == 0:
                     _logger.info(
-                        'attachment %s/%s after %.2fs',
-                        current, total,
-                        time.time() - start_time
+                        "attachment %s/%s after %.2fs",
+                        current,
+                        total,
+                        time.time() - start_time,
                     )
 
     @api.model
     def _force_storage_to_object_storage(self, new_cr=False):
-        _logger.info('migrating files to the object storage')
-        storage = self.env.context.get('storage_location') or self._storage()
+        _logger.info("migrating files to the object storage")
+        storage = self.env.context.get("storage_location") or self._storage()
         if self.is_storage_disabled(storage):
             return
         # The weird "res_field = False OR res_field != False" domain
@@ -392,16 +396,19 @@ class IrAttachment(models.Model):
         # which adds ('res_field', '=', False) when the domain does not
         # contain 'res_field'.
         # https://github.com/odoo/odoo/blob/9032617120138848c63b3cfa5d1913c5e5ad76db/odoo/addons/base/ir/ir_attachment.py#L344-L347
-        domain = ['!', ('store_fname', '=like', '{}://%'.format(storage)),
-                  '|',
-                  ('res_field', '=', False),
-                  ('res_field', '!=', False)]
+        domain = [
+            "!",
+            ("store_fname", "=like", "{}://%".format(storage)),
+            "|",
+            ("res_field", "=", False),
+            ("res_field", "!=", False),
+        ]
         # We do a copy of the environment so we can workaround the cache issue
         # below. We do not create a new cursor by default because it causes
         # serialization issues due to concurrent updates on attachments during
         # the installation
         with self.do_in_new_env(new_cr=new_cr) as new_env:
-            model_env = new_env['ir.attachment']
+            model_env = new_env["ir.attachment"]
             ids = model_env.search(domain).ids
             files_to_clean = []
             for attachment_id in ids:
@@ -410,12 +417,14 @@ class IrAttachment(models.Model):
                         # check that no other transaction has
                         # locked the row, don't send a file to storage
                         # in that case
-                        self.env.cr.execute("SELECT id "
-                                            "FROM ir_attachment "
-                                            "WHERE id = %s "
-                                            "FOR UPDATE NOWAIT",
-                                            (attachment_id,),
-                                            log_exceptions=False)
+                        self.env.cr.execute(
+                            "SELECT id "
+                            "FROM ir_attachment "
+                            "WHERE id = %s "
+                            "FOR UPDATE NOWAIT",
+                            (attachment_id,),
+                            log_exceptions=False,
+                        )
 
                         # This is a trick to avoid having the 'datas'
                         # function fields computed for every attachment on
@@ -428,17 +437,16 @@ class IrAttachment(models.Model):
                         if path:
                             files_to_clean.append(path)
                 except psycopg2.OperationalError:
-                    _logger.error('Could not migrate attachment %s to S3',
-                                  attachment_id)
-
-            def clean():
-                clean_fs(files_to_clean)
+                    _logger.error(
+                        "Could not migrate attachment %s to S3", attachment_id
+                    )
 
             # delete the files from the filesystem once we know the changes
             # have been committed in ir.attachment
             if files_to_clean:
-                new_env.cr.after('commit', clean)
+                new_env.cr.commit()
+                clean_fs(files_to_clean)
 
     def _get_stores(self):
-        """ To get the list of stores activated in the system  """
+        """To get the list of stores activated in the system"""
         return []
