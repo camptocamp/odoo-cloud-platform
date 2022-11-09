@@ -36,6 +36,7 @@ class IrBinary(models.AbstractModel):
                 mimetype=record.mimetype or None,
                 download_name=record.name,
                 size=len(stream_data),
+                etag=record.checksum,
             )
             return azurestream
         else:
