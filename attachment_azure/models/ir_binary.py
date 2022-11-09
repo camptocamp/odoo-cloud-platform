@@ -2,6 +2,7 @@
 # Copyright 2021 Open Source Integrators
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 from odoo import models
+from odoo.http import Stream
 
 
 class IrBinary(models.AbstractModel):
@@ -20,9 +21,22 @@ class IrBinary(models.AbstractModel):
             from.
         :rtype: odoo.http.Stream
         """
-        if record._name == "ir.attachment" and record.store_fname.startswith(
-            "azure://"
+        if (
+            record._name == "ir.attachment"
+            and record.store_fname
+            and record.store_fname.startswith("azure://")
         ):
-            return self.env["ir.attachment"]._store_file_read(record.store_fname)
+            # we will create or own tream and return it
+            stream_data = self.env["ir.attachment"]._store_file_read(record.store_fname)
+            azurestream = Stream(
+                type="data",
+                data=stream_data,
+                path=None,
+                url=None,
+                mimetype=record.mimetype or None,
+                download_name=record.name,
+                size=len(stream_data),
+            )
+            return azurestream
         else:
             return super()._record_to_stream(record, field_name)
