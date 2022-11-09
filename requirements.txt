@@ -10,3 +10,4 @@ keystoneauth1==3.14.0
 # error with 5.x (ConstructorError: could not determine a constructor for the tag '!record')
 PyYAML==4.2b4
 prometheus_client==0.11.0
+pyopenssl==22.0.0
