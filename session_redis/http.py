@@ -6,8 +6,8 @@ import os
 
 from .strtobool import strtobool
 
-import odoo
 from odoo import http
+from odoo.tools import config
 from odoo.tools.func import lazy_property
 
 from .session import RedisSessionStore
@@ -52,22 +52,10 @@ def session_store(self):
         redis_client = redis.from_url(url)
     else:
         redis_client = redis.Redis(host=host, port=port, password=password)
-    return RedisSessionStore(
-        redis=redis_client,
-        prefix=prefix,
-        expiration=expiration,
-        anon_expiration=anon_expiration,
-        session_class=http.OpenERPSession,
-    )
-
-
-def session_gc(session_store):
-    """Do not garbage collect the sessions
-
-    Redis keys are automatically cleaned at the end of their
-    expiration.
-    """
-    return
+    return RedisSessionStore(redis=redis_client, prefix=prefix,
+                             expiration=expiration,
+                             anon_expiration=anon_expiration,
+                             session_class=http.Session)
 
 
 def purge_fs_sessions(path):
@@ -89,14 +77,8 @@ if is_true(os.environ.get("ODOO_SESSION_REDIS")):
             sentinel_port,
         )
     else:
-        _logger.debug(
-            "HTTP sessions stored in Redis with prefix '%s' on " "%s:%s",
-            prefix or "",
-            host,
-            port,
-        )
-
-    http.Root.session_store = session_store
-    http.session_gc = session_gc
+        _logger.debug("HTTP sessions stored in Redis with prefix '%s' on "
+                      "%s:%s", prefix or '', host, port)
+    http.Application.session_store = session_store
     # clean the existing sessions on the file system
-    purge_fs_sessions(odoo.tools.config.session_dir)
+    purge_fs_sessions(config.session_dir)
