@@ -9,6 +9,21 @@ class IrBinary(models.AbstractModel):
     _inherit = "ir.binary"
     _description = "File streaming helper model for controllers"
 
+    def _azure_stream(self, attachment):
+        # we will create or own tream and return it
+        stream_data = self.env["ir.attachment"]._store_file_read(attachment.store_fname)
+        azurestream = Stream(
+            type="data",
+            data=stream_data,
+            path=None,
+            url=None,
+            mimetype=attachment.mimetype or None,
+            download_name=attachment.name,
+            size=len(stream_data),
+            etag=attachment.checksum,
+        )
+        return azurestream
+
     def _record_to_stream(self, record, field_name):
         """
         Low level method responsible for the actual conversion from a
@@ -22,22 +37,19 @@ class IrBinary(models.AbstractModel):
         :rtype: odoo.http.Stream
         """
         if (
-            (record._name in ["ir.attachment", "documents.document"])
+            record._name == "ir.attachment"
             and record.store_fname
             and record.store_fname.startswith("azure://")
         ):
             # we will create or own tream and return it
-            stream_data = self.env["ir.attachment"]._store_file_read(record.store_fname)
-            azurestream = Stream(
-                type="data",
-                data=stream_data,
-                path=None,
-                url=None,
-                mimetype=record.mimetype or None,
-                download_name=record.name,
-                size=len(stream_data),
-                etag=record.checksum,
-            )
-            return azurestream
+            return self._azure_stream(record)
+        elif (
+            record._name == "documents.document"
+            and record.attachment_id
+            and record.attachment_id.store_fname
+            and record.attachment_id.store_fname.startswith("azure://")
+        ):
+            return self._azure_stream(record.attachment_id)
+
         else:
             return super()._record_to_stream(record, field_name)
