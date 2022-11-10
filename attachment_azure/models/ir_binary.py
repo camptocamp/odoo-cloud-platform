@@ -22,7 +22,7 @@ class IrBinary(models.AbstractModel):
         :rtype: odoo.http.Stream
         """
         if (
-            record._name == "ir.attachment"
+            (record._name in ["ir.attachment", "documents.document"])
             and record.store_fname
             and record.store_fname.startswith("azure://")
         ):
