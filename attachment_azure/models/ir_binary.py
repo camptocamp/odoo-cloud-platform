@@ -55,10 +55,11 @@ class IrBinary(models.AbstractModel):
             return super()._record_to_stream(record, field_name)
 
 
+# This part is used if the customer install tne enterprise module documents
 try:
     from odoo.addons import documents
 
-    documents.models.ir_binary._record_to_stream = IrBinary._record_to_stream
+    documents.models.ir_binary.IrBinary._record_to_stream = IrBinary._record_to_stream
 except ImportError:
-    # document enterprise module i not installed, we just ignore
+    # document enterprise module if not installed, we just ignore
     pass
