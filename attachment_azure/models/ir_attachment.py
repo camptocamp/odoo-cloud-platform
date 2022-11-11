@@ -117,11 +117,8 @@ class IrAttachment(models.Model):
         https://docs.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-containers--blobs--and-metadata#container-names
         """
         running_env = os.environ.get("RUNNING_ENV", "dev")
-        storage_name = os.environ.get('AZURE_STORAGE_NAME', r'{env}-{db}')
-        storage_name = storage_name.format(
-            env=running_env,
-            db=self.env.cr.dbname
-        )
+        storage_name = os.environ.get("AZURE_STORAGE_NAME", r"{env}-{db}")
+        storage_name = storage_name.format(env=running_env, db=self.env.cr.dbname)
         # replace invalid characters by _
         storage_name = re.sub(r"[\W_]+", "-", storage_name)
         # lowercase, max 63 chars
@@ -136,7 +133,7 @@ class IrAttachment(models.Model):
         except exceptions.UserError:
             _logger.exception(
                 "error accessing to storage '%s' please check credentials ",
-                container_name
+                container_name,
             )
             return False
         container_client = blob_service_client.get_container_client(container_name)
@@ -153,14 +150,14 @@ class IrAttachment(models.Model):
     def _store_file_read(self, fname, bin_size=False):
         if fname.startswith("azure://"):
             key = fname.replace("azure://", "", 1).lower()
-            if '/' in key:
-                container_name, key = key.split('/', 1)
+            if "/" in key:
+                container_name, key = key.split("/", 1)
             else:
                 container_name = None
             container_client = self._get_azure_container(container_name)
             # if container cannot be retrived, abort reading from azure storage
             if not container_client:
-                return ''
+                return ""
             try:
                 blob_client = container_client.get_blob_client(key)
                 read = blob_client.download_blob().readall()
@@ -200,13 +197,13 @@ class IrAttachment(models.Model):
     def _store_file_delete(self, fname):
         if fname.startswith("azure://"):
             key = fname.replace("azure://", "", 1).lower()
-            if '/' in key:
-                container_name, key = key.split('/', 1)
+            if "/" in key:
+                container_name, key = key.split("/", 1)
             else:
                 container_name = None
             container_client = self._get_azure_container(container_name)
             if not container_client:
-                return ''
+                return ""
             # delete the file only if it is on the current configured container
             # otherwise, we might delete files used on a different environment
             try:
