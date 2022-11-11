@@ -53,3 +53,12 @@ class IrBinary(models.AbstractModel):
 
         else:
             return super()._record_to_stream(record, field_name)
+
+
+try:
+    from odoo.addons import documents
+
+    documents.models.ir_binary._record_to_stream = IrBinary._record_to_stream
+except ImportError:
+    # document enterprise module i not installed, we just ignore
+    pass
