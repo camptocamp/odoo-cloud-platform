@@ -5,7 +5,7 @@ redis==4.3.4
 python-json-logger==2.0.4
 statsd==4.0.1
 python-swiftclient==4.1.0
-python-keystoneclient==5.0.1
+python-keystoneclient==5.0.0
 keystoneauth1==5.0.0
 # error with 5.x (ConstructorError: could not determine a constructor for the tag '!record')
 PyYAML==6.0

@@ -9,7 +9,7 @@ branches:
 python:
   # Force a newer version than 3.7.1 which break build
   # due to https://bugs.python.org/issue34921
-  - "3.7.2"
+  - "3.8"
 
 addons:
   postgresql: "9.5"
