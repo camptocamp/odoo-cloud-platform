@@ -179,7 +179,7 @@ class IrAttachment(models.Model):
             return super(IrAttachment, self)._store_file_read(fname, bin_size)
 
     @api.model
-    def _store_file_write(self, key, bin_data):
+    def _store_file_write(self, key, bin_data, mimetype=False):
         location = self.env.context.get('storage_location') or self._storage()
         if location == 's3':
             bucket = self._get_s3_bucket()
@@ -189,7 +189,10 @@ class IrAttachment(models.Model):
                 file.seek(0)
                 filename = 's3://%s/%s' % (bucket.name, key)
                 try:
-                    obj.upload_fileobj(file)
+                    if mimetype:
+                        obj.upload_fileobj(file, ExtraArgs={'Metadata': {'ContentType': mimetype}})
+                    else:
+                        obj.upload_fileobj(file)
                 except ClientError as error:
                     # log verbose error from s3, return short message for user
                     _logger.exception(
