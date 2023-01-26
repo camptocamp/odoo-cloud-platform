@@ -164,10 +164,6 @@ class IrAttachment(models.Model):
                 return len(bin_data) <= limit
         return False
 
-    def _get_datas_related_values(self, data, mimetype):
-        self=self.with_context(mimetype=mimetype)
-        return super(IrAttachment, self)._get_datas_related_values(data, mimetype)
-
     def _inverse_datas(self):
         # override in order to store files that need fast access,
         # we keep them in the database instead of the object storage
