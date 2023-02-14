@@ -7,7 +7,7 @@ branches:
     - "/^[[:digit:]]{1,2}.[[:digit:]]$/"
 
 python:
-  - "3.5"
+  - "3.8"
 
 addons:
   postgresql: "9.5"
