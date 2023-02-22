@@ -18,7 +18,7 @@
         "cloud_platform_ovh",
         "cloud_platform_exoscale",
     ],
-    "website": "https://www.camptocamp.com",
+    "website": "https://github.com/camptocamp/odoo-cloud-platform",
     "data": [],
     "installable": True,
 }

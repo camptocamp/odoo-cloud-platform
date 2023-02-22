@@ -39,9 +39,9 @@ class IrAttachment(models.Model):
     _inherit = "ir.attachment"
 
     def _get_stores(self):
-        l = ['s3']
-        l += super(IrAttachment, self)._get_stores()
-        return l
+        stores = ['s3']
+        stores += super(IrAttachment, self)._get_stores()
+        return stores
 
     @api.model
     def _get_s3_connection_params(self, bucket_name=None):
