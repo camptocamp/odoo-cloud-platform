@@ -6,5 +6,5 @@ from os import environ
 
 
 def is_enabled():
-    env_val = environ.get('ODOO_REQUESTS_LOGGING')
-    return bool(strtobool(env_val or '0'.lower()))
+    env_val = environ.get("ODOO_REQUESTS_LOGGING")
+    return bool(strtobool(env_val or "0".lower()))

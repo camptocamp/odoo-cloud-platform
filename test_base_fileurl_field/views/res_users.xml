@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
     <record id="view_users_form_inherit" model="ir.ui.view">
         <field name="name">res.users.form.inherit</field>
@@ -9,7 +9,7 @@
                 <page name="fileurl_test" string="FileURL Test fields">
                     <group string="Default widget">
                         <field name="url_file" filename="url_file_fname" />
-                        <field name="url_file_fname" invisible="1"/>
+                        <field name="url_file_fname" invisible="1" />
                     </group>
                 </page>
             </xpath>
