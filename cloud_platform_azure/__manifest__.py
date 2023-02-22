@@ -9,16 +9,9 @@
     "author": "Camptocamp,Odoo Community Association (OCA)",
     "license": "AGPL-3",
     "category": "Extra Tools",
-    "depends": [
-        "cloud_platform",
-        "attachment_azure",
-        "monitoring_prometheus",
-    ],
-    "excludes": [
-        "cloud_platform_ovh",
-        "cloud_platform_exoscale",
-    ],
-    "website": "https://www.camptocamp.com",
+    "depends": ["cloud_platform", "attachment_azure", "monitoring_prometheus"],
+    "excludes": ["cloud_platform_ovh", "cloud_platform_exoscale"],
+    "website": "https://github.com/camptocamp/odoo-cloud-platform",
     "data": [],
     "installable": True,
 }

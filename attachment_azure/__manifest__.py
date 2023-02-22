@@ -9,13 +9,11 @@
     "Open Source Integrators, "
     "Serpent Consulting Services, "
     "Odoo Community Association (OCA)",
+    "website": "https://github.com/camptocamp/odoo-cloud-platform",
     "license": "AGPL-3",
     "category": "Knowledge Management",
     "depends": ["base_attachment_object_storage"],
-    "external_dependencies": {
-        "python": ["azure-storage-blob", "azure-identity"],
-    },
-    "website": "https://github.com/camptocamp/odoo-cloud-platform",
+    "external_dependencies": {"python": ["azure-storage-blob", "azure-identity"]},
     "installable": True,
     "development_status": "Beta",
     "post_init_hook": "_post_init_hook",
