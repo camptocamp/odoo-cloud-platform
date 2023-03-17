@@ -173,6 +173,8 @@ class IrAttachment(models.Model):
         location = self.env.context.get("storage_location") or self._storage()
         if location == "azure":
             container_client = self._get_azure_container()
+            if not container_client:
+                return ""
             filename = "azure://%s/%s" % (container_client.container_name, key)
             with io.BytesIO() as file:
                 blob_client = container_client.get_blob_client(key.lower())
