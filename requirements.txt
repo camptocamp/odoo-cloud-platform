@@ -1,7 +1,7 @@
 azure-storage-blob==12.14.1
 azure-identity==1.12.0
 boto3==1.26.7
-redis==4.3.4
+redis==4.4.4
 python-json-logger==2.0.4
 statsd==4.0.1
 python-swiftclient==4.1.0
