@@ -3,6 +3,11 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
+# make pytest happy
+# in pytest context module dependencies are not loaded
+# thus FileURL is unknown
+from odoo.addons import base_fileurl_field  # noqa
+
 
 class ResPartner(models.Model):
 
