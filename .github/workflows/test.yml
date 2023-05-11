@@ -36,25 +36,32 @@ jobs:
       matrix:
         include:
           - container: ghcr.io/oca/oca-ci/py3.6-odoo13.0:latest
-            include: "cloud_platform_exoscale"
+            include: "attachment_s3,cloud_platform_exoscale"
             makepot: "true"
-            name: test cloud_platform_exoscale with Odoo
+            name: test exoscale S3 with Odoo
           - container: ghcr.io/oca/oca-ci/py3.6-ocb13.0:latest
-            include: "cloud_platform_exoscale"
-            name: test cloud_platform_exoscale with OCB
+            include: "attachment_s3,cloud_platform_exoscale"
+            name: test exoscale S3 with OCB
           - container: ghcr.io/oca/oca-ci/py3.6-odoo13.0:latest
-            include: "cloud_platform_ovh"
+            include: "attachment_swift,cloud_platform_ovh"
             makepot: "true"
-            name: test cloud_platform_ovh with Odoo
+            name: test OVH with Odoo
           - container: ghcr.io/oca/oca-ci/py3.6-ocb13.0:latest
-            include: "cloud_platform_ovh"
-            name: test cloud_platform_ovh with OCB
+            include: "attachment_swift,cloud_platform_ovh"
+            name: test OVH with OCB
           - container: ghcr.io/oca/oca-ci/py3.6-odoo13.0:latest
-            exclude: "cloud_platform,cloud_platform_exoscale,cloud_platform_ovh"
+            include: "attachment_azure,cloud_platform_azure"
+            makepot: "true"
+            name: test azure with Odoo
+          - container: ghcr.io/oca/oca-ci/py3.6-ocb13.0:latest
+            include: "attachment_azure,cloud_platform_azure"
+            name: test azure with OCB
+          - container: ghcr.io/oca/oca-ci/py3.6-odoo13.0:latest
+            exclude: "attachment_azure,attachment_s3,attachment_swift,cloud_platform_exoscale,cloud_platform_ovh,cloud_platform_azure"
             makepot: "true"
             name: test others with Odoo
           - container: ghcr.io/oca/oca-ci/py3.6-ocb13.0:latest
-            exclude: "cloud_platform,cloud_platform_exoscale,cloud_platform_ovh"
+            exclude: "attachment_azure,attachment_s3,attachment_swift,cloud_platform_exoscale,cloud_platform_ovh,cloud_platform_azure"
             name: test others with OCB
     services:
       postgres:

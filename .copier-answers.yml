@@ -15,8 +15,9 @@ odoo_version: 13.0
 org_name: Camptocamp
 org_slug: camptocamp
 rebel_module_groups:
-- cloud_platform_exoscale
-- cloud_platform_ovh
+- attachment_s3,cloud_platform_exoscale
+- attachment_swift,cloud_platform_ovh
+- attachment_azure,cloud_platform_azure
 repo_description: None
 repo_name: Odoo Cloud Addons
 repo_slug: odoo-cloud-platform
