@@ -55,6 +55,13 @@ jobs:
             name: test azure with Odoo
           - container: ghcr.io/oca/oca-ci/py3.6-ocb13.0:latest
             include: "attachment_azure,cloud_platform_azure"
+            name: test fileurl with OCB
+          - container: ghcr.io/oca/oca-ci/py3.6-odoo13.0:latest
+            include: "base_fileurl_field,test_base_fileurl_field"
+            makepot: "true"
+            name: test fileurl with Odoo
+          - container: ghcr.io/oca/oca-ci/py3.6-ocb13.0:latest
+            include: "base_fileurl_field,test_base_fileurl_field"
             name: test azure with OCB
           - container: ghcr.io/oca/oca-ci/py3.6-odoo13.0:latest
             exclude: "attachment_azure,attachment_s3,attachment_swift,cloud_platform_exoscale,cloud_platform_ovh,cloud_platform_azure"
