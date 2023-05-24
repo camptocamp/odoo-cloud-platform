@@ -13,7 +13,7 @@
     "external_dependencies": {
         "python": ["python-json-logger"],
     },
-    "website": "http://www.camptocamp.com",
+    "website": "https://github.com/camptocamp/odoo-cloud-platform",
     "data": [],
     "installable": True,
 }
