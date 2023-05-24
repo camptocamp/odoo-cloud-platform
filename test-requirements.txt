@@ -1,0 +1,2 @@
+# avoid openssl breaking change https://github.com/odoo/odoo/issues/99809
+cryptography<38
