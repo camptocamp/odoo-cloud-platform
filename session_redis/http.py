@@ -4,13 +4,12 @@
 import logging
 import os
 
-from .strtobool import strtobool
-
 from odoo import http
 from odoo.tools import config
 from odoo.tools.func import lazy_property
 
 from .session import RedisSessionStore
+from .strtobool import strtobool
 
 _logger = logging.getLogger(__name__)
 
@@ -52,10 +51,13 @@ def session_store(self):
         redis_client = redis.from_url(url)
     else:
         redis_client = redis.Redis(host=host, port=port, password=password)
-    return RedisSessionStore(redis=redis_client, prefix=prefix,
-                             expiration=expiration,
-                             anon_expiration=anon_expiration,
-                             session_class=http.Session)
+    return RedisSessionStore(
+        redis=redis_client,
+        prefix=prefix,
+        expiration=expiration,
+        anon_expiration=anon_expiration,
+        session_class=http.Session,
+    )
 
 
 def purge_fs_sessions(path):
@@ -64,7 +66,7 @@ def purge_fs_sessions(path):
         try:
             os.unlink(path)
         except OSError:
-            pass
+            _logger.warning("OS Error during purge of redis sessions.")
 
 
 if is_true(os.environ.get("ODOO_SESSION_REDIS")):
@@ -77,8 +79,12 @@ if is_true(os.environ.get("ODOO_SESSION_REDIS")):
             sentinel_port,
         )
     else:
-        _logger.debug("HTTP sessions stored in Redis with prefix '%s' on "
-                      "%s:%s", prefix or '', host, port)
+        _logger.debug(
+            "HTTP sessions stored in Redis with prefix '%s' on " "%s:%s",
+            prefix or "",
+            host,
+            port,
+        )
     http.Application.session_store = session_store
     # clean the existing sessions on the file system
     purge_fs_sessions(config.session_dir)

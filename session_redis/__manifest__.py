@@ -13,7 +13,7 @@
     "external_dependencies": {
         "python": ["redis"],
     },
-    "website": "http://www.camptocamp.com",
+    "website": "https://github.com/camptocamp/odoo-cloud-platform",
     "data": [],
     "installable": True,
 }
