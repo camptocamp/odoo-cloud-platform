@@ -5,16 +5,16 @@ import inspect
 import logging
 import os
 import time
-from .strtobool import strtobool
+from contextlib import closing, contextmanager
 
 import psycopg2
-import odoo
 
-from contextlib import closing, contextmanager
-from odoo import api, exceptions, models, _
+import odoo
+from odoo import _, api, exceptions, models
 from odoo.osv.expression import AND, OR, normalize_domain
 from odoo.tools.safe_eval import const_eval
 
+from .strtobool import strtobool
 
 _logger = logging.getLogger(__name__)
 
@@ -242,7 +242,7 @@ class IrAttachment(models.Model):
             if not count:
                 self._store_file_delete(fname)
         else:
-            super()._file_delete(fname)
+            return super()._file_delete(fname)
 
     @api.model
     def _is_file_from_a_store(self, fname):
@@ -395,7 +395,8 @@ class IrAttachment(models.Model):
         # is required! It's because of an override of _search in ir.attachment
         # which adds ('res_field', '=', False) when the domain does not
         # contain 'res_field'.
-        # https://github.com/odoo/odoo/blob/9032617120138848c63b3cfa5d1913c5e5ad76db/odoo/addons/base/ir/ir_attachment.py#L344-L347
+        # https://github.com/odoo/odoo/blob/9032617120138848c63b3cfa5d1913c5e5ad76db/odoo/addons/base/ir/ir_attachment.py#L344-L347  # noqa: B950
+
         domain = [
             "!",
             ("store_fname", "=like", "{}://%".format(storage)),

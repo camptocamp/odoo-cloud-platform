@@ -13,7 +13,7 @@
     "external_dependencies": {
         "python": ["boto3"],
     },
-    "website": "https://www.camptocamp.com",
+    "website": "https://github.com/camptocamp/odoo-cloud-platform",
     "data": [],
     "installable": False,
 }

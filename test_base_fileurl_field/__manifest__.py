@@ -6,10 +6,9 @@
     "version": "12.0.1.0.0",
     "category": "Tests",
     "author": "Camptocamp,Odoo Community Association (OCA)",
+    "website": "https://github.com/camptocamp/odoo-cloud-platform",
     "license": "AGPL-3",
-    "depends": [
-        "base_fileurl_field"
-    ],
+    "depends": ["base_fileurl_field"],
     "data": [
         "views/res_partner.xml",
         "views/res_users.xml",

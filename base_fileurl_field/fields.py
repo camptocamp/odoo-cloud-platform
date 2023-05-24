@@ -4,7 +4,6 @@ import unicodedata
 
 from odoo import fields
 
-
 fields.Field.__doc__ += """
 
         .. _field-fileurl:
@@ -29,10 +28,10 @@ fields.Field.__doc__ += """
 class FileURL(fields.Binary):
 
     _slots = {
-        'attachment': True,  # Override default with True
-        'storage_location': '',  # External storage activated on the system (cf base_attachment_storage)  # noqa
-        'storage_path': '',  # Path to be used as storage key (prefix of filename)  # noqa
-        'filename': '',  # Field to use to store the filename on ir.attachment
+        "attachment": True,  # Override default with True
+        "storage_location": "",  # External storage activated on the system (cf base_attachment_storage)  # noqa
+        "storage_path": "",  # Path to be used as storage key (prefix of filename)  # noqa
+        "filename": "",  # Field to use to store the filename on ir.attachment
     }
 
     # pylint: disable=method-required-super
@@ -47,22 +46,22 @@ class FileURL(fields.Binary):
                 if not value:
                     continue
                 vals = {
-                    'name': self.name,
-                    'res_model': self.model_name,
-                    'res_field': self.name,
-                    'res_id': record.id,
-                    'type': 'binary',
-                    'datas': value,
+                    "name": self.name,
+                    "res_model": self.model_name,
+                    "res_field": self.name,
+                    "res_id": record.id,
+                    "type": "binary",
+                    "datas": value,
                 }
                 fname = False
                 if self.filename:
                     fname = record[self.filename]
-                    vals['datas_fname'] = fname
+                    vals["datas_fname"] = fname
                     if fname and self.storage_path:
                         storage_key = self._build_storage_key(fname)
                 if not fname:
                     storage_key = False
-                env['ir.attachment'].sudo().with_context(
+                env["ir.attachment"].sudo().with_context(
                     binary_field_real_user=env.user,
                     storage_location=self.storage_location,
                     force_storage_key=storage_key,
@@ -80,21 +79,22 @@ class FileURL(fields.Binary):
                     storage_location=self.storage_location,
                     force_storage_key=storage_key,
                 ),
-                value
+                value,
             )
         return True
 
     def _setup_regular_base(self, model):
-        super()._setup_regular_base(model)
+        res = super()._setup_regular_base(model)
         if self.storage_path:
-            assert self.filename is not None, \
+            assert self.filename is not None, (
                 "Field %s defines storage_path without filename" % self
+            )
+        return res
 
     def _build_storage_key(self, filename):
-        return '/'.join([
-            self.storage_path.rstrip('/'),
-            unicodedata.normalize('NFKC', filename)
-        ])
+        return "/".join(
+            [self.storage_path.rstrip("/"), unicodedata.normalize("NFKC", filename)]
+        )
 
 
 fields.FileURL = FileURL

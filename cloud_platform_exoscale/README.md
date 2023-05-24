@@ -1,5 +1,4 @@
-Cloud Platform Exoscale
-=======================
+# Cloud Platform Exoscale
 
 Install addons specific to the Exoscale setup.
 

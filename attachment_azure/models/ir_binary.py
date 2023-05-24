@@ -60,6 +60,6 @@ try:
     from odoo.addons import documents
 
     documents.models.ir_binary.IrBinary._record_to_stream = IrBinary._record_to_stream
-except ImportError:
+except ImportError:  # pylint: disable=except-pass
     # document enterprise module if not installed, we just ignore
     pass
