@@ -1,10 +1,10 @@
 import logging
 import os
 
-from odoo.addons.web.controllers.main import Database
-from odoo import http
-from odoo import exceptions
+from odoo import exceptions, http
 from odoo.http import request
+
+from odoo.addons.web.controllers.main import Database
 
 _logger = logging.getLogger(__name__)
 
