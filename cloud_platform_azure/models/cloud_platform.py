@@ -1,13 +1,15 @@
 # Copyright 2016-2021 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
-import re
 import os
+import re
 
-from odoo import models, api
-from odoo.addons.cloud_platform.models.cloud_platform import FilestoreKind
-from odoo.addons.cloud_platform.models.cloud_platform import PlatformConfig
+from odoo import api, models
 
+from odoo.addons.cloud_platform.models.cloud_platform import (
+    FilestoreKind,
+    PlatformConfig,
+)
 
 AZURE_STORE_KIND = FilestoreKind("azure", "remote")
 
@@ -42,8 +44,7 @@ class CloudPlatform(models.AbstractModel):
     @api.model
     def _check_filestore(self, environment_name):
         params = self.env["ir.config_parameter"].sudo()
-        use_azure = (params.get_param("ir_attachment.location") ==
-                     AZURE_STORE_KIND.name)
+        use_azure = params.get_param("ir_attachment.location") == AZURE_STORE_KIND.name
         if environment_name in ("prod", "integration"):
             # Labs instances use azure by default, but we don't want
             # to enforce it in case we want to test something with a different

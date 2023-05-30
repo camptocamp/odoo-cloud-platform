@@ -10,7 +10,7 @@
     "license": "AGPL-3",
     "category": "Knowledge Management",
     "depends": ["base"],
-    "website": "http://www.camptocamp.com",
+    "website": "https://github.com/camptocamp/odoo-cloud-platform",
     "data": ["data/res_config_settings_data.xml"],
     "installable": True,
     "auto_install": True,

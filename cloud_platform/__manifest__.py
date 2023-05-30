@@ -15,7 +15,7 @@
         "logging_json",
         "server_environment",  # OCA/server-tools
     ],
-    "website": "https://www.camptocamp.com",
+    "website": "https://github.com/camptocamp/odoo-cloud-platform",
     "data": [],
     "installable": True,
 }

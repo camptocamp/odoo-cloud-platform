@@ -12,13 +12,13 @@ from odoo import _, api, exceptions, models
 _logger = logging.getLogger(__name__)
 
 try:
+    from azure.core.exceptions import HttpResponseError, ResourceExistsError
     from azure.storage.blob import (
-        BlobServiceClient,
-        generate_account_sas,
-        ResourceTypes,
         AccountSasPermissions,
+        BlobServiceClient,
+        ResourceTypes,
+        generate_account_sas,
     )
-    from azure.core.exceptions import ResourceExistsError, HttpResponseError
 except ImportError:
     _logger.debug("Cannot 'import azure-storage-blob'.")
 
@@ -32,9 +32,7 @@ class IrAttachment(models.Model):
     _inherit = "ir.attachment"
 
     def _get_stores(self):
-        l = ["azure"]
-        l += super(IrAttachment, self)._get_stores()
-        return l
+        return ["azure"] + super(IrAttachment, self)._get_stores()
 
     @api.model
     def _get_blob_service_client(self):
@@ -88,7 +86,7 @@ class IrAttachment(models.Model):
                     "Error during the connection to Azure container using the "
                     "connection string."
                 )
-                raise exceptions.UserError(str(error))
+                raise exceptions.UserError(str(error)) from None
         else:
             try:
                 sas_token = generate_account_sas(
@@ -107,15 +105,13 @@ class IrAttachment(models.Model):
                     "Error during the connection to Azure container using the Shared "
                     "Access Signature (SAS)"
                 )
-                raise exceptions.UserError(str(error))
+                raise exceptions.UserError(str(error)) from None
         return blob_service_client
 
     @api.model
     def _get_container_name(self):
-        """
-        Container naming rules:
-        https://docs.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-containers--blobs--and-metadata#container-names
-        """
+        # Container naming rules:
+        # https://docs.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-containers--blobs--and-metadata#container-names  # noqa: B950
         running_env = os.environ.get("RUNNING_ENV", "dev")
         storage_name = os.environ.get("AZURE_STORAGE_NAME", r"{env}-{db}")
         storage_name = storage_name.format(env=running_env, db=self.env.cr.dbname)
@@ -143,7 +139,7 @@ class IrAttachment(models.Model):
                 container_client.create_container()
             except HttpResponseError as error:
                 _logger.exception("Error during the creation of the Azure container")
-                raise exceptions.UserError(str(error))
+                raise exceptions.UserError(str(error)) from None
         return container_client
 
     @api.model
@@ -181,13 +177,17 @@ class IrAttachment(models.Model):
                 try:
                     blob_client.upload_blob(file, blob_type="BlockBlob")
                 except ResourceExistsError:
-                    pass
+                    _logger.exception(
+                        "Trying to re create an existing resource %s" % filename
+                    )
                 except HttpResponseError as error:
                     # log verbose error from azure, return short message for user
-                    _logger.exception("Error during storage of the file %s" % filename)
+                    _logger.exception(
+                        "HTTP Error during storage of the file %s" % filename
+                    )
                     raise exceptions.UserError(
                         _("The file could not be stored: %s") % str(error)
-                    )
+                    ) from None
         else:
             _super = super(IrAttachment, self)
             filename = _super._store_file_write(key, bin_data)

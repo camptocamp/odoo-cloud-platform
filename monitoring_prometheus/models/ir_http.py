@@ -1,10 +1,10 @@
 # Copyright 2016-2021 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
+from prometheus_client import Counter, Summary
+
 from odoo import models
 from odoo.http import request
-from prometheus_client import Summary, Counter
-
 
 REQUEST_TIME = Summary(
     "request_latency_sec", "Request response time in sec", ["query_type"]

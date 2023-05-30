@@ -6,9 +6,9 @@ import os
 import threading
 import uuid
 
-from .strtobool import strtobool
-
 from odoo import http
+
+from .strtobool import strtobool
 
 _logger = logging.getLogger(__name__)
 

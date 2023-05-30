@@ -9,7 +9,6 @@ from odoo import models
 from odoo.http import request as http_request
 from odoo.tools.config import config
 
-
 _logger = logging.getLogger("monitoring.http.requests")
 
 

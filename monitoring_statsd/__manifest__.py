@@ -13,7 +13,7 @@
         "web",
         "server_environment",
     ],
-    "website": "http://www.camptocamp.com",
+    "website": "https://github.com/camptocamp/odoo-cloud-platform",
     "data": [],
     "external_dependencies": {
         "python": ["statsd"],
