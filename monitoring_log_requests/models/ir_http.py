@@ -3,14 +3,15 @@
 
 import json
 import time
-from os import environ
 from collections import MutableMapping
 from contextlib import suppress
+from os import environ
+
 from werkzeug.exceptions import HTTPException
+
 from odoo import models
 from odoo.http import request as http_request
 from odoo.tools.config import config
-
 
 udp_dest = environ.get("ODOO_REQUESTS_LOGGING_UDP")
 if udp_dest:
@@ -25,6 +26,8 @@ if udp_dest:
     def output_method(data):
         data += "\n"
         sock.sendto(data.encode("utf-8"), (ip, port))
+
+
 else:
     import logging
 

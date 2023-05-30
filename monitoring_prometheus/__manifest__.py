@@ -8,15 +8,9 @@
     "author": "Camptocamp,Odoo Community Association (OCA)",
     "license": "AGPL-3",
     "category": "category",
-    "depends": [
-        "base",
-        "web",
-        "server_environment",
-    ],
-    "website": "http://www.camptocamp.com",
+    "depends": ["base", "web", "server_environment"],
+    "website": "https://github.com/camptocamp/odoo-cloud-platform",
     "data": [],
-    "external_dependencies": {
-        "python": ["prometheus_client"],
-    },
+    "external_dependencies": {"python": ["prometheus_client"]},
     "installable": True,
 }

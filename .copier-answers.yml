@@ -1,0 +1,27 @@
+# Do NOT update manually; changes here will be overwritten by Copier
+_commit: v1.14.2
+_src_path: https://github.com/OCA/oca-addons-repo-template.git
+ci: GitHub
+dependency_installation_mode: PIP
+generate_requirements_txt: false
+github_check_license: true
+github_ci_extra_env: {}
+github_enable_codecov: true
+github_enable_makepot: true
+github_enable_stale_action: true
+github_enforce_dev_status_compatibility: false
+include_wkhtmltopdf: false
+odoo_version: 13.0
+org_name: Camptocamp
+org_slug: camptocamp
+rebel_module_groups:
+- attachment_s3,cloud_platform_exoscale
+- attachment_swift,cloud_platform_ovh
+- attachment_azure,cloud_platform_azure
+repo_description: None
+repo_name: Odoo Cloud Addons
+repo_slug: odoo-cloud-platform
+repo_website: https://github.com/camptocamp/odoo-cloud-platform
+travis_apt_packages: []
+travis_apt_sources: []
+

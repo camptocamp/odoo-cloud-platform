@@ -3,7 +3,6 @@
 
 import logging
 import os
-
 from contextlib import closing
 
 import odoo
@@ -14,32 +13,38 @@ _logger = logging.getLogger(__name__)
 def migrate(cr, version):
     if not version:
         return
-    cr.execute("""
+    cr.execute(
+        """
         SELECT value FROM ir_config_parameter
         WHERE key = 'ir_attachment.location'
-    """)
+    """
+    )
     row = cr.fetchone()
-    bucket = os.environ.get('AWS_BUCKETNAME')
+    bucket = os.environ.get("AWS_BUCKETNAME")
 
-    if row[0] == 's3' and bucket:
+    if row[0] == "s3" and bucket:
         uid = odoo.SUPERUSER_ID
         registry = odoo.modules.registry.Registry(cr.dbname)
         new_cr = registry.cursor()
         with closing(new_cr):
             with odoo.api.Environment.manage():
                 env = odoo.api.Environment(new_cr, uid, {})
-                store_local = env['ir.attachment'].search(
-                    [('store_fname', '=like', 's3://%'),
-                     '|', ('res_model', '=', 'ir.ui.view'),
-                          ('res_field', 'in', ['image_small',
-                                               'image_medium',
-                                               'web_icon_data'])
-                     ],
+                store_local = env["ir.attachment"].search(
+                    [
+                        ("store_fname", "=like", "s3://%"),
+                        "|",
+                        ("res_model", "=", "ir.ui.view"),
+                        (
+                            "res_field",
+                            "in",
+                            ["image_small", "image_medium", "web_icon_data"],
+                        ),
+                    ],
                 )
 
                 _logger.info(
-                    'Moving %d attachments from S3 to DB for fast access',
-                    len(store_local)
+                    "Moving %d attachments from S3 to DB for fast access",
+                    len(store_local),
                 )
                 for attachment_id in store_local.ids:
                     # force re-storing the document, will move
@@ -52,10 +57,13 @@ def migrate(cr, version):
                     # attachments on each loop.
                     try:
                         env.clear()
-                        attachment = env['ir.attachment'].browse(attachment_id)
-                        _logger.info('Moving attachment %s (id: %s)',
-                                     attachment.name, attachment.id)
-                        attachment.write({'datas': attachment.datas})
+                        attachment = env["ir.attachment"].browse(attachment_id)
+                        _logger.info(
+                            "Moving attachment %s (id: %s)",
+                            attachment.name,
+                            attachment.id,
+                        )
+                        attachment.write({"datas": attachment.datas})
                         new_cr.commit()
-                    except:
+                    except Exception:
                         new_cr.rollback()
