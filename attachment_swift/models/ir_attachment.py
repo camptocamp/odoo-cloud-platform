@@ -77,9 +77,9 @@ class IrAttachment(models.Model):
     _inherit = 'ir.attachment'
 
     def _get_stores(self):
-        l = ['swift']
-        l += super(IrAttachment, self)._get_stores()
-        return l
+        stores = ['swift']
+        stores += super(IrAttachment, self)._get_stores()
+        return stores
 
     @api.model
     def _get_swift_connection(self):

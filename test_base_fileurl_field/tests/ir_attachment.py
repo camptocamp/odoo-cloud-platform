@@ -14,9 +14,9 @@ class IrAttachment(models.Model):
     _inherit = "ir.attachment"
 
     def _get_stores(self):
-        l = ['s3']
-        l += super(IrAttachment, self)._get_stores()
-        return l
+        stores = ['s3']
+        stores += super(IrAttachment, self)._get_stores()
+        return stores
 
     @api.model
     def _store_file_read(self, fname, bin_size=False):

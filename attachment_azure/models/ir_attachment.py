@@ -33,9 +33,9 @@ class IrAttachment(models.Model):
     _inherit = "ir.attachment"
 
     def _get_stores(self):
-        l = ["azure"]
-        l += super(IrAttachment, self)._get_stores()
-        return l
+        stores = ["azure"]
+        stores += super(IrAttachment, self)._get_stores()
+        return stores
 
     @api.model
     def _get_blob_service_client(self):
