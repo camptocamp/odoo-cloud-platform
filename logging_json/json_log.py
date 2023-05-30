@@ -5,7 +5,6 @@ import logging
 import os
 import threading
 import uuid
-
 from distutils.util import strtobool
 
 from odoo import http
@@ -20,23 +19,22 @@ except ImportError:
 
 
 def is_true(strval):
-    return bool(strtobool(strval or '0'.lower()))
+    return bool(strtobool(strval or "0".lower()))
 
 
 class OdooJsonFormatter(jsonlogger.JsonFormatter):
-
     def add_fields(self, log_record, record, message_dict):
         record.pid = os.getpid()
-        record.dbname = getattr(threading.currentThread(), 'dbname', '?')
-        record.request_id = getattr(threading.current_thread(), 'request_uuid', None)
-        record.uid = getattr(threading.current_thread(), 'uid', None)
+        record.dbname = getattr(threading.currentThread(), "dbname", "?")
+        record.request_id = getattr(threading.current_thread(), "request_uuid", None)
+        record.uid = getattr(threading.current_thread(), "uid", None)
         _super = super(OdooJsonFormatter, self)
         return _super.add_fields(log_record, record, message_dict)
 
 
-if is_true(os.environ.get('ODOO_LOGGING_JSON')):
+if is_true(os.environ.get("ODOO_LOGGING_JSON")):
     formatted_message = (
-        '%(asctime)s %(pid)s %(levelname)s %(dbname)s %(name)s: %(message)s'
+        "%(asctime)s %(pid)s %(levelname)s %(dbname)s %(name)s: %(message)s"
     )
     formatter = OdooJsonFormatter(formatted_message)
     logging.getLogger().handlers[0].formatter = formatter

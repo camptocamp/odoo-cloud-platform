@@ -6,8 +6,7 @@ import re
 
 class SwiftUri(object):
 
-    _url_re = re.compile("^swift:///*([^/]*)/?(.*)",
-                         re.IGNORECASE | re.UNICODE)
+    _url_re = re.compile("^swift:///*([^/]*)/?(.*)", re.IGNORECASE | re.UNICODE)
 
     def __init__(self, uri):
         match = self._url_re.match(uri)

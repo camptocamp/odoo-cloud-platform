@@ -1,5 +1,4 @@
-Cloud Platform Azure
-====================
+# Cloud Platform Azure
 
 Install addons specific to the Azure setup.
 
