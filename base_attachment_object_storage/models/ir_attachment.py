@@ -59,7 +59,7 @@ class IrAttachment(models.Model):
         super()._register_hook()
         location = self.env.context.get("storage_location") or self._storage()
         # ignore if we are not using an object storage
-        if location not in self._get_stores():
+        if self.is_storage_disabled(location) or location not in self._get_stores():
             return
         curframe = inspect.currentframe()
         calframe = inspect.getouterframes(curframe, 2)
