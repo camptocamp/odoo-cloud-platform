@@ -79,7 +79,7 @@ class IrAttachment(models.Model):
         # migration here.
         # Typical example is images of ir.ui.menu which are updated in
         # ir.attachment at every upgrade of the addons
-        if update_module:
+        if update_module and not self.is_storage_disabled(location):
             self.env["ir.attachment"].sudo()._force_storage_to_object_storage()
 
     @property
