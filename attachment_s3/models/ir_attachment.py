@@ -178,9 +178,37 @@ class IrAttachment(models.Model):
         else:
             return super(IrAttachment, self)._store_file_read(fname, bin_size)
 
+
+    def _inverse_datas(self):
+        location = self._storage()
+        for attach in self:
+            # compute the fields that depend on datas
+            value = attach.datas
+            bin_data = base64.b64decode(value) if value else b''
+            vals = {
+                'file_size': len(bin_data),
+                'checksum': self._compute_checksum(bin_data),
+                'index_content': self._index(bin_data, attach.datas_fname, attach.mimetype),
+                'store_fname': False,
+                'db_datas': value,
+            }
+            if value and location != 'db':
+                # save it to the filestore
+                self=self.with_context(mimetype=attach.mimetype)
+                vals['store_fname'] = self._file_write(value, vals['checksum'])
+                vals['db_datas'] = False
+
+            # take current location in filestore to possibly garbage-collect it
+            fname = attach.store_fname
+            # write as superuser, as user probably does not have write access
+            super(IrAttachment, attach.sudo()).write(vals)
+            if fname:
+                self._file_delete(fname)
+
     @api.model
     def _store_file_write(self, key, bin_data):
         location = self.env.context.get('storage_location') or self._storage()
+        mimetype = self.env.context.get('mimetype')
         if location == 's3':
             bucket = self._get_s3_bucket()
             obj = bucket.Object(key=key)
@@ -189,7 +217,10 @@ class IrAttachment(models.Model):
                 file.seek(0)
                 filename = 's3://%s/%s' % (bucket.name, key)
                 try:
-                    obj.upload_fileobj(file)
+                    if mimetype:
+                        obj.upload_fileobj(file, ExtraArgs={'ContentType': mimetype})
+                    else:
+                        obj.upload_fileobj(file)
                 except ClientError as error:
                     # log verbose error from s3, return short message for user
                     _logger.exception(
