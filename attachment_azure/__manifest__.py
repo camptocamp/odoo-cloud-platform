@@ -4,7 +4,7 @@
 {
     "name": "Attachments on Azure storage",
     "summary": "Store assets and attachments on a Azure compatible object storage",
-    "version": "16.0.1.0.0",
+    "version": "17.0.1.0.0",
     "author": "Camptocamp, "
     "Open Source Integrators, "
     "Serpent Consulting Services, "
