@@ -3,11 +3,11 @@ name: tests
 on:
   pull_request:
     branches:
-      - "16.0*"
+      - "17.0*"
   push:
     branches:
-      - "16.0"
-      - "16.0-ocabot-*"
+      - "17.0"
+      - "17.0-ocabot-*"
 
 jobs:
   unreleased-deps:
@@ -35,18 +35,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - container: ghcr.io/oca/oca-ci/py3.10-odoo16.0:latest
+          - container: ghcr.io/oca/oca-ci/py3.10-odoo17.0:latest
             include: "attachment_azure,cloud_platform_azure"
             makepot: "false"
             name: test azure with Odoo
-          - container: ghcr.io/oca/oca-ci/py3.10-ocb16.0:latest
+          - container: ghcr.io/oca/oca-ci/py3.10-ocb17.0:latest
             include: "attachment_azure,cloud_platform_azure"
             name: test azure with OCA
-          - container: ghcr.io/oca/oca-ci/py3.10-odoo16.0:latest
+          - container: ghcr.io/oca/oca-ci/py3.10-odoo17.0:latest
             exclude: "attachment_s3,cloud_platform_exoscale,attachment_swift,cloud_platform_ovh,attachment_azure,cloud_platform_azure"
             makepot: "false"
             name: test others with Odoo
-          - container: ghcr.io/oca/oca-ci/py3.10-ocb16.0:latest
+          - container: ghcr.io/oca/oca-ci/py3.10-ocb17.0:latest
             exclude: "attachment_s3,cloud_platform_exoscale,attachment_swift,cloud_platform_ovh,attachment_azure,cloud_platform_azure"
             name: test others with OCB
     services:
