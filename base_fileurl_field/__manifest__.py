@@ -3,7 +3,7 @@
 {
     "name": "Base FileURL Field",
     "summary": "Implementation of FileURL type fields",
-    "version": "15.0.1.0.0",
+    "version": "17.0.1.0.0",
     "category": "Technical Settings",
     "author": "Camptocamp, Odoo Community Association (OCA)",
     "website": "https://github.com/camptocamp/odoo-cloud-platform",
