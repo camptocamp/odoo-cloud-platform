@@ -18,7 +18,6 @@ def from_attachment(cls, attachment):
         )
         self.type = "data"
         self.data = attachment.raw
-        self.last_modified = attachment["__last_update"]
         self.size = len(self.data)
         return self
     return old_from_attachment(attachment)
