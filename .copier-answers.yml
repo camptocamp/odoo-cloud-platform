@@ -11,7 +11,7 @@ github_enable_makepot: false
 github_enable_stale_action: true
 github_enforce_dev_status_compatibility: false
 include_wkhtmltopdf: false
-odoo_version: 16.0
+odoo_version: 17.0
 org_name: Camptocamp
 org_slug: camptocamp
 rebel_module_groups:
