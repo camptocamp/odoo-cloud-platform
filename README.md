@@ -7,6 +7,15 @@
 
 <!-- /!\ do not modify above this line -->
 
+# Avoin.Systems fork
+
+This is a fork of the original repo by CamptoCamp. All credit to the original authors.
+
+We maintain this fork since there are modules they have removed which we still need.
+
+If you do not need the specific modules we keep alive, it would probably be a better idea
+to use the original CamptoCamp repo.
+
 # Odoo Cloud Addons
 
 Camptocamp odoo addons used on our Cloud Platform.
