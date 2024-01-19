@@ -26,7 +26,7 @@ def is_true(strval):
 class OdooJsonFormatter(jsonlogger.JsonFormatter):
     def add_fields(self, log_record, record, message_dict):
         record.pid = os.getpid()
-        record.dbname = getattr(threading.currentThread(), "dbname", "?")
+        record.dbname = getattr(threading.current_thread(), "dbname", "?")
         record.request_id = getattr(threading.current_thread(), "request_uuid", None)
         record.uid = getattr(threading.current_thread(), "uid", None)
         _super = super(OdooJsonFormatter, self)
