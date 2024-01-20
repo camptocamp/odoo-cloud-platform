@@ -117,7 +117,7 @@ class RedisSessionStore(SessionStore):
             session.session_token = security.compute_session_token(session, env)
         self.save(session)
 
-    def vacuum(self):
+    def vacuum(self, *args, **kwargs):
         """Do not garbage collect the sessions
 
         Redis keys are automatically cleaned at the end of their
