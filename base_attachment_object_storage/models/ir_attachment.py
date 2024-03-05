@@ -257,13 +257,10 @@ class IrAttachment(osv.osv):
                 _logger.error('Could not migrate attachment %s to %s' %
                               (attachment_id, storage))
 
-        def clean():
+        clean_filesystem = os.environ.get('ODOO_ADDON_BASE_ATTACHMENT_OBJECT_STORAGE_CLEAN_FILESYSTEM', False) in ("True", "true", True)
+        # delete the files from the filesystem
+        if files_to_clean and clean_filesystem:
             clean_fs(files_to_clean)
-
-        # delete the files from the filesystem once we know the changes
-        # have been committed in ir.attachment
-        if files_to_clean:
-            cr.after('commit', clean)
 
     def _get_stores(self):
         """ To get the list of stores activated in the system  """
