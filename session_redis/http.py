@@ -85,6 +85,26 @@ if is_true(os.environ.get("ODOO_SESSION_REDIS")):
             host,
             port,
         )
-    http.Application.session_store = session_store
+    target = http.Application
+    if not hasattr(target, "session_store"):
+        # Some other module (at least OCA/server-tools/sentry) has replaced
+        # Application with a different object, hopefully wrapping it instead of
+        # completely overwriting it
+        # Try and see if we can extract the proper object from http.root instead
+        if not hasattr(http.root, "session_store"):
+            raise Exception(
+                "session_redis: unable to find correct objects to patch for "
+                "session management. Has another module overwritten "
+                "odoo.http.Application with a different object?"
+            )
+        else:
+            _logger.warning(
+                "Extracting underlying web app object from odoo.http.root, as "
+                "the actual Application object has been replaced. This may not "
+                "work correctly: if you can affect load order, try to make "
+                "session_redis load before other server-wide modules."
+            )
+            target = type(http.root)
+    target.session_store = session_store
     # clean the existing sessions on the file system
     purge_fs_sessions(config.session_dir)
