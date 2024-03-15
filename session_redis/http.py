@@ -1,6 +1,6 @@
 # Copyright 2016-2019 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
-
+import glob
 import logging
 import os
 
@@ -61,12 +61,13 @@ def session_store(self):
 
 
 def purge_fs_sessions(path):
-    for fname in os.listdir(path):
-        path = os.path.join(path, fname)
+    # Same logic as odoo.http.FilesystemSessionStore.vacuum
+    for fname in glob.iglob(os.path.join(path, '*', '*')):
+        session_file = os.path.join(path, fname)
         try:
-            os.unlink(path)
+            os.unlink(session_file)
         except OSError:
-            _logger.warning("OS Error during purge of redis sessions.")
+            _logger.exception(f"OS Error during purge of old sessions: {session_file}")
 
 
 if is_true(os.environ.get("ODOO_SESSION_REDIS")):
