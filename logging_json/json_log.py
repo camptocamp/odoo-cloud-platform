@@ -29,7 +29,7 @@ class OdooJsonFormatter(jsonlogger.JsonFormatter):
         record.dbname = getattr(threading.currentThread(), "dbname", "?")
         record.request_id = getattr(threading.current_thread(), "request_uuid", None)
         record.uid = getattr(threading.current_thread(), "uid", None)
-        _super = super(OdooJsonFormatter, self)
+        _super = super()
         return _super.add_fields(log_record, record, message_dict)
 
 
