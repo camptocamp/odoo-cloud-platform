@@ -40,10 +40,10 @@ class RedisSessionStore(SessionStore):
             self.anon_expiration = anon_expiration
         self.prefix = "session:"
         if prefix:
-            self.prefix = "%s:%s:" % (self.prefix, prefix)
+            self.prefix = f"{self.prefix}:{prefix}:"
 
     def build_key(self, sid):
-        return "%s%s" % (self.prefix, sid)
+        return f"{self.prefix}{sid}"
 
     def save(self, session):
         key = self.build_key(session.sid)
@@ -56,7 +56,7 @@ class RedisSessionStore(SessionStore):
             expiration = session.expiration or self.anon_expiration
         if _logger.isEnabledFor(logging.DEBUG):
             if session.uid:
-                user_msg = "user '%s' (id: %s)" % (session.login, session.uid)
+                user_msg = f"user '{session.login}' (id: {session.uid})"
             else:
                 user_msg = "anonymous user"
             _logger.debug(

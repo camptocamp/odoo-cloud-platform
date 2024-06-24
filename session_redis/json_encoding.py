@@ -27,7 +27,7 @@ class SessionDecoder(json.JSONDecoder):
     """Decode json, recomposing recordsets and date/datetime"""
 
     def __init__(self, *args, **kwargs):
-        super().__init__(object_hook=self.object_hook, *args, **kwargs)
+        super().__init__(*args, object_hook=self.object_hook, **kwargs)
 
     def object_hook(self, obj):
         if "_type" not in obj:
