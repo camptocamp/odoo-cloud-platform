@@ -60,10 +60,8 @@ class RedisSessionStore(SessionStore):
             else:
                 user_msg = "anonymous user"
             _logger.debug(
-                "saving session with key '%s' and " "expiration of %s seconds for %s",
-                key,
-                expiration,
-                user_msg,
+                f"saving session with key '{key}' and "
+                f"expiration of {expiration} seconds for {user_msg}"
             )
 
         data = json.dumps(dict(session), cls=json_encoding.SessionEncoder).encode(
@@ -74,14 +72,14 @@ class RedisSessionStore(SessionStore):
 
     def delete(self, session):
         key = self.build_key(session.sid)
-        _logger.debug("deleting session with key %s", key)
+        _logger.debug(f"deleting session with key {key}")
         return self.redis.delete(key)
 
     def get(self, sid):
         if not self.is_valid_key(sid):
             _logger.debug(
-                "session with invalid sid '%s' has been asked, " "returning a new one",
-                sid,
+                f"session with invalid sid '{sid}' has been asked, "
+                "returning a new one"
             )
             return self.new()
 
@@ -89,18 +87,16 @@ class RedisSessionStore(SessionStore):
         saved = self.redis.get(key)
         if not saved:
             _logger.debug(
-                "session with non-existent key '%s' has been asked, "
-                "returning a new one",
-                key,
+                f"session with non-existent key '{key}' has been asked, "
+                "returning a new one"
             )
             return self.new()
         try:
             data = json.loads(saved.decode("utf-8"), cls=json_encoding.SessionDecoder)
         except ValueError:
             _logger.debug(
-                "session for key '%s' has been asked but its json "
-                "content could not be read, it has been reset",
-                key,
+                f"session for key '{key}' has been asked but its json "
+                "content could not be read, it has been reset"
             )
             data = {}
         return self.session_class(data, sid, False)

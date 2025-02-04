@@ -25,21 +25,21 @@ def is_true(strval):
     return bool(strtobool(strval or "0".lower()))
 
 
-sentinel_host = os.environ.get("ODOO_SESSION_REDIS_SENTINEL_HOST")
-sentinel_master_name = os.environ.get("ODOO_SESSION_REDIS_SENTINEL_MASTER_NAME")
+sentinel_host = os.getenv("ODOO_SESSION_REDIS_SENTINEL_HOST")
+sentinel_master_name = os.getenv("ODOO_SESSION_REDIS_SENTINEL_MASTER_NAME")
 if sentinel_host and not sentinel_master_name:
     raise Exception(
         "ODOO_SESSION_REDIS_SENTINEL_MASTER_NAME must be defined "
         "when using session_redis"
     )
-sentinel_port = int(os.environ.get("ODOO_SESSION_REDIS_SENTINEL_PORT", 26379))
-host = os.environ.get("ODOO_SESSION_REDIS_HOST", "localhost")
-port = int(os.environ.get("ODOO_SESSION_REDIS_PORT", 6379))
-prefix = os.environ.get("ODOO_SESSION_REDIS_PREFIX")
-url = os.environ.get("ODOO_SESSION_REDIS_URL")
-password = os.environ.get("ODOO_SESSION_REDIS_PASSWORD")
-expiration = os.environ.get("ODOO_SESSION_REDIS_EXPIRATION")
-anon_expiration = os.environ.get("ODOO_SESSION_REDIS_EXPIRATION_ANONYMOUS")
+sentinel_port = int(os.getenv("ODOO_SESSION_REDIS_SENTINEL_PORT", 26379))
+host = os.getenv("ODOO_SESSION_REDIS_HOST", "localhost")
+port = int(os.getenv("ODOO_SESSION_REDIS_PORT", 6379))
+prefix = os.getenv("ODOO_SESSION_REDIS_PREFIX")
+url = os.getenv("ODOO_SESSION_REDIS_URL")
+password = os.getenv("ODOO_SESSION_REDIS_PASSWORD")
+expiration = os.getenv("ODOO_SESSION_REDIS_EXPIRATION")
+anon_expiration = os.getenv("ODOO_SESSION_REDIS_EXPIRATION_ANONYMOUS")
 
 
 @lazy_property
@@ -61,6 +61,10 @@ def session_store(self):
 
 
 def purge_fs_sessions(path):
+    if not os.path.isdir(path):
+        _logger.warning(f"Session directory '{path}' does not exist.")
+        return
+
     for fname in os.listdir(path):
         path = os.path.join(path, fname)
         try:
@@ -69,7 +73,7 @@ def purge_fs_sessions(path):
             _logger.warning("OS Error during purge of redis sessions.")
 
 
-if is_true(os.environ.get("ODOO_SESSION_REDIS")):
+if is_true(os.getenv("ODOO_SESSION_REDIS")):
     if sentinel_host:
         _logger.debug(
             "HTTP sessions stored in Redis with prefix '%s'. "
