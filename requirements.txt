@@ -1,6 +1,3 @@
 # generated from manifests external_dependencies
-azure-identity
-azure-storage-blob
-prometheus_client
-python-json-logger
+boto3
 redis

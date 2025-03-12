@@ -1,3 +1,5 @@
+from typing import Union
+
 _MAP = {
     "y": True,
     "yes": True,

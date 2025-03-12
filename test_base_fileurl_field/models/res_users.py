@@ -4,7 +4,6 @@ from odoo import fields, models
 
 
 class ResUsers(models.Model):
-
     _inherit = "res.users"
 
     partner_url_file = fields.FileURL(related="partner_id.url_file")
