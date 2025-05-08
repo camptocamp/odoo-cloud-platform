@@ -6,7 +6,6 @@ exclude: |
   ^base_fileurl_field/|
   ^cloud_platform_exoscale/|
   ^cloud_platform_ovh/|
-  ^monitoring_log_requests/|
   ^monitoring_statsd/|
   ^test_base_fileurl_field/|
   # END NOT INSTALLABLE ADDONS
