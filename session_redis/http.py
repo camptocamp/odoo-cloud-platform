@@ -44,6 +44,8 @@ anon_expiration = os.getenv("ODOO_SESSION_REDIS_EXPIRATION_ANONYMOUS")
 ssl = os.getenv("ODOO_SESSION_REDIS_SSL", "1")
 ssl_cert_reqs = os.getenv("ODOO_SESSION_REDIS_SSL_CERT_REQS", "1")
 redis_cluster = os.getenv("ODOO_SESSION_REDIS_CLUSTER", "0")
+
+
 @lazy_property
 def session_store(self):
     if sentinel_host:
@@ -57,12 +59,16 @@ def session_store(self):
             port=port,
             password=password,
             ssl=is_true(ssl),
-            ssl_cert_reqs=is_true(ssl_cert_reqs))
+            ssl_cert_reqs=is_true(ssl_cert_reqs),
+        )
     else:
         redis_client = redis.Redis(
-            host=host, port=port, password=password,
+            host=host,
+            port=port,
+            password=password,
             ssl=is_true(ssl),
-            ssl_cert_reqs=is_true(ssl_cert_reqs))
+            ssl_cert_reqs=is_true(ssl_cert_reqs),
+        )
     return RedisSessionStore(
         redis=redis_client,
         prefix=prefix,
