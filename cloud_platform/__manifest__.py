@@ -17,5 +17,5 @@
     ],
     "website": "https://github.com/camptocamp/odoo-cloud-platform",
     "data": [],
-    "installable": True,
+     "installable": False,
 }
