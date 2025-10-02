@@ -1,8 +1,8 @@
 
 <!-- /!\ Non OCA Context : Set here the badge of your runbot / runboat instance. -->
-[![Pre-commit Status](https://github.com/camptocamp/odoo-cloud-platform/actions/workflows/pre-commit.yml/badge.svg?branch=18.0)](https://github.com/camptocamp/odoo-cloud-platform/actions/workflows/pre-commit.yml?query=branch%3A18.0)
-[![Build Status](https://github.com/camptocamp/odoo-cloud-platform/actions/workflows/test.yml/badge.svg?branch=18.0)](https://github.com/camptocamp/odoo-cloud-platform/actions/workflows/test.yml?query=branch%3A18.0)
-[![codecov](https://codecov.io/gh/camptocamp/odoo-cloud-platform/branch/18.0/graph/badge.svg)](https://codecov.io/gh/camptocamp/odoo-cloud-platform)
+[![Pre-commit Status](https://github.com/camptocamp/odoo-cloud-platform/actions/workflows/pre-commit.yml/badge.svg?branch=19.0)](https://github.com/camptocamp/odoo-cloud-platform/actions/workflows/pre-commit.yml?query=branch%3A19.0)
+[![Build Status](https://github.com/camptocamp/odoo-cloud-platform/actions/workflows/test.yml/badge.svg?branch=19.0)](https://github.com/camptocamp/odoo-cloud-platform/actions/workflows/test.yml?query=branch%3A19.0)
+[![codecov](https://codecov.io/gh/camptocamp/odoo-cloud-platform/branch/19.0/graph/badge.svg)](https://codecov.io/gh/camptocamp/odoo-cloud-platform)
 <!-- /!\ Non OCA Context : Set here the badge of your translation instance. -->
 
 <!-- /!\ do not modify above this line -->
@@ -200,8 +200,11 @@ that explains its license.
 
 # updating the template to create new branch XX.0
 
-To generate the new branch for the next version of odoo, please update the template with : 
+To generate the new branch for the next version of odoo, please update the template with the OCA. 
+You can find the src template here https://github.com/OCA/oca-addons-repo-template.
+
+to update the template with the same answer :
 
 ```
-copier update --UNSAFE
+copier update --trust -f --data odoo_version="XX.0"
 ```
