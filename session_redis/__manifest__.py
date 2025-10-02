@@ -18,5 +18,5 @@
         "python": ["redis"],
     },
     "website": "https://github.com/camptocamp/odoo-cloud-platform",
-     "installable": False,
+    "installable": False,
 }
