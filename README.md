@@ -197,3 +197,11 @@ that explains its license.
 
 ----
 <!-- /!\ Non OCA Context : Set here the full description of your organization. -->
+
+# updating the template to create new branch XX.0
+
+To generate the new branch for the next version of odoo, please update the template with : 
+
+```
+copier update --UNSAFE
+```

@@ -13,10 +13,10 @@ github_enable_stale_action: true
 github_enforce_dev_status_compatibility: false
 include_wkhtmltopdf: false
 odoo_test_flavor: Both
-odoo_version: 18.0
+odoo_version: 17.0
 org_name: Camptocamp
 org_slug: camptocamp
-rebel_module_groups:
+rebel_module_groups: []
 repo_description: 'Tools to run Odoo on a cloud platform.'
 repo_name: Odoo Cloud Addons
 repo_slug: odoo-cloud-platform
