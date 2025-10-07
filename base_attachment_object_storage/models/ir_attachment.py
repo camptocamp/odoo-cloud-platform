@@ -47,9 +47,7 @@ class IrAttachment(models.Model):
     def is_storage_disabled(storage=None, log=True):
         msg = _("Storages are disabled (see environment configuration).")
         if storage:
-            msg = _("Storage '%s' is disabled (see environment configuration).") % (
-                storage,
-            )
+            msg = _(f"Storage '{storage}' is disabled (see environment configuration).")
         is_disabled = is_true(os.environ.get("DISABLE_ATTACHMENT_STORAGE"))
         if is_disabled and log:
             _logger.warning(msg)
@@ -124,7 +122,7 @@ class IrAttachment(models.Model):
         domain = []
         storage_config = self._get_storage_force_db_config()
         for mimetype_key, limit in storage_config.items():
-            part = [("mimetype", "=like", "{}%".format(mimetype_key))]
+            part = [("mimetype", "=like", f"{mimetype_key}%")]
             if limit:
                 part = AND([part, [("file_size", "<=", limit)]])
             domain = OR([domain, part])
@@ -207,15 +205,15 @@ class IrAttachment(models.Model):
 
     def _store_file_read(self, fname):
         storage = fname.partition("://")[0]
-        raise NotImplementedError("No implementation for %s" % (storage,))
+        raise NotImplementedError(f"No implementation for {storage}")
 
     def _store_file_write(self, key, bin_data):
         storage = self.storage()
-        raise NotImplementedError("No implementation for %s" % (storage,))
+        raise NotImplementedError(f"No implementation for {storage}")
 
     def _store_file_delete(self, fname):
         storage = fname.partition("://")[0]
-        raise NotImplementedError("No implementation for %s" % (storage,))
+        raise NotImplementedError(f"No implementation for {storage}")
 
     @api.model
     def _file_write(self, bin_data, checksum):
@@ -249,7 +247,7 @@ class IrAttachment(models.Model):
         for store_name in self._get_stores():
             if self.is_storage_disabled(store_name):
                 continue
-            uri = "{}://".format(store_name)
+            uri = f"{store_name}://"
             if fname.startswith(uri):
                 return True
         return False
@@ -279,7 +277,7 @@ class IrAttachment(models.Model):
 
     def _move_attachment_to_store(self):
         self.ensure_one()
-        _logger.info("inspecting attachment %s (%d)", self.name, self.id)
+        _logger.info(f"inspecting attachment {self.name} ({self.id})")
         fname = self.store_fname
         storage = fname.partition("://")[0]
         if self.is_storage_disabled(storage):
@@ -287,7 +285,7 @@ class IrAttachment(models.Model):
         if fname:
             # migrating from filesystem filestore
             # or from the old 'store_fname' without the bucket name
-            _logger.info("moving %s on the object storage", fname)
+            _logger.info(f"moving {fname} on the object storage")
             self.write(
                 {
                     "datas": self.datas,
@@ -298,7 +296,7 @@ class IrAttachment(models.Model):
                     "mimetype": self.mimetype,
                 }
             )
-            _logger.info("moved %s on the object storage", fname)
+            _logger.info(f"moved {fname} on the object storage")
             return self._full_path(fname)
         elif self.db_datas:
             _logger.info("moving on the object storage from database")
@@ -340,7 +338,7 @@ class IrAttachment(models.Model):
             (
                 normalize_domain(
                     [
-                        ("store_fname", "=like", "{}://%".format(storage)),
+                        ("store_fname", "=like", f"{storage}://%"),
                         # for res_field, see comment in
                         # _force_storage_to_object_storage
                         "|",
@@ -360,7 +358,7 @@ class IrAttachment(models.Model):
             total = len(attachment_ids)
             start_time = time.time()
             _logger.info(
-                "Moving %d attachments from %s to" " DB for fast access", total, storage
+                f"Moving {total} attachments from {storage} to DB for fast access"
             )
             current = 0
             for attachment_id in attachment_ids:
@@ -379,10 +377,7 @@ class IrAttachment(models.Model):
                 new_env.cr.commit()
                 if current % 100 == 0 or total - current == 0:
                     _logger.info(
-                        "attachment %s/%s after %.2fs",
-                        current,
-                        total,
-                        time.time() - start_time,
+                        f"attachment {current}/{total} after {time.time() - start_time:.2f}s"
                     )
 
     @api.model
@@ -399,7 +394,7 @@ class IrAttachment(models.Model):
 
         domain = [
             "!",
-            ("store_fname", "=like", "{}://%".format(storage)),
+            ("store_fname", "=like", f"{storage}://%"),
             "|",
             ("res_field", "=", False),
             ("res_field", "!=", False),
@@ -439,7 +434,7 @@ class IrAttachment(models.Model):
                             files_to_clean.append(path)
                 except psycopg2.OperationalError:
                     _logger.error(
-                        "Could not migrate attachment %s to S3", attachment_id
+                        f"Could not migrate attachment {attachment_id} to S3"
                     )
 
             # delete the files from the filesystem once we know the changes
