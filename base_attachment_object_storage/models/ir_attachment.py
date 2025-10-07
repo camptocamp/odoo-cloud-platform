@@ -11,6 +11,7 @@ import psycopg2
 
 import odoo
 from odoo import _, api, exceptions, models
+from odoo.http import Stream
 from odoo.osv.expression import AND, OR, normalize_domain
 from odoo.tools.safe_eval import const_eval
 
@@ -446,3 +447,23 @@ class IrAttachment(models.Model):
     def _get_stores(self):
         """To get the list of stores activated in the system"""
         return []
+
+    def _to_http_stream(self):
+        """Create a Stream from an ir.attachment record for object storage"""
+        self.ensure_one()
+        
+        # Check if this attachment uses object storage
+        if (self.store_fname and self._is_file_from_a_store(self.store_fname)):
+            stream = Stream(
+                mimetype=self.mimetype,
+                download_name=self.name,
+                etag=self.checksum,
+            )
+            stream.type = "data"
+            stream.data = self.raw
+            stream.last_modified = self.write_date
+            stream.size = len(stream.data)
+            return stream
+        
+        # Fall back to standard behavior
+        return super()._to_http_stream()
