@@ -78,7 +78,7 @@ class IrAttachment(models.Model):
         # Typical example is images of ir.ui.menu which are updated in
         # ir.attachment at every upgrade of the addons
         if update_module:
-            self.env["ir.attachment"].sudo()._force_storage_to_object_storage()
+            # self.env["ir.attachment"].sudo()._force_storage_to_object_storage()
 
     @property
     def _object_storage_default_force_db_config(self):
