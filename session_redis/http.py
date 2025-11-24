@@ -1,12 +1,11 @@
 # Copyright 2016-2024 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
-
+import functools
 import logging
 import os
 
 from odoo import http
 from odoo.tools import config
-from odoo.tools.func import lazy_property
 
 from .session import RedisSessionStore
 from .strtobool import strtobool
@@ -46,7 +45,7 @@ ssl_cert_reqs = os.getenv("ODOO_SESSION_REDIS_SSL_CERT_REQS", "1")
 redis_cluster = os.getenv("ODOO_SESSION_REDIS_CLUSTER", "0")
 
 
-@lazy_property
+@functools.cached_property
 def session_store(self):
     if sentinel_host:
         sentinel = Sentinel([(sentinel_host, sentinel_port)], password=password)
@@ -108,5 +107,14 @@ if is_true(os.getenv("ODOO_SESSION_REDIS")):
             port,
         )
     http.Application.session_store = session_store
+    # cached_property needs __set_name__ to be called, but it is not called
+    # automatically since we are attaching the property after instance creation.
+    # So we have to do it manually
+    # See: https://docs.python.org/3/reference/datamodel.html#object.__set_name__
+    # Credit: https://stackoverflow.com/a/62161136
+    http.Application.session_store.__set_name__(
+        http.Application,
+        "session_store",
+    )
     # clean the existing sessions on the file system
     purge_fs_sessions(config.session_dir)
