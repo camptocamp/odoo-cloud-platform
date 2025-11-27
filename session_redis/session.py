@@ -96,6 +96,10 @@ class RedisSessionStore(SessionStore):
             "utf-8"
         )
         if self.redis.set(key, data):
+            if type(expiration) != int:
+                expiration = DEFAULT_SESSION_TIMEOUT_ANONYMOUS
+            if expiration == 0:
+                expiration = DEFAULT_SESSION_TIMEOUT_ANONYMOUS
             return self.redis.expire(key, expiration)
 
     def delete(self, session):
