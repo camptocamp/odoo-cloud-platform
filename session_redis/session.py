@@ -1,9 +1,10 @@
 # Copyright 2016-2024 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
+import builtins
 import json
 import logging
-from typing import TypeAlias, List
+from typing import TypeAlias
 
 import odoo.http
 from odoo.http import SESSION_LIFETIME
@@ -96,9 +97,8 @@ class RedisSessionStore(SessionStore):
             "utf-8"
         )
         if self.redis.set(key, data):
-            if type(expiration) != int:
+            if not (expiration and isinstance(expiration, int)):
                 expiration = DEFAULT_SESSION_TIMEOUT_ANONYMOUS
-            if expiration == 0:
                 expiration = DEFAULT_SESSION_TIMEOUT_ANONYMOUS
             return self.redis.expire(key, expiration)
 
@@ -110,8 +110,7 @@ class RedisSessionStore(SessionStore):
     def get(self, sid):
         if not self.is_valid_key(sid):
             _logger.debug(
-                f"session with invalid sid '{sid}' has been asked, "
-                "returning a new one"
+                f"session with invalid sid '{sid}' has been asked, returning a new one"
             )
             return self.new()
 
@@ -134,7 +133,7 @@ class RedisSessionStore(SessionStore):
         return self.session_class(data, sid, False)
 
     def list(self):
-        keys = self.redis.keys("%s*" % self.prefix)
+        keys = self.redis.keys(f"{self.prefix}*")
         _logger.debug("a listing redis keys has been called")
         return [key[len(self.prefix) :] for key in keys]
 
@@ -162,7 +161,9 @@ class RedisSessionStore(SessionStore):
         """
         return
 
-    def get_missing_session_identifiers(self, identifiers: List[PartialSid]) -> set[PartialSid]:
+    def get_missing_session_identifiers(
+        self, identifiers: builtins.list[PartialSid]
+    ) -> set[PartialSid]:
         """
         Given a list of partial session ids, return a set of those session ids
         which no longer exist in the keystore.
@@ -188,7 +189,7 @@ class RedisSessionStore(SessionStore):
 
         return not_found
 
-    def delete_from_identifiers(self, identifiers: List[PartialSid]):
+    def delete_from_identifiers(self, identifiers: builtins.list[PartialSid]):
         """
         Given a list of partial session ids, remove any that are in the session store.
 
@@ -198,10 +199,13 @@ class RedisSessionStore(SessionStore):
         """
         patterns_to_unlink = []
         for identifier in identifiers:
-            # Avoid removing a session if it does not match an identifier.
-            # See this same comment in odoo.http.FileSessionStore.delete_from_identifiers.
+            # Avoid removing a session if it does not match an identifier. See this same
+            # comment in odoo.http.FileSessionStore.delete_from_identifiers.
             if not odoo.http._session_identifier_re.match(identifier):
-                raise ValueError("Identifier format incorrect, did you pass in a string instead of a list?")
+                raise ValueError(
+                    "Identifier format incorrect, did you pass in a string instead ",
+                    "of a list?",
+                )
             patterns_to_unlink.append(f"{self.prefix}{identifier}*")
         keys_to_unlink = []
         for pattern in patterns_to_unlink:
