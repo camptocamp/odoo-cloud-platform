@@ -6,17 +6,23 @@ import os
 import threading
 import uuid
 
+import pythonjsonlogger
+
 from odoo import http
 
 from .strtobool import strtobool
 
 _logger = logging.getLogger(__name__)
 
-try:
-    from pythonjsonlogger import jsonlogger
-except ImportError:
+# Module ``jsonlogger`` of package ``python-json-logger`` is deprecated since version
+# 3.1.0, keep it for backward compatibility
+if hasattr(pythonjsonlogger, "json"):
+    jsonlogger = pythonjsonlogger.json
+elif hasattr(pythonjsonlogger, "jsonlogger"):
+    jsonlogger = pythonjsonlogger.jsonlogger
+else:
     jsonlogger = None  # noqa
-    _logger.debug("Cannot 'import pythonjsonlogger'.")
+    _logger.debug("Cannot import 'json' or 'jsonlogger' from 'pythonjsonlogger'.")
 
 
 def is_true(strval):
