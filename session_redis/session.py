@@ -176,17 +176,10 @@ class RedisSessionStore(SessionStore):
         identifiers = set(identifiers)
         not_found = set()
         for partial_sid in identifiers:
-            try:
-                next(
-                    self.redis.scan_iter(
-                        match=f"{self.prefix}{partial_sid}*",
-                        count=1,
-                    )
-                )
-            except StopIteration:
-                # No matches found
+            key = f"session::{self.prefix}:{partial_sid}*"
+            match = self.redis.keys(pattern=key)
+            if not match:
                 not_found.add(partial_sid)
-
         return not_found
 
     def delete_from_identifiers(self, identifiers: builtins.list[PartialSid]):
