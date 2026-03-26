@@ -1,8 +1,10 @@
 # Copyright 2016-2019 Camptocamp SA
+# Copyright 2026 Ledo Enterprises
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
 import json
 import logging
+import os
 import time
 
 from odoo import models
@@ -10,6 +12,49 @@ from odoo.http import request as http_request
 from odoo.tools.config import config
 
 _logger = logging.getLogger("monitoring.http.requests")
+
+# Maximum size (bytes) for serialized params in log entries.
+# Set MONITORING_LOG_PARAMS_MAX_SIZE=0 to disable param logging.
+PARAMS_MAX_SIZE = int(os.environ.get("MONITORING_LOG_PARAMS_MAX_SIZE", "4096"))
+
+
+def _sanitize_params(params, max_size=PARAMS_MAX_SIZE):
+    """Return a JSON-safe summary of RPC params, excluding binary data.
+
+    Only keeps scalar values (str, int, float, bool, None) and lists of IDs.
+    Truncates the serialized result to max_size bytes.
+    """
+    if not params or max_size <= 0:
+        return None
+
+    def _clean(val, depth=0):
+        if depth > 3:
+            return "..."
+        if val is None or isinstance(val, (bool, int, float)):
+            return val
+        if isinstance(val, str):
+            if len(val) > 1000:
+                return f"<str len={len(val)}>"
+            return val
+        if isinstance(val, bytes):
+            return f"<bytes len={len(val)}>"
+        if isinstance(val, (list, tuple)):
+            if all(isinstance(v, int) for v in val):
+                return list(val)
+            return [_clean(v, depth + 1) for v in val[:20]]
+        if isinstance(val, dict):
+            return {
+                k: _clean(v, depth + 1)
+                for k, v in list(val.items())[:30]
+                if not isinstance(v, bytes)
+            }
+        return str(type(val).__name__)
+
+    cleaned = _clean(params)
+    result = json.dumps(cleaned, default=str)
+    if len(result) > max_size:
+        return result[:max_size] + "..."
+    return cleaned
 
 
 class IrHttp(models.AbstractModel):
@@ -71,16 +116,22 @@ class IrHttp(models.AbstractModel):
                     "db": request.session.get("db"),
                 }
             )
-        if hasattr(request, "params"):
+        if hasattr(request, "params") and request.params:
             info.update(
                 {
                     "model": request.params.get("model"),
                     "model_method": request.params.get("method"),
-                    "workflow_signal": request.params.get("signal"),
                 }
             )
+            if PARAMS_MAX_SIZE > 0:
+                args = request.params.get("args")
+                kwargs = request.params.get("kwargs")
+                if args:
+                    info["args"] = _sanitize_params(args)
+                if kwargs:
+                    info["kwargs"] = _sanitize_params(kwargs)
         return info
 
     @classmethod
     def _monitoring_log(cls, info):
-        _logger.info(json.dumps(info))
+        _logger.info(json.dumps(info, default=str))
