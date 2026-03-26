@@ -29,8 +29,8 @@ class IrHttp(models.AbstractModel):
 
     @classmethod
     def _monitoring_blacklist(cls, request):
-        path_info = request.httprequest.environ.get("PATH_INFO")
-        if path_info.startswith("/longpolling/"):
+        path_info = request.httprequest.environ.get("PATH_INFO", "")
+        if path_info.startswith(("/longpolling/", "/websocket")):
             return True
         return False
 
@@ -62,8 +62,8 @@ class IrHttp(models.AbstractModel):
             # response things
             "response_status_code": None,
         }
-        if hasattr(request, "status_code"):
-            info["status_code"] = response.status_code
+        if hasattr(response, "status_code"):
+            info["response_status_code"] = response.status_code
         if hasattr(request, "session"):
             info.update(
                 {
