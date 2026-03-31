@@ -6,7 +6,6 @@ import os
 import re
 
 from odoo import api, models
-from odoo.tools.config import config
 
 from .strtobool import strtobool
 
@@ -22,7 +21,7 @@ class CloudPlatform(models.AbstractModel):
     _description = "cloud.platform"
 
     def _get_running_env(self):
-        environment_name = config["running_env"]
+        environment_name = os.environ.get("RUNNING_ENV")
         if environment_name.startswith("labs"):
             # We allow to have environments such as 'labs-logistics'
             # or 'labs-finance', in order to have the matching ribbon.
