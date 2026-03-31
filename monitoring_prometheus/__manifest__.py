@@ -4,17 +4,12 @@
 
 {
     "name": "Monitoring: Prometheus Metrics",
-    "version": "16.0.1.0.0",
+    "version": "16.0.1.0.1",
     "author": "Camptocamp,Odoo Community Association (OCA)",
     "license": "AGPL-3",
-    "category": "category",
-    "depends": [
-        "base",
-        "web",
-        "server_environment",
-    ],
+    "category": "Extra Tools",
+    "depends": ["base", "web"],
     "website": "https://github.com/camptocamp/odoo-cloud-platform",
-    "data": [],
     "external_dependencies": {
         "python": ["prometheus_client"],
     },
