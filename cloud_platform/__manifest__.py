@@ -9,13 +9,7 @@
     "author": "Camptocamp,Odoo Community Association (OCA)",
     "license": "AGPL-3",
     "category": "Extra Tools",
-    "depends": [
-        "session_redis",
-        "monitoring_status",
-        "logging_json",
-        "server_environment",  # OCA/server-tools
-    ],
+    "depends": ["session_redis", "monitoring_status", "logging_json"],
     "website": "https://github.com/camptocamp/odoo-cloud-platform",
-    "data": [],
     "installable": False,
 }
