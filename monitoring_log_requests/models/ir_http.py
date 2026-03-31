@@ -116,11 +116,31 @@ class IrHttp(models.AbstractModel):
                     "db": request.session.get("db"),
                 }
             )
+
+        # JSON-RPC often hides model/method in jsonrequest
+        if hasattr(request, "jsonrequest"):
+            jr = request.jsonrequest
+            if jr and "params" in jr:
+                p = jr["params"]
+                info.update(
+                    {
+                        "model": p.get("model") or info.get("model"),
+                        "model_method": p.get("method") or info.get("model_method"),
+                    }
+                )
+            if not info.get("model") and jr:
+                info.update(
+                    {
+                        "model": jr.get("model") or info.get("model"),
+                        "model_method": jr.get("method") or info.get("model_method"),
+                    }
+                )
+
         if hasattr(request, "params") and request.params:
             info.update(
                 {
-                    "model": request.params.get("model"),
-                    "model_method": request.params.get("method"),
+                    "model": request.params.get("model") or info.get("model"),
+                    "model_method": request.params.get("method") or info.get("model_method"),
                 }
             )
             if PARAMS_MAX_SIZE > 0:
