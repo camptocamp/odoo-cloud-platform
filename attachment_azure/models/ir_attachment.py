@@ -5,6 +5,7 @@ import io
 import logging
 import os
 import re
+import traceback
 from datetime import datetime, timedelta
 
 from odoo import _, api, exceptions, models
@@ -177,8 +178,10 @@ class IrAttachment(models.Model):
                 try:
                     blob_client.upload_blob(file, blob_type="BlockBlob")
                 except ResourceExistsError:
-                    _logger.exception(
-                        "Trying to re create an existing resource %s" % filename
+                    _logger.error(
+                        "Trying to re create an existing resource %s:\n%s",
+                        filename,
+                        "".join(traceback.format_stack()),
                     )
                 except HttpResponseError as error:
                     # log verbose error from azure, return short message for user
