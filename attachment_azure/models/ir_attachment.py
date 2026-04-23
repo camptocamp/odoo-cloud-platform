@@ -177,8 +177,12 @@ class IrAttachment(models.Model):
                 try:
                     blob_client.upload_blob(file, blob_type="BlockBlob")
                 except ResourceExistsError:
-                    _logger.exception(
-                        "Trying to re create an existing resource %s" % filename
+                    (
+                        _logger.exception(
+                            "Trying to re create an existing resource %s",
+                            filename,
+                            stack_info=True,
+                        ),
                     )
                 except HttpResponseError as error:
                     # log verbose error from azure, return short message for user
