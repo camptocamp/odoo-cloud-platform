@@ -63,14 +63,24 @@ class IrHttp(models.AbstractModel):
     @classmethod
     def _dispatch(cls, endpoint):
         begin = time.time()
-        response = super()._dispatch(endpoint)
-        end = time.time()
-        if not cls._monitoring_blacklist(http_request) and cls._monitoring_filter(
-            http_request
-        ):
-            info = cls._monitoring_info(http_request, response, begin, end)
-            cls._monitoring_log(info)
-        return response
+        response = None
+        exc = None
+        try:
+            response = super()._dispatch(endpoint)
+            return response
+        except Exception as e:
+            exc = e
+            raise
+        finally:
+            end = time.time()
+            if not cls._monitoring_blacklist(http_request) and cls._monitoring_filter(
+                http_request
+            ):
+                info = cls._monitoring_info(http_request, response, begin, end)
+                if exc is not None:
+                    info["exception_type"] = type(exc).__name__
+                    info["exception_message"] = str(exc)[:1000]
+                cls._monitoring_log(info, exc=exc)
 
     @classmethod
     def _monitoring_blacklist(cls, request):
@@ -153,5 +163,9 @@ class IrHttp(models.AbstractModel):
         return info
 
     @classmethod
-    def _monitoring_log(cls, info):
-        _logger.info(json.dumps(info, default=str))
+    def _monitoring_log(cls, info, exc=None):
+        payload = json.dumps(info, default=str)
+        if exc is None:
+            _logger.info(payload)
+        else:
+            _logger.error(payload, exc_info=(type(exc), exc, exc.__traceback__))
