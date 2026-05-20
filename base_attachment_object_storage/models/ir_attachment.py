@@ -33,7 +33,7 @@ def clean_fs(files):
                 _logger.info(
                     "_file_delete could not unlink %s", full_path, exc_info=True
                 )
-            except IOError:
+            except OSError:
                 # Harmless and needed for race conditions
                 _logger.info(
                     "_file_delete could not unlink %s", full_path, exc_info=True
@@ -124,7 +124,7 @@ class IrAttachment(models.Model):
         domain = []
         storage_config = self._get_storage_force_db_config()
         for mimetype_key, limit in storage_config.items():
-            part = [("mimetype", "=like", "{}%".format(mimetype_key))]
+            part = [("mimetype", "=like", f"{mimetype_key}%")]
             if limit:
                 part = AND([part, [("file_size", "<=", limit)]])
             domain = OR([domain, part])
@@ -236,7 +236,7 @@ class IrAttachment(models.Model):
             # using SQL to include files hidden through unlink or due to record
             # rules
             cr.execute(
-                "SELECT COUNT(*) FROM ir_attachment " "WHERE store_fname = %s", (fname,)
+                "SELECT COUNT(*) FROM ir_attachment WHERE store_fname = %s", (fname,)
             )
             count = cr.fetchone()[0]
             if not count:
@@ -249,7 +249,7 @@ class IrAttachment(models.Model):
         for store_name in self._get_stores():
             if self.is_storage_disabled(store_name):
                 continue
-            uri = "{}://".format(store_name)
+            uri = f"{store_name}://"
             if fname.startswith(uri):
                 return True
         return False
@@ -340,7 +340,7 @@ class IrAttachment(models.Model):
             (
                 normalize_domain(
                     [
-                        ("store_fname", "=like", "{}://%".format(storage)),
+                        ("store_fname", "=like", f"{storage}://%"),
                         # for res_field, see comment in
                         # _force_storage_to_object_storage
                         "|",
@@ -360,7 +360,7 @@ class IrAttachment(models.Model):
             total = len(attachment_ids)
             start_time = time.time()
             _logger.info(
-                "Moving %d attachments from %s to" " DB for fast access", total, storage
+                "Moving %d attachments from %s to DB for fast access", total, storage
             )
             current = 0
             for attachment_id in attachment_ids:
@@ -399,7 +399,7 @@ class IrAttachment(models.Model):
 
         domain = [
             "!",
-            ("store_fname", "=like", "{}://%".format(storage)),
+            ("store_fname", "=like", f"{storage}://%"),
             "|",
             ("res_field", "=", False),
             ("res_field", "!=", False),

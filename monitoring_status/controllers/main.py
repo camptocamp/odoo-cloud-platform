@@ -7,7 +7,6 @@ import logging
 import werkzeug
 
 from odoo import http
-
 from odoo.addons.web.controllers.main import ensure_db
 
 

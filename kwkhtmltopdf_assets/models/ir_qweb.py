@@ -6,7 +6,6 @@ from odoo.tools import config
 
 
 class IrQweb(models.AbstractModel):
-
     _inherit = "ir.qweb"
 
     def _generate_asset_nodes_cache(
