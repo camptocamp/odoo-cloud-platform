@@ -18,4 +18,4 @@ def strtobool(value):
     try:
         return _MAP[str(value).lower()]
     except KeyError as error:
-        raise ValueError('"{}" is not a valid bool value'.format(value)) from error
+        raise ValueError(f'"{value}" is not a valid bool value') from error

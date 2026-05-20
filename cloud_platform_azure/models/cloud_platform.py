@@ -5,7 +5,6 @@ import os
 import re
 
 from odoo import api, models
-
 from odoo.addons.cloud_platform.models.cloud_platform import (
     FilestoreKind,
     PlatformConfig,
@@ -19,13 +18,13 @@ class CloudPlatform(models.AbstractModel):
 
     @api.model
     def _filestore_kinds(self):
-        kinds = super(CloudPlatform, self)._filestore_kinds()
+        kinds = super()._filestore_kinds()
         kinds["azure"] = AZURE_STORE_KIND
         return kinds
 
     @api.model
     def _platform_kinds(self):
-        kinds = super(CloudPlatform, self)._platform_kinds()
+        kinds = super()._platform_kinds()
         kinds.append("azure")
         return kinds
 

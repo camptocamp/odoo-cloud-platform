@@ -60,7 +60,7 @@ class RedisSessionStore(SessionStore):
             else:
                 user_msg = "anonymous user"
             _logger.debug(
-                "saving session with key '%s' and " "expiration of %s seconds for %s",
+                "saving session with key '%s' and expiration of %s seconds for %s",
                 key,
                 expiration,
                 user_msg,
@@ -80,7 +80,7 @@ class RedisSessionStore(SessionStore):
     def get(self, sid):
         if not self.is_valid_key(sid):
             _logger.debug(
-                "session with invalid sid '%s' has been asked, " "returning a new one",
+                "session with invalid sid '%s' has been asked, returning a new one",
                 sid,
             )
             return self.new()
