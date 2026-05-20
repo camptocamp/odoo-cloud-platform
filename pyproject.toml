@@ -1,0 +1,54 @@
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+
+[tool.ruff.lint]
+select = [
+    "E",        # pycodestyle errors
+    "W",        # pycodestyle warnings
+    "C90",      # mccabe
+    "F",        # pyflakes
+    "UP",       # pyupgrade
+    "I",        # isort
+]
+ignore = [
+    "UP031",    # pyupgrade: use format specifiers instead of percent format (no autofix)
+]
+
+[tool.ruff.lint.pycodestyle]
+# line-length is set in [tool.ruff], and it's used by the formatter
+# in case the formatted can't autofix the line length, it will be reported as an error
+# if it exceeds the max-line-length set here. We use 320 which is maximum allowed value.
+max-line-length = 320
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+force-wrap-aliases = true
+known-third-party = [
+    "anthem",
+    "git",
+    "invoke",
+    "marabunta",
+    "openupgradelib",
+    "pkg_resources",
+    "psycopg2",
+    "requests",
+    "setuptools",
+    "urllib2",
+    "yaml",
+]
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "odoo",
+    "first-party",
+    "local-folder",
+]
+
+[tool.ruff.lint.isort.sections]
+odoo = ["odoo"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 16
