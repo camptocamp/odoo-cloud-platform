@@ -1,8 +1,10 @@
 # Copyright 2016-2019 Camptocamp SA
+# Copyright 2026 Ledo Enterprises
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
 import json
 import logging
+import os
 import time
 
 from odoo import models
@@ -11,6 +13,49 @@ from odoo.tools.config import config
 
 _logger = logging.getLogger("monitoring.http.requests")
 
+# Maximum size (bytes) for serialized params in log entries.
+# Set MONITORING_LOG_PARAMS_MAX_SIZE=0 to disable param logging.
+PARAMS_MAX_SIZE = int(os.environ.get("MONITORING_LOG_PARAMS_MAX_SIZE", "4096"))
+
+
+def _sanitize_params(params, max_size=PARAMS_MAX_SIZE):
+    """Return a JSON-safe summary of RPC params, excluding binary data.
+
+    Only keeps scalar values (str, int, float, bool, None) and lists of IDs.
+    Truncates the serialized result to max_size bytes.
+    """
+    if not params or max_size <= 0:
+        return None
+
+    def _clean(val, depth=0):
+        if depth > 3:
+            return "..."
+        if val is None or isinstance(val, (bool, int, float)):
+            return val
+        if isinstance(val, str):
+            if len(val) > 1000:
+                return f"<str len={len(val)}>"
+            return val
+        if isinstance(val, bytes):
+            return f"<bytes len={len(val)}>"
+        if isinstance(val, (list, tuple)):
+            if all(isinstance(v, int) for v in val):
+                return list(val)
+            return [_clean(v, depth + 1) for v in val[:20]]
+        if isinstance(val, dict):
+            return {
+                k: _clean(v, depth + 1)
+                for k, v in list(val.items())[:30]
+                if not isinstance(v, bytes)
+            }
+        return str(type(val).__name__)
+
+    cleaned = _clean(params)
+    result = json.dumps(cleaned, default=str)
+    if len(result) > max_size:
+        return result[:max_size] + "..."
+    return cleaned
+
 
 class IrHttp(models.AbstractModel):
     _inherit = "ir.http"
@@ -18,19 +63,29 @@ class IrHttp(models.AbstractModel):
     @classmethod
     def _dispatch(cls, endpoint):
         begin = time.time()
-        response = super()._dispatch(endpoint)
-        end = time.time()
-        if not cls._monitoring_blacklist(http_request) and cls._monitoring_filter(
-            http_request
-        ):
-            info = cls._monitoring_info(http_request, response, begin, end)
-            cls._monitoring_log(info)
-        return response
+        response = None
+        exc = None
+        try:
+            response = super()._dispatch(endpoint)
+            return response
+        except Exception as e:
+            exc = e
+            raise
+        finally:
+            end = time.time()
+            if not cls._monitoring_blacklist(http_request) and cls._monitoring_filter(
+                http_request
+            ):
+                info = cls._monitoring_info(http_request, response, begin, end)
+                if exc is not None:
+                    info["exception_type"] = type(exc).__name__
+                    info["exception_message"] = str(exc)[:1000]
+                cls._monitoring_log(info, exc=exc)
 
     @classmethod
     def _monitoring_blacklist(cls, request):
-        path_info = request.httprequest.environ.get("PATH_INFO")
-        if path_info.startswith("/longpolling/"):
+        path_info = request.httprequest.environ.get("PATH_INFO", "")
+        if path_info.startswith(("/longpolling/", "/websocket")):
             return True
         return False
 
@@ -62,8 +117,8 @@ class IrHttp(models.AbstractModel):
             # response things
             "response_status_code": None,
         }
-        if hasattr(request, "status_code"):
-            info["status_code"] = response.status_code
+        if hasattr(response, "status_code"):
+            info["response_status_code"] = response.status_code
         if hasattr(request, "session"):
             info.update(
                 {
@@ -71,16 +126,46 @@ class IrHttp(models.AbstractModel):
                     "db": request.session.get("db"),
                 }
             )
-        if hasattr(request, "params"):
+
+        # JSON-RPC often hides model/method in jsonrequest
+        if hasattr(request, "jsonrequest"):
+            jr = request.jsonrequest
+            if jr and "params" in jr:
+                p = jr["params"]
+                info.update(
+                    {
+                        "model": p.get("model") or info.get("model"),
+                        "model_method": p.get("method") or info.get("model_method"),
+                    }
+                )
+            if not info.get("model") and jr:
+                info.update(
+                    {
+                        "model": jr.get("model") or info.get("model"),
+                        "model_method": jr.get("method") or info.get("model_method"),
+                    }
+                )
+
+        if hasattr(request, "params") and request.params:
             info.update(
                 {
-                    "model": request.params.get("model"),
-                    "model_method": request.params.get("method"),
-                    "workflow_signal": request.params.get("signal"),
+                    "model": request.params.get("model") or info.get("model"),
+                    "model_method": request.params.get("method") or info.get("model_method"),
                 }
             )
+            if PARAMS_MAX_SIZE > 0:
+                args = request.params.get("args")
+                kwargs = request.params.get("kwargs")
+                if args:
+                    info["args"] = _sanitize_params(args)
+                if kwargs:
+                    info["kwargs"] = _sanitize_params(kwargs)
         return info
 
     @classmethod
-    def _monitoring_log(cls, info):
-        _logger.info(json.dumps(info))
+    def _monitoring_log(cls, info, exc=None):
+        payload = json.dumps(info, default=str)
+        if exc is None:
+            _logger.info(payload)
+        else:
+            _logger.error(payload, exc_info=(type(exc), exc, exc.__traceback__))
