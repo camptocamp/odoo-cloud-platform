@@ -4,12 +4,12 @@
 
 {
     "name": "Monitoring: Status",
-    "version": "18.0.1.0.0",
+    "version": "19.0.1.0.0",
     "author": "Camptocamp,Odoo Community Association (OCA)",
     "license": "AGPL-3",
     "category": "category",
     "depends": ["base", "web"],
     "website": "https://github.com/camptocamp/odoo-cloud-platform",
     "data": [],
-    "installable": False,
+    "installable": True,
 }
