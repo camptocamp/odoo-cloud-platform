@@ -176,10 +176,17 @@ class RedisSessionStore(SessionStore):
         identifiers = set(identifiers)
         not_found = set()
         for partial_sid in identifiers:
-            key = f"session::{self.prefix}:{partial_sid}*"
-            match = self.redis.keys(pattern=key)
-            if not match:
+            try:
+                next(
+                    self.redis.scan_iter(
+                        match=f"{self.prefix}{partial_sid}*",
+                        count=1,
+                    )
+                )
+            except StopIteration:
+                # No matches found
                 not_found.add(partial_sid)
+
         return not_found
 
     def delete_from_identifiers(self, identifiers: builtins.list[PartialSid]):
@@ -192,12 +199,12 @@ class RedisSessionStore(SessionStore):
         """
         patterns_to_unlink = []
         for identifier in identifiers:
-            # Avoid removing a session if it does not match an identifier. See this same
-            # comment in odoo.http.FileSessionStore.delete_from_identifiers.
+            # Avoid removing a session if it does not match an identifier.
+            # See this same comment in odoo.http.FileSessionStore.delete_from_identifiers.
             if not odoo.http._session_identifier_re.match(identifier):
                 raise ValueError(
-                    "Identifier format incorrect, did you pass in a string instead ",
-                    "of a list?",
+                    "Identifier format incorrect, did you pass in a string instead "
+                    "of a list?"
                 )
             patterns_to_unlink.append(f"{self.prefix}{identifier}*")
         keys_to_unlink = []
