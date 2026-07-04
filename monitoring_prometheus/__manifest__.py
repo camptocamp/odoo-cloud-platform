@@ -4,7 +4,7 @@
 
 {
     "name": "Monitoring: Prometheus Metrics",
-    "version": "18.0.1.0.1",
+    "version": "18.0.1.0.2",
     "author": "Camptocamp,Odoo Community Association (OCA)",
     "license": "AGPL-3",
     "category": "Extra Tools",

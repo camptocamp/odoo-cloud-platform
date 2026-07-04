@@ -15,24 +15,29 @@ def get_process_info():
         ["pid", "name", "memory_full_info", "cmdline", "nice"]
     ):
         try:
-            if process.info["memory_full_info"]:
+            mem = process.info["memory_full_info"]
+            # rss == 0 means a zombie/dying process: skip to avoid
+            # publishing garbage series
+            if mem and mem.rss:
+                # cmdline is None for processes that died mid-iteration
+                cmdline = process.info["cmdline"] or []
                 if process.info["nice"] == 10:
                     ProcessLabel = "workercron"
                 elif process.info["pid"] == 1:
                     ProcessLabel = "dispatcher"
-                elif any("gevent" in x for x in process.info["cmdline"]):
+                elif any("gevent" in x for x in cmdline):
                     ProcessLabel = "gevent"
-                elif any("odoo" in x for x in process.info["cmdline"]):
+                elif any("odoo" in x for x in cmdline):
                     ProcessLabel = "workerhttp"
-                elif any("shell" in x for x in process.cmdline()):
+                elif any("shell" in x for x in cmdline):
                     ProcessLabel = "OdooShell"
                 else:
                     ProcessLabel = "other"
                 MEMORY_USAGE_VMS.labels(ProcessLabel, process.info["pid"]).set(
-                    process.info["memory_full_info"].rss // 1000000
+                    mem.vms // 1000000
                 )
                 MEMORY_USAGE_RSS.labels(ProcessLabel, process.info["pid"]).set(
-                    process.info["memory_full_info"].vms // 1000000
+                    mem.rss // 1000000
                 )
 
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
