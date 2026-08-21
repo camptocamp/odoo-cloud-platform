@@ -1,7 +1,7 @@
 azure-storage-blob==12.16.0
 azure-identity==1.13.0
 boto3==1.26.7
-redis==4.3.4
+redis
 python-json-logger==2.0.4
 statsd==4.0.1
 python-swiftclient==4.1.0
@@ -9,5 +9,5 @@ python-keystoneclient==5.0.0
 keystoneauth1==5.0.0
 # error with 5.x (ConstructorError: could not determine a constructor for the tag '!record')
 PyYAML==6.0
-prometheus_client==0.15.0
-pyopenssl==22.1.0
+prometheus_client
+pyopenssl
