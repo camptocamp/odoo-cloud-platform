@@ -3,14 +3,15 @@
 
 
 {
-    "name": "Monitoring: Prometheus Metrics",
-    "version": "14.0.1.1.0",
+    "name": "Monitoring: Prometheus Metrics for Queue Jobs",
+    "version": "14.0.1.0.0",
     "author": "Camptocamp,Odoo Community Association (OCA)",
     "license": "AGPL-3",
     "category": "category",
-    "depends": ["base", "web", "server_environment"],
+    "depends": ["monitoring_prometheus", "queue_job"],
     "website": "https://github.com/camptocamp/odoo-cloud-platform",
-    "data": ["data/ir_cron.xml"],
+    "data": [],
     "external_dependencies": {"python": ["prometheus_client"]},
+    "auto_install": True,
     "installable": True,
 }
