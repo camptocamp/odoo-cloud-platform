@@ -1,16 +1,17 @@
-# Copyright 2016-2021 Camptocamp SA
+# Copyright 2026 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
 
 {
-    "name": "Monitoring: Prometheus Metrics",
-    "version": "14.0.1.1.0",
+    "name": "Monitoring: Prometheus Metrics for Queue Jobs",
+    "version": "14.0.1.0.0",
     "author": "Camptocamp,Odoo Community Association (OCA)",
     "license": "AGPL-3",
     "category": "category",
-    "depends": ["base", "web", "server_environment"],
+    "depends": ["monitoring_prometheus", "queue_job"],
     "website": "https://github.com/camptocamp/odoo-cloud-platform",
-    "data": ["security/ir.model.access.csv", "data/ir_cron.xml"],
+    "data": [],
     "external_dependencies": {"python": ["prometheus_client"]},
+    "auto_install": True,
     "installable": True,
 }
