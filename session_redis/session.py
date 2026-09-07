@@ -1,10 +1,12 @@
 # Copyright 2016-2024 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
+import builtins
 import json
 import logging
+from typing import TypeAlias
 
-from odoo.service import security
+import odoo
 from odoo.tools._vendor.sessions import SessionStore
 
 from . import json_encoding
@@ -15,6 +17,14 @@ DEFAULT_SESSION_TIMEOUT = 60 * 60 * 24 * 7  # 7 days in seconds
 DEFAULT_SESSION_TIMEOUT_ANONYMOUS = 60 * 60 * 3  # 3 hours in seconds
 
 _logger = logging.getLogger(__name__)
+
+
+# Many parts of the session store API operate not on full session keys, but only
+# the first n characters of them (see odoo.http.STORED_SESSION_BYTES). In
+# particular used by Devices, but Odoo in general seems to promise that this
+# partial sid will be safe to store in the database, and can be used to later
+# find sessions, even if those sessions are actually longer.
+PartialSid: TypeAlias = str
 
 
 class RedisSessionStore(SessionStore):
@@ -78,8 +88,7 @@ class RedisSessionStore(SessionStore):
     def get(self, sid):
         if not self.is_valid_key(sid):
             _logger.debug(
-                f"session with invalid sid '{sid}' has been asked, "
-                "returning a new one"
+                f"session with invalid sid '{sid}' has been asked, returning a new one"
             )
             return self.new()
 
@@ -102,16 +111,13 @@ class RedisSessionStore(SessionStore):
         return self.session_class(data, sid, False)
 
     def list(self):
-        keys = self.redis.keys("%s*" % self.prefix)
+        keys = self.redis.keys(f"{self.prefix}*")
         _logger.debug("a listing redis keys has been called")
         return [key[len(self.prefix) :] for key in keys]
 
-    def rotate(self, session, env):
-        self.delete(session)
-        session.sid = self.generate_key()
-        if session.uid and env:
-            session.session_token = security.compute_session_token(session, env)
-        self.save(session)
+    # The FilesystemSessionStore's rotate does not do anything file-system
+    # specific so it can just be reused here
+    rotate = odoo.http.FilesystemSessionStore.rotate
 
     def vacuum(self, *args, **kwargs):
         """Do not garbage collect the sessions
@@ -120,3 +126,56 @@ class RedisSessionStore(SessionStore):
         expiration.
         """
         return None
+
+    def get_missing_session_identifiers(
+        self, identifiers: builtins.list[PartialSid]
+    ) -> set[PartialSid]:
+        """
+        Given a list of partial session ids, return a set of those session ids
+        which no longer exist in the keystore.
+
+        While this method is not part of the generic SessionStore API, it is
+        defined on the file session store, and is used by Odoo's devices to
+        figure out what needs to be revoked
+        (see odoo.addons.base.models.res_device.ResDeviceLog.__update_revoked).
+        """
+        identifiers = set(identifiers)
+        not_found = set()
+        for partial_sid in identifiers:
+            try:
+                next(
+                    self.redis.scan_iter(
+                        match=f"{self.prefix}{partial_sid}*",
+                        count=1,
+                    )
+                )
+            except StopIteration:
+                # No matches found
+                not_found.add(partial_sid)
+
+        return not_found
+
+    def delete_from_identifiers(self, identifiers: builtins.list[PartialSid]):
+        """
+        Given a list of partial session ids, remove any that are in the session store.
+
+        While this method is not part of the generic SessionStore API, it is
+        defined on the file session store, and is used by devices when revoking
+        device sessions (see odoo.addons.base.models.res_device.ResDevice._revoke).
+        """
+        patterns_to_unlink = []
+        for identifier in identifiers:
+            # Avoid removing a session if it does not match an identifier.
+            # See this same comment in
+            # odoo.http.FileSessionStore.delete_from_identifiers.
+            if not odoo.http._session_identifier_re.match(identifier):
+                raise ValueError(
+                    "Identifier format incorrect, did you pass in a string instead "
+                    "of a list?"
+                )
+            patterns_to_unlink.append(f"{self.prefix}{identifier}*")
+        keys_to_unlink = []
+        for pattern in patterns_to_unlink:
+            keys_to_unlink.extend(self.redis.scan_iter(match=pattern))
+        if keys_to_unlink:
+            self.redis.delete(*keys_to_unlink)
