@@ -6,8 +6,8 @@ import json
 import logging
 from typing import TypeAlias
 
-import odoo
-from odoo.tools._vendor.sessions import SessionStore
+import odoo.http
+from odoo.tools._vendor.sessions import SessionStore, _sha1_re
 
 from . import json_encoding
 
@@ -142,7 +142,7 @@ class RedisSessionStore(SessionStore):
         identifiers = set(identifiers)
         not_found = set()
         for partial_sid in identifiers:
-            key = f"session::{self.prefix}:{partial_sid}*"
+            key = f"{self.prefix}{partial_sid}*"
             match = self.redis.keys(pattern=key)
             if not match:
                 not_found.add(partial_sid)
@@ -161,11 +161,9 @@ class RedisSessionStore(SessionStore):
             # Avoid removing a session if it does not match an identifier.
             # See this same comment in
             # odoo.http.FileSessionStore.delete_from_identifiers.
-            if not odoo.http._session_identifier_re.match(identifier):
-                raise ValueError(
-                    "Identifier format incorrect, did you pass in a string instead "
-                    "of a list?"
-                )
+            if not _sha1_re.match(identifier):
+                # skip as done in odoo.http.FileSessionStore
+                continue
             patterns_to_unlink.append(f"{self.prefix}{identifier}*")
         keys_to_unlink = []
         for pattern in patterns_to_unlink:
