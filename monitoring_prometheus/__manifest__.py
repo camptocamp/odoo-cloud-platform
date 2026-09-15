@@ -10,7 +10,7 @@
     "category": "category",
     "depends": ["base", "web", "server_environment"],
     "website": "https://github.com/camptocamp/odoo-cloud-platform",
-    "data": ["data/ir_cron.xml"],
+    "data": ["security/ir.model.access.csv", "data/ir_cron.xml"],
     "external_dependencies": {"python": ["prometheus_client"]},
     "installable": True,
 }

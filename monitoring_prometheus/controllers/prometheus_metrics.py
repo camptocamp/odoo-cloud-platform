@@ -8,8 +8,6 @@ from prometheus_client import Gauge, generate_latest
 
 from odoo.http import Controller, request, route
 
-from ..models.prometheus_gatherer import METRICS_PARAM
-
 _logger = logging.getLogger(__name__)
 
 # Gauges must be instantiated only once per process, registering the same
@@ -27,23 +25,23 @@ def _get_gauge(name, documentation, label_names):
 
 class PrometheusController(Controller):
     def _publish_gathered_metrics(self):
-        param = request.env["ir.config_parameter"].sudo().get_param(METRICS_PARAM)
-        if not param:
+        records = request.env["prometheus.metric"].sudo().search([])
+        if not records:
             return
 
         cleared = set()
-        for metric in json.loads(param):
-            name = metric["name"]
-            labels = metric.get("labels") or {}
-            gauge = _get_gauge(name, metric.get("documentation", ""), sorted(labels))
+        for record in records:
+            name = record.name
+            labels = json.loads(record.labels or "{}")
+            gauge = _get_gauge(name, record.documentation or "", sorted(labels))
             if name not in cleared:
                 # drop the series that disappeared since the last collection
                 gauge.clear()
                 cleared.add(name)
             if labels:
-                gauge.labels(**labels).set(metric["value"])
+                gauge.labels(**labels).set(record.value)
             else:
-                gauge.set(metric["value"])
+                gauge.set(record.value)
 
     @route("/metrics", auth="public")
     def metrics(self):

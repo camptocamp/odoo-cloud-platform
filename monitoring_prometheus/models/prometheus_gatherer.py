@@ -1,19 +1,15 @@
 # Copyright 2016-2021 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
-import json
-
 from odoo import api, models
-
-METRICS_PARAM = "monitoring_prometheus.metrics"
 
 
 class PrometheusGatherer(models.AbstractModel):
     """Collect application metrics to be exposed on the /metrics endpoint.
 
-    Metrics are gathered by a cron and stored as JSON in an
-    ``ir.config_parameter``, because crons and HTTP workers run in
-    separate processes and cannot share the Prometheus registry.
+    Metrics are gathered by a cron and stored in ``prometheus.metric``
+    records, because crons and HTTP workers run in separate processes and
+    cannot share the Prometheus registry.
     """
 
     _name = "prometheus.gatherer"
@@ -42,7 +38,10 @@ class PrometheusGatherer(models.AbstractModel):
 
     @api.model
     def _cron_gather_metrics(self):
-        self.env["ir.config_parameter"].sudo().set_param(
-            METRICS_PARAM, json.dumps(self._gather_metrics())
-        )
+        Metric = self.env["prometheus.metric"].sudo()
+        touched = self.env["prometheus.metric"]
+        for metric in self._gather_metrics():
+            touched |= Metric._update_metric(metric)
+        # drop the series that disappeared since the last collection
+        (Metric.search([]) - touched).unlink()
         return True
