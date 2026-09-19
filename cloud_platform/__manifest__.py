@@ -5,11 +5,11 @@
 {
     "name": "Cloud Platform",
     "summary": "Addons required for the Camptocamp Cloud Platform",
-    "version": "18.0.1.0.0",
+    "version": "19.0.1.0.0",
     "author": "Camptocamp,Odoo Community Association (OCA)",
     "license": "AGPL-3",
     "category": "Extra Tools",
     "depends": ["session_redis", "monitoring_status", "logging_json"],
     "website": "https://github.com/camptocamp/odoo-cloud-platform",
-    "installable": False,
+    "installable": True,
 }
