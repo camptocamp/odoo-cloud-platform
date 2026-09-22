@@ -148,10 +148,17 @@ class IrAttachment(models.Model):
                 "file_size": len(data),
                 "checksum": checksum,
                 "index_content": index_content,
-                "store_fname": f"{storage}://{key}",
+                "store_fname": self._store_fname_for_key(storage, key),
                 "db_datas": False,
             }
         return super()._get_datas_related_values(data, mimetype)
+
+    def _store_fname_for_key(self, storage, key):
+        """Return the ``store_fname`` URI for an object-store key.
+
+        Backends that embed a bucket or container in the URI (S3) override this.
+        """
+        return f"{storage}://{key}"
 
     def _with_object_storage_write_tracking(self):
         """Return self with a mutable set of checksums forced to the database.
