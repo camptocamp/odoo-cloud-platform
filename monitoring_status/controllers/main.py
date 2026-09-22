@@ -41,5 +41,5 @@ class Monitoring(http.Controller):
         # tested in odoo source code, but we wouldn't check the health of
         # Redis.
         if not session.uid:
-            session.expiration = 1
+            session.can_save = False
         return werkzeug.wrappers.Response(json.dumps(info), headers=headers)
