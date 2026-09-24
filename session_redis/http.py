@@ -40,6 +40,7 @@ url = os.environ.get("ODOO_SESSION_REDIS_URL")
 password = os.environ.get("ODOO_SESSION_REDIS_PASSWORD")
 expiration = os.environ.get("ODOO_SESSION_REDIS_EXPIRATION")
 anon_expiration = os.environ.get("ODOO_SESSION_REDIS_EXPIRATION_ANONYMOUS")
+absolute_expiration = is_true(os.environ.get("ODOO_SESSION_REDIS_EXPIRATION_ABSOLUTE"))
 
 
 @lazy_property
@@ -56,6 +57,7 @@ def session_store(self):
         prefix=prefix,
         expiration=expiration,
         anon_expiration=anon_expiration,
+        absolute_expiration=absolute_expiration,
         session_class=http.Session,
     )
 

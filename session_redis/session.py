@@ -27,6 +27,7 @@ class RedisSessionStore(SessionStore):
         prefix="",
         expiration=None,
         anon_expiration=None,
+        absolute_expiration=False,
     ):
         super().__init__(session_class=session_class)
         self.redis = redis
@@ -38,6 +39,8 @@ class RedisSessionStore(SessionStore):
             self.anon_expiration = DEFAULT_SESSION_TIMEOUT_ANONYMOUS
         else:
             self.anon_expiration = anon_expiration
+        # authenticated sessions expire after `expiration` since their login
+        self.absolute_expiration = absolute_expiration
         self.prefix = "session:"
         if prefix:
             self.prefix = f"{self.prefix}:{prefix}:"
@@ -69,8 +72,19 @@ class RedisSessionStore(SessionStore):
         data = json.dumps(dict(session), cls=json_encoding.SessionEncoder).encode(
             "utf-8"
         )
-        if self.redis.set(key, data):
-            return self.redis.expire(key, expiration)
+        if self.absolute_expiration and session.uid and not session.is_new:
+            # absolute mode: keep the TTL set at login (keepttl) and never
+            # recreate an expired session (xx); anonymous and new sessions
+            # get a full TTL below
+            if not self.redis.set(key, data, xx=True, keepttl=True):
+                return False
+            # keepttl keeps "no TTL": give one to a key left without
+            if self.redis.ttl(key) == -1:
+                self.redis.expire(key, expiration)
+            return True
+        # write the data and the TTL in one command: with SET then EXPIRE, a
+        # failed EXPIRE left a key without TTL, never expiring
+        return self.redis.set(key, data, ex=expiration)
 
     def delete(self, session):
         key = self.build_key(session.sid)
@@ -113,8 +127,11 @@ class RedisSessionStore(SessionStore):
     def rotate(self, session, env):
         self.delete(session)
         session.sid = self.generate_key()
+        # new key: save it with a full expiration, in absolute mode too
+        session.is_new = True
         if session.uid and env:
             session.session_token = security.compute_session_token(session, env)
+        session.should_rotate = False
         self.save(session)
 
     def vacuum(self, *args, **kwargs):

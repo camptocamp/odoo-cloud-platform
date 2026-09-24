@@ -3,4 +3,4 @@ azure-identity
 azure-storage-blob
 prometheus_client
 python-json-logger
-redis
+redis>=3.5
