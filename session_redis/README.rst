@@ -20,6 +20,10 @@ The storage of sessions in Redis is activated using environment variables.
   the sessions (default is 7 days)
 * ``ODOO_SESSION_REDIS_EXPIRATION_ANONYMOUS`` is the time in seconds before expiration of
   the anonymous sessions (default is 3 hours)
+* ``ODOO_SESSION_REDIS_EXPIRATION_ABSOLUTE``, when ``1`` or ``true``, the
+  authenticated sessions expire ``ODOO_SESSION_REDIS_EXPIRATION`` seconds
+  after the login, whatever the activity, instead of after the last request
+  (requires Redis >= 6.0 and redis-py >= 3.5)
 
 
 The keys are set to ``session:<session id>``.
