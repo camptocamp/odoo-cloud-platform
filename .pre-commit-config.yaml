@@ -40,7 +40,7 @@ repos:
       - id: oca-fix-manifest-website
         args: ["https://github.com/camptocamp/odoo-cloud-platform"]
   - repo: https://github.com/myint/autoflake
-    rev: v1.4
+    rev: v1.5.3
     hooks:
       - id: autoflake
         args:
@@ -109,11 +109,11 @@ repos:
           - --settings=.
         exclude: /__init__\.py$
   - repo: https://github.com/acsone/setuptools-odoo
-    rev: 3.1.8
+    rev: 3.3.2
     hooks:
       - id: setuptools-odoo-make-default
   - repo: https://github.com/PyCQA/flake8
-    rev: 3.8.3
+    rev: 5.0.0
     hooks:
       - id: flake8
         name: flake8
