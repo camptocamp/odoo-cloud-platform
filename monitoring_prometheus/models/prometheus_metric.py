@@ -9,7 +9,11 @@ from odoo import api, fields, models
 
 
 class PrometheusMetric(models.Model):
-    """Store the metrics gathered by ``prometheus.gatherer``.
+    """Application metrics gathered by a cron and exposed on ``/metrics``.
+
+    Metrics are gathered by ``_cron_gather_metrics`` and stored as records,
+    because crons and HTTP workers run in separate processes and cannot share
+    the Prometheus registry.
 
     A record is stored per metric name/labels combination, because a single
     metric name can be reported several times with different labels (e.g.
@@ -56,6 +60,37 @@ class PrometheusMetric(models.Model):
     def write(self, vals):
         self._check_upsert_context()
         return super().write(vals)
+
+    @api.model
+    def _gather_metrics(self):
+        """Return the metrics as a list of dicts.
+
+        Each entry is of the form::
+
+            {
+                "name": "odoo_some_metric",
+                "documentation": "What this metric measures",
+                "labels": {"label_name": "label_value"},
+                "value": 42,
+            }
+
+        ``labels`` may be omitted for an unlabelled metric. All the entries
+        sharing a ``name`` must declare the same label names.
+
+        Modules extending this method must return the result of ``super()``
+        extended with their own entries.
+        """
+        return []
+
+    @api.model
+    def _cron_gather_metrics(self):
+        Metric = self.sudo()
+        touched = Metric.browse()
+        for metric in Metric._gather_metrics():
+            touched |= Metric._create_or_update_metric(metric)
+        # drop the series that disappeared since the last collection
+        (Metric.search([]) - touched).unlink()
+        return True
 
     @api.model
     def _create_or_update_metric(self, metric):

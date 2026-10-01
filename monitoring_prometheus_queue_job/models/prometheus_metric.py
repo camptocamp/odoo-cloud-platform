@@ -8,8 +8,8 @@ GAUGE_NAME = "odoo_queue_job_count"
 GAUGE_DOC = "Number of queue jobs per state and channel"
 
 
-class PrometheusGatherer(models.AbstractModel):
-    _inherit = "prometheus.gatherer"
+class PrometheusMetric(models.Model):
+    _inherit = "prometheus.metric"
 
     @api.model
     def _gather_metrics(self):

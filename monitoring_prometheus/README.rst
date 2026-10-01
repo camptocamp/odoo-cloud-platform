@@ -31,8 +31,8 @@ can read ``prometheus.metric`` records through the ORM/UI. The */metrics* endpoi
 remains public and reads the records with ``sudo()`` so Prometheus can keep scraping it
 without authentication.
 
-To publish new metrics, extend ``_gather_metrics`` on the ``prometheus.gatherer``
-abstract model and return the result of ``super()`` extended with your own entries::
+To publish new metrics, extend ``_gather_metrics`` on the ``prometheus.metric``
+model and return the result of ``super()`` extended with your own entries::
 
     {
         "name": "odoo_some_metric",
