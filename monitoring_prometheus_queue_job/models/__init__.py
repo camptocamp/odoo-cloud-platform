@@ -1,1 +1,1 @@
-from . import prometheus_metric
+from . import prometheus_gatherer

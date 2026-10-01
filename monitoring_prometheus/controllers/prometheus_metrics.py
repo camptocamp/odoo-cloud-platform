@@ -29,9 +29,8 @@ class PrometheusController(Controller):
         # REGISTRY holds the in-process metrics (request latency, longpolling)
         output = generate_latest(REGISTRY)
         try:
-            records = request.env["prometheus.metric"].sudo().search([])
-            registry = records._build_prometheus_registry()
-            output += generate_latest(registry)
+            gatherer = request.env["prometheus.gatherer"].sudo()
+            output += generate_latest(gatherer._build_prometheus_registry())
         except Exception:
             _logger.exception("Could not publish the gathered Prometheus metrics")
         return output
