@@ -41,7 +41,7 @@ class PrometheusGatherer(models.AbstractModel):
         Metric = self.env["prometheus.metric"].sudo()
         touched = self.env["prometheus.metric"]
         for metric in self._gather_metrics():
-            touched |= Metric._update_metric(metric)
+            touched |= Metric._create_or_update_metric(metric)
         # drop the series that disappeared since the last collection
         (Metric.search([]) - touched).unlink()
         return True
