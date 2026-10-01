@@ -13,8 +13,7 @@ The gauge ``odoo_queue_job_count`` is published with the labels *state* and
 and ``wait_dependencies``. The terminal states ``done`` and ``cancelled`` are
 not reported.
 
-Values are refreshed by the *Prometheus: gather metrics* scheduled action, so
-they are a snapshot and not a real time count.
+Values are counted at each scrape of the */metrics* endpoint.
 
 This module is automatically installed when both ``monitoring_prometheus`` and
 ``queue_job`` are installed.
