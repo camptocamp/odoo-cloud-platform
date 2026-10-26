@@ -1,10 +1,9 @@
 # Copyright 2016-2024 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
-import functools
 import logging
 import os
 
-from odoo import http
+from odoo.http import session as http_session
 from odoo.tools import config
 
 from .session import RedisSessionStore
@@ -27,13 +26,13 @@ def is_true(strval):
 sentinel_host = os.getenv("ODOO_SESSION_REDIS_SENTINEL_HOST")
 sentinel_master_name = os.getenv("ODOO_SESSION_REDIS_SENTINEL_MASTER_NAME")
 if sentinel_host and not sentinel_master_name:
-    raise Exception(
+    raise ValueError(
         "ODOO_SESSION_REDIS_SENTINEL_MASTER_NAME must be defined "
         "when using session_redis"
     )
-sentinel_port = int(os.getenv("ODOO_SESSION_REDIS_SENTINEL_PORT", 26379))
+sentinel_port = int(os.getenv("ODOO_SESSION_REDIS_SENTINEL_PORT", "26379"))
 host = os.getenv("ODOO_SESSION_REDIS_HOST", "localhost")
-port = int(os.getenv("ODOO_SESSION_REDIS_PORT", 6379))
+port = int(os.getenv("ODOO_SESSION_REDIS_PORT", "6379"))
 prefix = os.getenv("ODOO_SESSION_REDIS_PREFIX")
 url = os.getenv("ODOO_SESSION_REDIS_URL")
 password = os.getenv("ODOO_SESSION_REDIS_PASSWORD")
@@ -45,15 +44,14 @@ ssl_cert_reqs = os.getenv("ODOO_SESSION_REDIS_SSL_CERT_REQS", "1")
 redis_cluster = os.getenv("ODOO_SESSION_REDIS_CLUSTER", "0")
 
 
-@functools.cached_property
-def session_store(self):
+def redis_client():
     if sentinel_host:
         sentinel = Sentinel([(sentinel_host, sentinel_port)], password=password)
-        redis_client = sentinel.master_for(sentinel_master_name)
+        return sentinel.master_for(sentinel_master_name)
     elif url:
-        redis_client = redis.from_url(url)
+        return redis.from_url(url)
     elif is_true(redis_cluster):
-        redis_client = redis.RedisCluster(
+        return redis.RedisCluster(
             host=host,
             port=port,
             password=password,
@@ -61,20 +59,31 @@ def session_store(self):
             ssl_cert_reqs=is_true(ssl_cert_reqs),
         )
     else:
-        redis_client = redis.Redis(
+        return redis.Redis(
             host=host,
             port=port,
             password=password,
             ssl=is_true(ssl),
             ssl_cert_reqs=is_true(ssl_cert_reqs),
         )
-    return RedisSessionStore(
-        redis=redis_client,
-        prefix=prefix,
-        expiration=expiration,
-        anon_expiration=anon_expiration,
-        session_class=http.Session,
-    )
+
+
+class ConfiguredRedisSessionStore(RedisSessionStore):
+    """RedisSessionStore configured from the environment variables
+
+    Instantiated by odoo.http.session.session_store() with the same
+    arguments as the filesystem session store it replaces.
+    """
+
+    def __init__(self, path=None, session_cls=http_session.Session):
+        super().__init__(
+            path=path,
+            session_cls=session_cls,
+            redis=redis_client(),
+            prefix=prefix,
+            expiration=expiration,
+            anon_expiration=anon_expiration,
+        )
 
 
 def purge_fs_sessions(path):
@@ -105,15 +114,10 @@ if is_true(os.getenv("ODOO_SESSION_REDIS")):
             host,
             port,
         )
-    http.Application.session_store = session_store
-    # cached_property needs __set_name__ to be called, but it is not called
-    # automatically since we are attaching the property after instance creation.
-    # So we have to do it manually
-    # See: https://docs.python.org/3/reference/datamodel.html#object.__set_name__
-    # Credit: https://stackoverflow.com/a/62161136
-    http.Application.session_store.__set_name__(
-        http.Application,
-        "session_store",
-    )
+    # odoo.http.session.session_store() is a cached factory imported by name
+    # in many places: replace the class it instantiates and drop the cached
+    # filesystem store so that every caller gets the redis one.
+    http_session.SessionStore = ConfiguredRedisSessionStore
+    http_session.session_store.cache_clear()
     # clean the existing sessions on the file system
     purge_fs_sessions(config.session_dir)
