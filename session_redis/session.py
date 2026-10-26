@@ -147,7 +147,7 @@ class RedisSessionStore(SessionStore):
         Redis keys are automatically cleaned at the end of their
         expiration.
         """
-        return None
+        return
 
     def delete_old_sessions(self, session):
         """

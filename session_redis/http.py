@@ -16,7 +16,7 @@ try:
     import redis
     from redis.sentinel import Sentinel
 except ImportError:
-    redis = None  # noqa
+    redis = None
     _logger.debug("Cannot 'import redis'.")
 
 

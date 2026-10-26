@@ -18,6 +18,6 @@ def strtobool(value):
     result = _MAP.get(str(value).strip().lower())
 
     if result is None:
-        raise ValueError(f"Invalid boolean value: {repr(value)}")
+        raise ValueError(f"Invalid boolean value: {value!r}")
 
     return result
