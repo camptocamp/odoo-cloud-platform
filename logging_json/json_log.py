@@ -7,7 +7,7 @@ import sys
 import threading
 import uuid
 
-from odoo import http
+from odoo.http.requestlib import Request
 
 from .strtobool import strtobool
 
@@ -74,7 +74,7 @@ if is_true(os.environ.get("ODOO_LOGGING_JSON")):
 
 
 # monkey patch Request constructor to store request_uuid
-org_init = http.Request.__init__
+org_init = Request.__init__
 
 
 def new_init(self, httprequest):
@@ -82,4 +82,4 @@ def new_init(self, httprequest):
     threading.current_thread().request_uuid = uuid.uuid4()
 
 
-http.Request.__init__ = new_init
+Request.__init__ = new_init
