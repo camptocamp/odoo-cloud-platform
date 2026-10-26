@@ -16,7 +16,7 @@ _logger = logging.getLogger(__name__)
 try:
     from pythonjsonlogger.json import JsonFormatter
 except ImportError:
-    JsonFormatter = None  # noqa
+    JsonFormatter = None
     _logger.debug("Cannot 'import pythonjsonlogger'.")
 
 
