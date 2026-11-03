@@ -83,13 +83,9 @@ class TestRedisSessionStore(BaseCase):
             patcher = mock.patch(target, new)
             patcher.start()
             self.addCleanup(patcher.stop)
-        return RedisSessionStore(
-            redis=self.redis,
-            session_class=http.Session,
-            expiration=7 * DAY,
-            anon_expiration=3 * HOUR,
-            **kwargs,
-        )
+        kwargs.setdefault("expiration", 7 * DAY)
+        kwargs.setdefault("anon_expiration", 3 * HOUR)
+        return RedisSessionStore(redis=self.redis, session_class=http.Session, **kwargs)
 
     def _login(self, store):
         session = store.new()
@@ -248,3 +244,20 @@ class TestRedisSessionStore(BaseCase):
         self.redis.advance(http.SESSION_DELETION_TIMER)
         self.assertIsNone(self.redis.get(store.build_key(old_sid)))
         self.assertEqual(store.get(session.sid).uid, 1)
+
+    def test_expiration_from_environment(self):
+        """The expirations set in the environment variables (strings) apply"""
+        store = self._get_store(expiration=str(DAY), anon_expiration=str(HOUR))
+        session = self._login(store)
+        self.assertEqual(self._ttl(store, session), DAY)
+        anonymous = store.new()
+        anonymous["debug"] = ""
+        store.save(anonymous)
+        self.assertEqual(self._ttl(store, anonymous), HOUR)
+
+    def test_expiration_defaults(self):
+        """Unset or empty environment variables use the defaults"""
+        for value in (None, "", "0"):
+            store = self._get_store(expiration=value, anon_expiration=value)
+            self.assertEqual(store.expiration, http.SESSION_LIFETIME)
+            self.assertEqual(store.anon_expiration, 3 * HOUR)

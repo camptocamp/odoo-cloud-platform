@@ -42,14 +42,12 @@ class RedisSessionStore(SessionStore):
     ):
         super().__init__(session_class=session_class)
         self.redis = redis
-        if expiration is None:
-            self.expiration = SESSION_LIFETIME
-        else:
-            self.expiration = expiration
-        if anon_expiration is None:
-            self.anon_expiration = DEFAULT_SESSION_TIMEOUT_ANONYMOUS
-        else:
-            self.anon_expiration = anon_expiration
+        # the expirations come from environment variables, as strings: unset,
+        # empty or 0 means the default
+        self.expiration = int(expiration or 0) or SESSION_LIFETIME
+        self.anon_expiration = (
+            int(anon_expiration or 0) or DEFAULT_SESSION_TIMEOUT_ANONYMOUS
+        )
         # authenticated sessions expire after `expiration` since their login
         self.absolute_expiration = absolute_expiration
         self.prefix = "session:"
@@ -96,9 +94,6 @@ class RedisSessionStore(SessionStore):
         data = json.dumps(dict(session), cls=json_encoding.SessionEncoder).encode(
             "utf-8"
         )
-        if not (expiration and isinstance(expiration, int)):
-            expiration = DEFAULT_SESSION_TIMEOUT_ANONYMOUS
-            expiration = DEFAULT_SESSION_TIMEOUT_ANONYMOUS
         if (
             self.absolute_expiration
             and session.uid
