@@ -39,6 +39,7 @@ url = os.getenv("ODOO_SESSION_REDIS_URL")
 password = os.getenv("ODOO_SESSION_REDIS_PASSWORD")
 expiration = os.getenv("ODOO_SESSION_REDIS_EXPIRATION")
 anon_expiration = os.getenv("ODOO_SESSION_REDIS_EXPIRATION_ANONYMOUS")
+absolute_expiration = is_true(os.getenv("ODOO_SESSION_REDIS_EXPIRATION_ABSOLUTE"))
 # For non url connections
 ssl = os.getenv("ODOO_SESSION_REDIS_SSL", "1")
 ssl_cert_reqs = os.getenv("ODOO_SESSION_REDIS_SSL_CERT_REQS", "1")
@@ -73,6 +74,7 @@ def session_store(self):
         prefix=prefix,
         expiration=expiration,
         anon_expiration=anon_expiration,
+        absolute_expiration=absolute_expiration,
         session_class=http.Session,
     )
 

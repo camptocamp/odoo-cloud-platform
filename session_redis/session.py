@@ -4,6 +4,7 @@
 import builtins
 import json
 import logging
+import time
 from typing import TypeAlias
 
 import odoo.http
@@ -37,17 +38,18 @@ class RedisSessionStore(SessionStore):
         prefix="",
         expiration=None,
         anon_expiration=None,
+        absolute_expiration=False,
     ):
         super().__init__(session_class=session_class)
         self.redis = redis
-        if expiration is None:
-            self.expiration = SESSION_LIFETIME
-        else:
-            self.expiration = expiration
-        if anon_expiration is None:
-            self.anon_expiration = DEFAULT_SESSION_TIMEOUT_ANONYMOUS
-        else:
-            self.anon_expiration = anon_expiration
+        # the expirations come from environment variables, as strings: unset,
+        # empty or 0 means the default
+        self.expiration = int(expiration or 0) or SESSION_LIFETIME
+        self.anon_expiration = (
+            int(anon_expiration or 0) or DEFAULT_SESSION_TIMEOUT_ANONYMOUS
+        )
+        # authenticated sessions expire after `expiration` since their login
+        self.absolute_expiration = absolute_expiration
         self.prefix = "session:"
         if prefix:
             self.prefix = f"{self.prefix}:{prefix}:"
@@ -68,21 +70,17 @@ class RedisSessionStore(SessionStore):
 
         # If the session has a deletion_time, it is slated for rotation, and
         # should be removed once the rotation window is over. See
-        # odoo.http.SESSION_DELETION_TIMER.
+        # odoo.http.SESSION_DELETION_TIMER. deletion_time is a timestamp, the
+        # TTL is the time left until then.
         # Otherwise, allow to set a custom expiration for a session
         # such as a very short one for monitoring requests
-        if session.uid:
-            expiration = (
-                session.get("deletion_time")
-                or session.get("expiration")
-                or self.expiration
-            )
+        deletion_time = session.get("deletion_time")
+        if deletion_time:
+            expiration = max(int(deletion_time - time.time()), 1)
+        elif session.uid:
+            expiration = session.get("expiration") or self.expiration
         else:
-            expiration = (
-                session.get("deletion_time")
-                or session.get("expiration")
-                or self.anon_expiration
-            )
+            expiration = session.get("expiration") or self.anon_expiration
         if _logger.isEnabledFor(logging.DEBUG):
             if session.uid:
                 user_msg = f"user '{session.login}' (id: {session.uid})"
@@ -96,11 +94,25 @@ class RedisSessionStore(SessionStore):
         data = json.dumps(dict(session), cls=json_encoding.SessionEncoder).encode(
             "utf-8"
         )
-        if self.redis.set(key, data):
-            if not (expiration and isinstance(expiration, int)):
-                expiration = DEFAULT_SESSION_TIMEOUT_ANONYMOUS
-                expiration = DEFAULT_SESSION_TIMEOUT_ANONYMOUS
-            return self.redis.expire(key, expiration)
+        if (
+            self.absolute_expiration
+            and session.uid
+            and not session.is_new
+            and not session.get("deletion_time")
+        ):
+            # absolute mode: keep the TTL set at login (keepttl) and never
+            # recreate an expired session (xx); anonymous and new sessions
+            # get a full TTL below, and the old key of a soft rotation its
+            # deletion delay
+            if not self.redis.set(key, data, xx=True, keepttl=True):
+                return False
+            # keepttl keeps "no TTL": give one to a key left without
+            if self.redis.ttl(key) == -1:
+                self.redis.expire(key, expiration)
+            return True
+        # write the data and the TTL in one command: with SET then EXPIRE, a
+        # failed EXPIRE left a key without TTL, never expiring
+        return self.redis.set(key, data, ex=expiration)
 
     def delete(self, session):
         key = self.build_key(session.sid)
@@ -137,9 +149,40 @@ class RedisSessionStore(SessionStore):
         _logger.debug("a listing redis keys has been called")
         return [key[len(self.prefix) :] for key in keys]
 
-    # The FilesystemSessionStore's rotate does not do anything file-system
-    # specific so it can just be reused here
-    rotate = odoo.http.FilesystemSessionStore.rotate
+    def rotate(self, session, env, soft=False):
+        """Rotate the session id, see odoo.http.FilesystemSessionStore.rotate
+
+        Its logic does not do anything file-system specific, so it is reused,
+        but the new session id is a new Redis key:
+
+        * it is saved as a new session (full TTL): on login, logout or MFA
+          (hard rotation), the expiration restarts, in absolute mode too
+        * in absolute mode, a soft rotation (every
+          odoo.http.SESSION_ROTATION_INTERVAL) keeps the remaining TTL of the
+          old key, so the expiration still counts from the login
+        """
+        ttl = None
+        if soft and self.absolute_expiration and session.uid:
+            # read it before the old key gets the TTL of its deletion_time
+            ttl = self.redis.ttl(self.build_key(session.sid))
+        create_time = session.get("create_time")
+        session.is_new = True
+        try:
+            odoo.http.FilesystemSessionStore.rotate(self, session, env, soft=soft)
+        finally:
+            session.is_new = False
+        # a soft rotation already done by a concurrent request only switches
+        # to its new session id, without saving: its TTL is already right
+        rotated = session.get("create_time") != create_time
+        if ttl is None or not rotated:
+            return
+        key = self.build_key(session.sid)
+        if ttl > 0:
+            self.redis.expire(key, ttl)
+        elif ttl == -2:
+            # the old session expired meanwhile: do not revive it
+            self.redis.delete(key)
+        # ttl == -1 (old key without TTL): keep the full TTL of the new key
 
     def vacuum(self, *args, **kwargs):
         """Do not garbage collect the sessions
@@ -176,7 +219,7 @@ class RedisSessionStore(SessionStore):
         identifiers = set(identifiers)
         not_found = set()
         for partial_sid in identifiers:
-            key = f"session::{self.prefix}:{partial_sid}*"
+            key = f"{self.build_key(partial_sid)}*"
             match = self.redis.keys(pattern=key)
             if not match:
                 not_found.add(partial_sid)
