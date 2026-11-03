@@ -77,6 +77,7 @@ class TestRedisSessionStore(BaseCase):
         # the clock and needs an env to compute the session token
         for target, new in (
             ("odoo.http.time", mock.Mock(time=self.redis.time)),
+            (f"{RedisSessionStore.__module__}.time", mock.Mock(time=self.redis.time)),
             ("odoo.http.security.compute_session_token", mock.Mock(return_value="t")),
         ):
             patcher = mock.patch(target, new)
@@ -204,6 +205,8 @@ class TestRedisSessionStore(BaseCase):
         self.assertNotEqual(session.sid, old_sid)
         self.assertEqual(self._ttl(store, session), 7 * DAY - 4 * HOUR)
         self.assertEqual(store.get(old_sid)["next_sid"], session.sid)
+        # the old key is kept for the deletion delay only
+        self.assertEqual(self.redis.ttl(store.build_key(old_sid)), 120)
         # later requests keep counting from the login
         self.redis.advance(DAY)
         session = self._use(store, session)
@@ -230,3 +233,18 @@ class TestRedisSessionStore(BaseCase):
         session = store.get(session.sid)
         store.rotate(session, self.env, soft=True)
         self.assertEqual(self._ttl(store, session), 7 * DAY)
+
+    def test_soft_rotation_old_key_deletion(self):
+        """The old key of a soft rotation expires after its deletion delay"""
+        store = self._get_store()
+        session = self._login_from_anonymous(store)
+        old_sid = session.sid
+        self.redis.advance(4 * HOUR)
+        session = store.get(session.sid)
+        store.rotate(session, self.env, soft=True)
+        self.assertEqual(
+            self.redis.ttl(store.build_key(old_sid)), http.SESSION_DELETION_TIMER
+        )
+        self.redis.advance(http.SESSION_DELETION_TIMER)
+        self.assertIsNone(self.redis.get(store.build_key(old_sid)))
+        self.assertEqual(store.get(session.sid).uid, 1)

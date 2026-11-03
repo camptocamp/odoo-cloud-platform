@@ -4,6 +4,7 @@
 import builtins
 import json
 import logging
+import time
 from typing import TypeAlias
 
 import odoo.http
@@ -71,21 +72,17 @@ class RedisSessionStore(SessionStore):
 
         # If the session has a deletion_time, it is slated for rotation, and
         # should be removed once the rotation window is over. See
-        # odoo.http.SESSION_DELETION_TIMER.
+        # odoo.http.SESSION_DELETION_TIMER. deletion_time is a timestamp, the
+        # TTL is the time left until then.
         # Otherwise, allow to set a custom expiration for a session
         # such as a very short one for monitoring requests
-        if session.uid:
-            expiration = (
-                session.get("deletion_time")
-                or session.get("expiration")
-                or self.expiration
-            )
+        deletion_time = session.get("deletion_time")
+        if deletion_time:
+            expiration = max(int(deletion_time - time.time()), 1)
+        elif session.uid:
+            expiration = session.get("expiration") or self.expiration
         else:
-            expiration = (
-                session.get("deletion_time")
-                or session.get("expiration")
-                or self.anon_expiration
-            )
+            expiration = session.get("expiration") or self.anon_expiration
         if _logger.isEnabledFor(logging.DEBUG):
             if session.uid:
                 user_msg = f"user '{session.login}' (id: {session.uid})"
