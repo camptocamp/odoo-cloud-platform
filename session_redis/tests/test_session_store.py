@@ -1,6 +1,7 @@
 # Copyright 2026 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
+from fnmatch import fnmatchcase
 from unittest import mock
 
 from odoo import http
@@ -44,6 +45,11 @@ class FakeRedis:
     def get(self, key):
         self._purge(key)
         return self.data.get(key)
+
+    def keys(self, pattern="*"):
+        for key in list(self.data):
+            self._purge(key)
+        return [key for key in self.data if fnmatchcase(key, pattern)]
 
     def delete(self, key):
         self.expire_at.pop(key, None)
@@ -261,3 +267,15 @@ class TestRedisSessionStore(BaseCase):
             store = self._get_store(expiration=value, anon_expiration=value)
             self.assertEqual(store.expiration, http.SESSION_LIFETIME)
             self.assertEqual(store.anon_expiration, 3 * HOUR)
+
+    def test_get_missing_session_identifiers(self):
+        """Only the identifiers of sessions not in Redis are missing"""
+        for prefix in ("", "project"):
+            store = self._get_store(prefix=prefix)
+            session = self._login(store)
+            existing = session.sid[: http.STORED_SESSION_BYTES]
+            missing = store.generate_key()[: http.STORED_SESSION_BYTES]
+            self.assertEqual(
+                store.get_missing_session_identifiers([existing, missing]),
+                {missing},
+            )

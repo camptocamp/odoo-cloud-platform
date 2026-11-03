@@ -219,7 +219,7 @@ class RedisSessionStore(SessionStore):
         identifiers = set(identifiers)
         not_found = set()
         for partial_sid in identifiers:
-            key = f"session::{self.prefix}:{partial_sid}*"
+            key = f"{self.build_key(partial_sid)}*"
             match = self.redis.keys(pattern=key)
             if not match:
                 not_found.add(partial_sid)
