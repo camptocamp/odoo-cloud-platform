@@ -1,6 +1,8 @@
 # Copyright 2026 Camptocamp SA
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html)
 
+from unittest import mock
+
 from odoo import http
 from odoo.tests import BaseCase
 
@@ -14,7 +16,8 @@ class FakeRedis:
     """In-memory Redis with a manual clock, for the commands used by the store"""
 
     def __init__(self):
-        self.now = 0
+        # a realistic epoch: odoo.http stores time.time() in the sessions
+        self.now = 1_800_000_000.0
         self.data = {}
         self.expire_at = {}
 
@@ -59,12 +62,26 @@ class FakeRedis:
             return -2
         if key not in self.expire_at:
             return -1
-        return self.expire_at[key] - self.now
+        return int(self.expire_at[key] - self.now)
+
+    def time(self):
+        return self.now
 
 
 class TestRedisSessionStore(BaseCase):
+    env = object()  # rotate() asserts an env for authenticated sessions
+
     def _get_store(self, **kwargs):
         self.redis = FakeRedis()
+        # odoo.http.FilesystemSessionStore.rotate, reused by the store, uses
+        # the clock and needs an env to compute the session token
+        for target, new in (
+            ("odoo.http.time", mock.Mock(time=self.redis.time)),
+            ("odoo.http.security.compute_session_token", mock.Mock(return_value="t")),
+        ):
+            patcher = mock.patch(target, new)
+            patcher.start()
+            self.addCleanup(patcher.stop)
         return RedisSessionStore(
             redis=self.redis,
             session_class=http.Session,
@@ -131,7 +148,7 @@ class TestRedisSessionStore(BaseCase):
         session = self._login(store)
         old_sid = session.sid
         self.redis.advance(3 * DAY)
-        store.rotate(session, None)
+        store.rotate(session, self.env)
         self.assertNotEqual(session.sid, old_sid)
         self.assertIsNone(self.redis.get(store.build_key(old_sid)))
         self.assertEqual(self._ttl(store, session), 7 * DAY)
@@ -154,4 +171,62 @@ class TestRedisSessionStore(BaseCase):
         self.redis.expire_at.pop(store.build_key(session.sid))
         self.assertEqual(self._ttl(store, session), -1)
         session = self._use(store, session)
+        self.assertEqual(self._ttl(store, session), 7 * DAY)
+
+    def _login_from_anonymous(self, store):
+        """Simulate odoo.http: the login rotates the anonymous session"""
+        session = store.new()
+        session["debug"] = ""
+        store.save(session)
+        session = store.get(session.sid)
+        session.update({"uid": 1, "login": "admin"})
+        store.rotate(session, self.env)
+        return session
+
+    def test_login_rotation(self):
+        """The login saves the new key, then the TTL counts from it"""
+        store = self._get_store(absolute_expiration=True)
+        self.redis.advance(HOUR)
+        session = self._login_from_anonymous(store)
+        self.assertEqual(self._ttl(store, session), 7 * DAY)
+        self.redis.advance(DAY)
+        session = self._use(store, session)
+        self.assertEqual(self._ttl(store, session), 6 * DAY)
+
+    def test_absolute_expiration_soft_rotation(self):
+        """A soft rotation keeps the expiration since the login"""
+        store = self._get_store(absolute_expiration=True)
+        session = self._login_from_anonymous(store)
+        old_sid = session.sid
+        self.redis.advance(4 * HOUR)
+        session = store.get(session.sid)
+        store.rotate(session, self.env, soft=True)
+        self.assertNotEqual(session.sid, old_sid)
+        self.assertEqual(self._ttl(store, session), 7 * DAY - 4 * HOUR)
+        self.assertEqual(store.get(old_sid)["next_sid"], session.sid)
+        # later requests keep counting from the login
+        self.redis.advance(DAY)
+        session = self._use(store, session)
+        self.assertEqual(self._ttl(store, session), 6 * DAY - 4 * HOUR)
+
+    def test_absolute_expiration_concurrent_soft_rotation(self):
+        """A request following a concurrent soft rotation keeps its TTL"""
+        store = self._get_store(absolute_expiration=True)
+        session = self._login_from_anonymous(store)
+        old_sid = session.sid
+        self.redis.advance(4 * HOUR)
+        first = store.get(old_sid)
+        second = store.get(old_sid)
+        store.rotate(first, self.env, soft=True)
+        store.rotate(second, self.env, soft=True)
+        self.assertEqual(second.sid, first.sid)
+        self.assertEqual(self._ttl(store, second), 7 * DAY - 4 * HOUR)
+
+    def test_sliding_expiration_soft_rotation(self):
+        """By default, a soft rotation gives a full expiration"""
+        store = self._get_store()
+        session = self._login_from_anonymous(store)
+        self.redis.advance(4 * HOUR)
+        session = store.get(session.sid)
+        store.rotate(session, self.env, soft=True)
         self.assertEqual(self._ttl(store, session), 7 * DAY)

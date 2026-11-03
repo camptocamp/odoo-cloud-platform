@@ -102,10 +102,16 @@ class RedisSessionStore(SessionStore):
         if not (expiration and isinstance(expiration, int)):
             expiration = DEFAULT_SESSION_TIMEOUT_ANONYMOUS
             expiration = DEFAULT_SESSION_TIMEOUT_ANONYMOUS
-        if self.absolute_expiration and session.uid and not session.is_new:
+        if (
+            self.absolute_expiration
+            and session.uid
+            and not session.is_new
+            and not session.get("deletion_time")
+        ):
             # absolute mode: keep the TTL set at login (keepttl) and never
             # recreate an expired session (xx); anonymous and new sessions
-            # get a full TTL below
+            # get a full TTL below, and the old key of a soft rotation its
+            # deletion delay
             if not self.redis.set(key, data, xx=True, keepttl=True):
                 return False
             # keepttl keeps "no TTL": give one to a key left without
@@ -151,9 +157,40 @@ class RedisSessionStore(SessionStore):
         _logger.debug("a listing redis keys has been called")
         return [key[len(self.prefix) :] for key in keys]
 
-    # The FilesystemSessionStore's rotate does not do anything file-system
-    # specific so it can just be reused here
-    rotate = odoo.http.FilesystemSessionStore.rotate
+    def rotate(self, session, env, soft=False):
+        """Rotate the session id, see odoo.http.FilesystemSessionStore.rotate
+
+        Its logic does not do anything file-system specific, so it is reused,
+        but the new session id is a new Redis key:
+
+        * it is saved as a new session (full TTL): on login, logout or MFA
+          (hard rotation), the expiration restarts, in absolute mode too
+        * in absolute mode, a soft rotation (every
+          odoo.http.SESSION_ROTATION_INTERVAL) keeps the remaining TTL of the
+          old key, so the expiration still counts from the login
+        """
+        ttl = None
+        if soft and self.absolute_expiration and session.uid:
+            # read it before the old key gets the TTL of its deletion_time
+            ttl = self.redis.ttl(self.build_key(session.sid))
+        create_time = session.get("create_time")
+        session.is_new = True
+        try:
+            odoo.http.FilesystemSessionStore.rotate(self, session, env, soft=soft)
+        finally:
+            session.is_new = False
+        # a soft rotation already done by a concurrent request only switches
+        # to its new session id, without saving: its TTL is already right
+        rotated = session.get("create_time") != create_time
+        if ttl is None or not rotated:
+            return
+        key = self.build_key(session.sid)
+        if ttl > 0:
+            self.redis.expire(key, ttl)
+        elif ttl == -2:
+            # the old session expired meanwhile: do not revive it
+            self.redis.delete(key)
+        # ttl == -1 (old key without TTL): keep the full TTL of the new key
 
     def vacuum(self, *args, **kwargs):
         """Do not garbage collect the sessions
